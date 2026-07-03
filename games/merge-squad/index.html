@@ -425,7 +425,11 @@ var defaultData = {
 function loadData() {
     try {
         var d = JSON.parse(LS.getItem(STORAGE_KEY));
-        return d ? Object.assign({}, defaultData, d) : Object.assign({}, defaultData);
+        if (!d) return Object.assign({}, defaultData);
+        d = Object.assign({}, defaultData, d);
+        /* v1 saves had no bestLevel, backfill it from campaign progress */
+        d.bestLevel = Math.max(d.bestLevel || 1, d.campaignLevel || 1);
+        return d;
     } catch (e) {
         return Object.assign({}, defaultData);
     }
@@ -768,6 +772,71 @@ function sfxSell() {
     o.stop(t + 0.22);
 }
 
+/* Coin tick: tiny bright blip for the payout cascade (one per landing coin) */
+function sfxCoinTick() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar() * rand(0.96, 1.12);
+    var o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(1760 * p, t);
+    o.frequency.exponentialRampToValueAtTime(2637 * p, t + 0.04);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.1, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.12);
+}
+
+/* Impact thump pitched by damage tier: 0 pip, 1 solid, 2 boss/heavy */
+function sfxImpact(tier) {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var base = tier >= 2 ? 150 : (tier === 1 ? 260 : 380);
+    var src = audioCtx.createBufferSource();
+    src.buffer = getNoise();
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(base * 1.4 * p, t);
+    lp.frequency.exponentialRampToValueAtTime(base * 0.4 * p, t + 0.14);
+    var g = audioCtx.createGain();
+    var vol = tier >= 2 ? 0.3 : (tier === 1 ? 0.24 : 0.18);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (tier >= 2 ? 0.22 : 0.14));
+    src.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
+    src.onended = voiceDone;
+    src.start(t);
+    src.stop(t + (tier >= 2 ? 0.24 : 0.16));
+}
+
+/* Era fanfare: a rising arpeggio, brighter with later eras */
+function sfxEraFanfare(era) {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar() * Math.pow(2, Math.min(5, era) / 12);
+    var o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    var notes = [523, 659, 784, 1047, 1319];
+    for (var n = 0; n < notes.length; n++) o.frequency.setValueAtTime(notes[n] * p, t + n * 0.09);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.19, t + 0.02);
+    g.gain.setValueAtTime(0.19, t + 0.45);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.82);
+}
+
 /* ================= Layout constants (logical 420 x 860, letterboxed) ================= */
 var W = 420, H = 860;
 var INK = '#2B2350';
@@ -814,8 +883,9 @@ var ERA_NAMES = ['Sock', 'Wooden', 'Wind-Up', 'Blaster', 'Robo', 'Cosmic Plush']
 function winPayout(level) {
     var p = 150 + 25 * level;
     /* from mid campaign the payout tracks the enemy budget so income keeps pace
-       with the 1.16 difficulty curve (factor tuned via the headless autopilot) */
-    p = Math.max(p, r10(250 * Math.pow(1.16, level - 1) * 0.34));
+       with the 1.19 difficulty curve (factor 0.40 tuned via the headless autopilot:
+       a smart player clears level 25 in <=3 tries, a lazy-merge player stalls in 6-25) */
+    p = Math.max(p, r10(250 * Math.pow(1.19, level - 1) * 0.4));
     return (level % 5 === 0) ? p * 2 : p;
 }
 function backdropEra(campLevel) { return Math.min(5, Math.floor((campLevel - 1) / 5)); }
@@ -834,6 +904,7 @@ var dragging = null; /* { u, x, y, fromSlot, overSlot, overSell } */
 var bonusCoin = null;
 var nextCoinIn = rand(7, 13);
 var coinFlashT = 0;
+var backdropFlashT = 0; /* white flash overlay on the backdrop after an era jump */
 
 function slotXY(slot) {
     var col = slot % COLS, row = Math.floor(slot / COLS);
@@ -866,11 +937,22 @@ function buyUnit(cls) {
     var u = { slot: s, cls: cls, level: shopSpawnLevel(data.campaignLevel), popT: 0.001 };
     data.army.push(u);
     var p = slotXY(s);
+    /* drop-in: squash pop, a ring of dust at the feet, a sparkle */
     burstSparks(p.x, p.y, 8, '#FFFFFF');
+    burstRing(p.x, p.y + 18, 'rgba(214,180,126,0.9)');
+    for (var d = 0; d < 6; d++) {
+        var da = d * Math.PI / 3;
+        spawnPart(8, p.x + Math.cos(da) * 14, p.y + 20, Math.cos(da) * 40, -rand(6, 20), rand(0.3, 0.5), rand(5, 8), 'rgba(214,180,126,0.85)');
+    }
+    /* shop card press-bounce (index of the class in the shop row) */
+    cardBounce[CLASS_LIST.indexOf(cls)] = 0.001;
     sfxSpawn();
     saveNow();
     return u;
 }
+/* per-card press bounce timers + eased coin-counter display value */
+var cardBounce = [0, 0, 0];
+var coinCountShown = null; /* null until first render; then eases toward data.coins */
 
 /* Drop the unit from one slot onto another. Returns 'merge' | 'swap' | 'move' | 'none'. */
 function dropUnit(fromSlot, toSlot) {
@@ -879,14 +961,29 @@ function dropUnit(fromSlot, toSlot) {
     var b = unitAt(toSlot);
     var p = slotXY(toSlot);
     if (b && b.cls === a.cls && b.level === a.level) {
-        /* merge: one unit of level + 1 with a fuse pop */
+        /* merge: one unit of level + 1 with a big fuse */
+        var prevEra = eraOf(b.level);
         data.army.splice(data.army.indexOf(a), 1);
         b.level++;
         b.popT = 0.001;
+        b.flexT = 0.001; /* new unit strikes a pose for ~300ms */
         data.totalMerges++;
+        /* bigger fuse: double ring burst + radial rays of sparks */
         burstRing(p.x, p.y, TEAM_COL[0].main);
-        burstConfettiAt(p.x, p.y, 20);
+        burstRing(p.x, p.y, '#FFE14D');
+        burstShock(p.x, p.y, 14, '#FFFFFF');
+        for (var ray = 0; ray < 10; ray++) {
+            var ra = ray * Math.PI / 5;
+            spawnPart(2, p.x, p.y, Math.cos(ra) * 200, Math.sin(ra) * 200, rand(0.3, 0.55), rand(3, 5.5), '#FFE14D');
+        }
+        burstConfettiAt(p.x, p.y, 22);
         sfxMerge(b.level);
+        /* era celebration when a merge crosses into a new era band (lvl 5,9,13,17,21) */
+        var newEra = eraOf(b.level);
+        if (newEra > prevEra) {
+            triggerEraCelebration(newEra);
+            backdropFlashT = 0.9; /* backdrop strip flashes to the new era backdrop */
+        }
         saveNow();
         return 'merge';
     }
@@ -927,15 +1024,37 @@ function pickWeighted(w) {
 var FORM_WEIGHTS = {
     turtle: [0.55, 0.3, 0.15],
     spread: [0.34, 0.33, 0.33],
-    artillery: [0.25, 0.25, 0.5],
-    rush: [0.65, 0.25, 0.1]
+    artillery: [0.16, 0.2, 0.64],
+    rush: [0.74, 0.16, 0.1],
+    tanks: [0.86, 0.09, 0.05]
 };
+/* Player army value split by class, used to pick a counter wave */
+function armyProfile() {
+    var v = { bonker: 0, popper: 0, lobber: 0 };
+    for (var i = 0; i < data.army.length; i++) {
+        v[data.army[i].cls] += unitVal(data.army[i].level);
+    }
+    return v;
+}
+/* Levels 1 to 5 stay gentle onboarding. From level 6 the wave usually counters
+   the player's heaviest class: tank walls outlast dart spam, rush swarms punish
+   back heavy boards, artillery punishes melee clumps. Every third level runs a
+   fixed rotation instead so no single board layout wins everything. */
+function pickForm(level) {
+    if (level < 6) return ['spread', 'turtle', 'spread', 'rush', 'spread'][(level - 1) % 5];
+    var rot = ['artillery', 'rush', 'tanks', 'spread'];
+    if (level % 3 === 0) return rot[Math.floor(level / 3) % 4];
+    var v = armyProfile();
+    if (v.popper >= v.bonker && v.popper >= v.lobber) return 'tanks';
+    if (v.lobber >= v.bonker) return 'rush';
+    return 'artillery';
+}
 function generateEnemies(level) {
-    var budget = 250 * Math.pow(1.16, level - 1);
+    var budget = 250 * Math.pow(1.19, level - 1);
     var out = [];
     var isBossLv = level % 5 === 0;
-    var forms = ['turtle', 'spread', 'artillery', 'rush'];
-    var form = forms[(level * 7 + Math.floor(level / 4)) % 4];
+    if (isBossLv) budget *= 1.5; /* boss levels spike well above the curve */
+    var form = pickForm(level);
     var weights = FORM_WEIGHTS[form];
 
     if (isBossLv) {
@@ -950,10 +1069,12 @@ function generateEnemies(level) {
             x: 210, y: 200
         });
     }
-    /* cap level so at least 4 escorts fit, keeps formations from being one giant blob */
+    /* unit sizing per formation: tank walls are few and huge, rushes are a swarm,
+       everything else caps level so at least 4 escorts fit */
+    var per = (form === 'tanks') ? 3 : (form === 'rush' ? 6 : 4);
     var maxL = 1;
-    while (unitVal(maxL + 1) <= budget / 4 && maxL < 39) maxL++;
-    var maxCount = isBossLv ? 6 : 12;
+    while (unitVal(maxL + 1) <= budget / per && maxL < 39) maxL++;
+    var maxCount = isBossLv ? 6 : (form === 'tanks' ? 6 : 12);
     var count = 0;
     while (budget >= 100 && count < maxCount) {
         var lvl = Math.min(maxL, Math.floor(Math.log2(budget / 100)) + 1);
@@ -988,10 +1109,11 @@ function generateEnemies(level) {
 
 /* ================= FX pools (never allocate during gameplay) ================= */
 var parts = [];
-for (var qi = 0; qi < 220; qi++) {
+for (var qi = 0; qi < 340; qi++) {
     parts.push({ active: false, type: 0, x: 0, y: 0, vx: 0, vy: 0, rot: 0, vr: 0, life: 0, ttl: 1, size: 4, color: '#fff', seed: 0 });
 }
-/* types: 1 confetti rect, 2 spark dot, 3 stuffing puff, 4 water droplet, 5 expanding ring, 6 coin */
+/* types: 1 confetti rect, 2 spark dot, 3 stuffing puff, 4 water droplet, 5 expanding ring,
+   6 coin, 7 shockwave flash ring (thick, quick), 8 dust puff (ground), 9 trail dot */
 function spawnPart(type, x, y, vx, vy, ttl, size, color) {
     for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
@@ -1050,6 +1172,130 @@ function burstCoins(x, y, n) {
         spawnPart(6, x + rand(-14, 14), y + rand(-8, 8), rand(-70, 70), rand(-160, -60), rand(0.45, 0.8), rand(4, 6.5), '#FFD93D');
     }
 }
+/* Impact shockwave: a quick thick flash ring plus a brief bright dot at the hit point */
+function burstShock(x, y, size, color) {
+    spawnPart(7, x, y, 0, 0, 0.26, size || 10, color || '#FFFFFF');
+}
+/* Ground dust puff kicked up under a running toy */
+function burstDust(x, y, dir) {
+    for (var i = 0; i < 2; i++) {
+        spawnPart(8, x + rand(-6, 6), y, rand(-24, 24) - dir * 30, rand(-6, -22), rand(0.28, 0.5), rand(5, 9), 'rgba(214,180,126,0.85)');
+    }
+}
+/* Motion trail dot for darts and balloons (fades fast, no gravity) */
+function spawnTrail(x, y, size, color) {
+    spawnPart(9, x, y, 0, 0, 0.22, size, color);
+}
+/* Era-colored confetti sky for era celebrations */
+function burstConfettiSkyColors(cols) {
+    for (var i = 0; i < 60; i++) {
+        spawnPart(1, rand(W * 0.08, W * 0.92), rand(-70, -10), rand(-80, 80), rand(70, 210), rand(2, 3.4), rand(5, 10), cols[i % cols.length]);
+    }
+}
+
+/* ---- Wobble impact words ("BONK!"/"POP!"/"SPLAT!"), pooled and capped ---- */
+var words = [];
+for (var wq = 0; wq < 8; wq++) words.push({ active: false, x: 0, y: 0, t: 0, ttl: 0.7, txt: '', color: '#fff', seed: 0 });
+function spawnWord(x, y, txt, color) {
+    for (var i = 0; i < words.length; i++) {
+        var w = words[i];
+        if (!w.active) {
+            w.active = true; w.x = clamp(x, 40, W - 40); w.y = clamp(y, 96, H - 130);
+            w.t = 0; w.ttl = 0.7; w.txt = txt; w.color = color; w.seed = rand(0, 10);
+            return;
+        }
+    }
+}
+function updateWords(dt) {
+    for (var i = 0; i < words.length; i++) {
+        var w = words[i];
+        if (!w.active) continue;
+        w.t += dt; w.y -= 26 * dt;
+        if (w.t > w.ttl) w.active = false;
+    }
+}
+
+/* ---- Coins that fly one by one into the top-right counter on victory ---- */
+var flyCoins = [];
+for (var fcq = 0; fcq < 24; fcq++) flyCoins.push({ active: false, x: 0, y: 0, sx: 0, sy: 0, t: 0, dur: 0.6, delay: 0 });
+var coinTickTarget = 0, coinTickShown = 0, coinTickTimer = 0;
+function launchVictoryCoins(finalCoins, n) {
+    /* set up a ticking counter that climbs to finalCoins as coins land */
+    coinTickTarget = finalCoins;
+    coinTickShown = Math.max(0, finalCoins - n * Math.round((finalCoins) / Math.max(1, n)) * 0);
+    var per = 0;
+    var launched = 0;
+    for (var i = 0; i < flyCoins.length && launched < n; i++) {
+        var f = flyCoins[i];
+        if (!f.active) {
+            f.active = true;
+            f.sx = rand(W * 0.3, W * 0.7); f.sy = rand(H * 0.42, H * 0.6);
+            f.x = f.sx; f.y = f.sy;
+            f.t = 0; f.dur = rand(0.5, 0.75); f.delay = launched * 0.07;
+            launched++;
+        }
+    }
+    coinsLandRemaining = launched;
+    coinTickShown = data.coins - launched; /* start slightly below, tick up as they land */
+    if (coinTickShown < 0) coinTickShown = 0;
+}
+var coinsLandRemaining = 0;
+function updateFlyCoins(dt) {
+    for (var i = 0; i < flyCoins.length; i++) {
+        var f = flyCoins[i];
+        if (!f.active) continue;
+        if (f.delay > 0) { f.delay -= dt; continue; }
+        f.t += dt;
+        var k = clamp(f.t / f.dur, 0, 1);
+        var ek = 1 - Math.pow(1 - k, 3);
+        var tx = W - 40, ty = 75;
+        f.x = f.sx + (tx - f.sx) * ek;
+        f.y = f.sy + (ty - f.sy) * ek - Math.sin(k * Math.PI) * 40;
+        if (k >= 1) {
+            f.active = false;
+            coinsLandRemaining = Math.max(0, coinsLandRemaining - 1);
+            coinFlashT = 0.35;
+            if (coinTickShown < coinTickTarget) {
+                var stepc = Math.ceil((coinTickTarget - coinTickShown) / Math.max(1, coinsLandRemaining + 1));
+                coinTickShown = Math.min(coinTickTarget, coinTickShown + stepc);
+            }
+            if (coinsLandRemaining === 0) coinTickShown = coinTickTarget;
+            sfxCoinTick();
+        }
+    }
+}
+
+/* ---- Screen shake / trauma helper scaled to damage tier ---- */
+function addTrauma(v) { trauma = Math.min(1, Math.max(trauma, v)); }
+
+/* ---- Slow-mo + zoom punch on the final KO of a battle ---- */
+var slowmoT = 0;       /* seconds of slow motion remaining */
+var zoomPunchT = 0;    /* seconds of zoom punch remaining */
+var zoomCX = W / 2, zoomCY = H / 2;
+function triggerFinalKO(x, y) {
+    slowmoT = 0.4;
+    zoomPunchT = 0.4;
+    zoomCX = x; zoomCY = y;
+    addTrauma(0.55);
+}
+
+/* ---- Era celebration banner ---- */
+var eraBanner = { t: 0, ttl: 0, name: '', era: 0 };
+function triggerEraCelebration(era) {
+    eraBanner.t = 0; eraBanner.ttl = 2.2; eraBanner.era = era;
+    eraBanner.name = (ERA_NAMES[era] || 'NEW').toUpperCase() + ' ERA!';
+    var cols = ERA_CONFETTI[era] || CONFETTI_COLORS;
+    burstConfettiSkyColors(cols);
+    sfxEraFanfare(era);
+}
+var ERA_CONFETTI = [
+    ['#F2E2C4', '#E8D2AC', '#FFD93D', '#FF8A3D'],
+    ['#CE9455', '#B87E41', '#8F5F2C', '#FFD93D'],
+    ['#BFCDD6', '#A9BAC6', '#F0B429', '#7E93A1'],
+    ['#FFB03A', '#FF8A3D', '#4FC3F7', '#FFFFFF'],
+    ['#7CFC9A', '#5AE1FF', '#FF7BD5', '#565C7E'],
+    ['#9D7BFF', '#C9B8FF', '#FFE14D', '#FF5FA2']
+];
 function updateParticles(dt) {
     for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
@@ -1067,7 +1313,12 @@ function updateParticles(dt) {
             p.vy = p.vy - 26 * dt; /* stuffing drifts gently upward */
         } else if (p.type === 4 || p.type === 6) {
             p.vy += 420 * dt;
+        } else if (p.type === 8) {
+            /* dust puff: drifts up and slows */
+            p.vx *= (1 - Math.min(1, 3 * dt));
+            p.vy = p.vy - 20 * dt;
         }
+        /* types 7 (flash ring) and 9 (trail) are stationary, just fade */
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.rot += p.vr * dt;
@@ -1190,23 +1441,46 @@ function startBattle() {
     battleMaxHp = [Math.max(1, tot[0]), Math.max(1, tot[1])];
     battleT = 0;
     timeScale = 1;
+    slowmoT = 0; zoomPunchT = 0; /* clear any leftover cinematic state */
     state = 'battle';
     if (!IS_NODE) pauseBtn.style.display = 'flex';
     return true;
 }
 
+/* damage tier by fraction of target maxHp: 0 pip, 1 solid, 2 heavy/boss */
+function dmgTier(t, amt) {
+    var frac = amt / Math.max(1, t.maxHp);
+    if (t.isBoss || frac >= 0.5) return 2;
+    if (frac >= 0.18) return 1;
+    return 0;
+}
 function damage(t, amt, splashy) {
     if (!t.alive) return;
     amt = Math.round(amt);
     t.hp -= amt;
     spawnDmg(t.x, t.y - t.r - 8, String(amt), t.team === 0 ? '#F35BAE' : '#FFFFFF');
+    /* impact shockwave + flash + screen shake scaled to the hit's weight */
+    var tier = dmgTier(t, amt);
+    burstShock(t.x, t.y, 8 + tier * 5, tier >= 2 ? '#FFE14D' : '#FFFFFF');
+    addTrauma(tier === 0 ? 0.08 : (tier === 1 ? 0.16 : 0.34));
     if (t.hp <= 0) {
         t.alive = false;
         burstStuffing(t.x, t.y, t.r);
         spawnChute(t.x, t.y, t.team);
         sfxPoof();
-        if (t.isBoss) { trauma = Math.max(trauma, 0.6); burstConfettiAt(t.x, t.y, 30); }
+        if (t.isBoss) { addTrauma(0.6); burstConfettiAt(t.x, t.y, 30); }
+        checkFinalKO(t);
     }
+}
+/* If this death empties a team, punch a 400ms slow-mo + zoom on the last KO */
+function checkFinalKO(justKilled) {
+    if (slowmoT > 0) return;
+    var aliveSame = 0;
+    for (var i = 0; i < fighters.length; i++) {
+        var o = fighters[i];
+        if (o.alive && o.team === justKilled.team) aliveSame++;
+    }
+    if (aliveSame === 0) triggerFinalKO(justKilled.x, justKilled.y);
 }
 
 function nearestFoe(f) {
@@ -1231,11 +1505,16 @@ function doAttack(f, t, mul) {
         var lead = 0.75 * clamp(Math.sqrt((t.x - f.x) * (t.x - f.x) + (t.y - f.y) * (t.y - f.y)) / 300, 0.45, 0.95);
         spawnBalloon(f, t.x + t.vx * lead, t.y + t.vy * lead, f.dmg * mul, f.splash);
     } else {
-        damage(t, f.dmg * mul);
+        var hit = f.dmg * mul;
+        var tier = dmgTier(t, hit);
+        damage(t, hit);
         burstSparks(t.x, t.y - t.r * 0.4, 6, '#FFFFFF');
         sfxBonk();
+        sfxImpact(f.isBoss ? 2 : tier);
+        /* wobble word on big bonks only (pooled + capped) */
+        if (f.isBoss || tier >= 2) spawnWord(t.x, t.y - t.r - 22, 'BONK!', '#FFD93D');
         if (f.isBoss) {
-            trauma = Math.max(trauma, 0.4);
+            addTrauma(0.4);
             for (var i = 0; i < fighters.length; i++) {
                 var o = fighters[i];
                 if (!o.alive || o.team === f.team || o === t) continue;
@@ -1268,6 +1547,9 @@ function updateBattle(dt) {
             f.vy = dy * inv * f.speed;
             f.x += f.vx * dt;
             f.y += f.vy * dt;
+            /* kick up a dust puff under the feet at a throttled rate */
+            f.dustT = (f.dustT || 0) - dt;
+            if (f.dustT <= 0) { burstDust(f.x, f.y + f.r * 0.7, f.vx >= 0 ? 1 : -1); f.dustT = 0.16; }
         } else if (f.cd <= 0) {
             doAttack(f, t, mul);
             f.cd = f.cdMax * rand(0.92, 1.08);
@@ -1304,9 +1586,16 @@ function updateBattle(dt) {
             var pdx = p.tx - p.x, pdy = p.ty - p.y;
             var pd = Math.sqrt(pdx * pdx + pdy * pdy);
             var step = 460 * dt;
+            /* motion trail behind the dart */
+            p.trailT = (p.trailT || 0) - dt;
+            if (p.trailT <= 0) { spawnTrail(p.x, p.y, 3.5, '#FF8A3D'); p.trailT = 0.03; }
             if (pd <= step || p.t > p.dur) {
                 p.active = false;
-                if (tgt && tgt.alive) damage(tgt, p.dmg);
+                if (tgt && tgt.alive) {
+                    var dtier = dmgTier(tgt, p.dmg);
+                    damage(tgt, p.dmg);
+                    if (dtier >= 2) spawnWord(tgt.x, tgt.y - tgt.r - 20, 'POP!', '#FF8A3D');
+                }
                 burstSparks(p.tx, p.ty, 4, '#FFE14D');
             } else {
                 p.x += pdx / pd * step;
@@ -1314,17 +1603,23 @@ function updateBattle(dt) {
             }
         } else {
             var k = p.t / p.dur;
+            /* arcing balloon leaves a soft blue trail */
+            p.trailT = (p.trailT || 0) - dt;
+            if (p.trailT <= 0 && k < 1) { spawnTrail(p.x, p.y, 4.5, '#6FCBFF'); p.trailT = 0.035; }
             if (k >= 1) {
                 p.active = false;
                 burstSplash(p.tx, p.ty);
                 sfxSplash();
+                var splashHits = 0;
                 for (var m = 0; m < fighters.length; m++) {
                     var o2 = fighters[m];
                     if (!o2.alive || o2.team === p.team) continue;
                     var sdx = o2.x - p.tx, sdy = o2.y - p.ty;
                     var sr = p.splash + o2.r;
-                    if (sdx * sdx + sdy * sdy < sr * sr) damage(o2, p.dmg);
+                    if (sdx * sdx + sdy * sdy < sr * sr) { damage(o2, p.dmg); splashHits++; }
                 }
+                /* SPLAT on a multi-target soak, capped by the word pool */
+                if (splashHits >= 2) spawnWord(p.tx, p.ty - 20, 'SPLAT!', '#6FCBFF');
             } else {
                 p.x = p.sx + (p.tx - p.sx) * k;
                 p.y = p.sy + (p.ty - p.sy) * k - Math.sin(k * Math.PI) * 90;
@@ -1373,16 +1668,21 @@ function endBattle(won) {
         if (data.campaignLevel > data.bestLevel) data.bestLevel = data.campaignLevel;
         chests = buildChests(payout);
         state = 'reward';
+        /* confetti storm + a stream of coins flying one-by-one into the counter */
         burstConfettiSky();
-        burstCoins(W - 60, 74, 12);
+        burstConfettiSky();
+        launchVictoryCoins(data.coins, 16);
         sfxFanfare();
-        sfxCoin();
         if (!IS_NODE) showRewardPanel(payout, lvl);
     } else {
         /* army kept exactly as it stood before the battle, small pity coins so a retry is always possible */
         var pity = Math.max(20, r10(winPayout(lvl) * 0.4));
         data.coins += pity;
         state = 'lose';
+        /* bigger, floatier stuffing puffs drifting up as the squad flops */
+        for (var sp = 0; sp < 5; sp++) {
+            spawnPart(3, rand(W * 0.25, W * 0.75), rand(GRID_Y, GRID_Y + ROWS * CELL), rand(-30, 30), -rand(20, 50), rand(0.9, 1.5), rand(12, 20), '#FFFDF5');
+        }
         sfxLoss();
         if (!IS_NODE) {
             pityRowEl.textContent = '+' + pity + ' coins for trying!';
@@ -1449,6 +1749,9 @@ function enterBuy() {
     bonusCoin = null;
     nextCoinIn = rand(7, 13);
     dragging = null;
+    /* clear any lingering victory coin-fly state and snap the counter to truth */
+    coinsLandRemaining = 0;
+    coinCountShown = data.coins;
     if (!IS_NODE) {
         rewardPanel.classList.remove('show');
         pauseBtn.style.display = 'none';
@@ -1488,18 +1791,40 @@ function update(dt) {
     time += dt;
     if (trauma > 0) trauma = Math.max(0, trauma - 1.8 * dt);
     if (coinFlashT > 0) coinFlashT -= dt;
+    if (eraBanner.ttl > 0) { eraBanner.t += dt; if (eraBanner.t >= eraBanner.ttl) eraBanner.ttl = 0; }
+    if (zoomPunchT > 0) zoomPunchT = Math.max(0, zoomPunchT - dt);
+    if (backdropFlashT > 0) backdropFlashT = Math.max(0, backdropFlashT - dt);
+    for (var cb = 0; cb < cardBounce.length; cb++) {
+        if (cardBounce[cb]) { cardBounce[cb] += dt; if (cardBounce[cb] > 0.28) cardBounce[cb] = 0; }
+    }
+    /* ease the displayed coin counter toward the real balance */
+    if (coinCountShown === null) coinCountShown = data.coins;
+    else {
+        var diff = data.coins - coinCountShown;
+        if (Math.abs(diff) < 1) coinCountShown = data.coins;
+        else coinCountShown += diff * Math.min(1, 12 * dt);
+    }
     var i;
     for (i = 0; i < data.army.length; i++) {
         if (data.army[i].popT) {
             data.army[i].popT += dt;
             if (data.army[i].popT > 0.4) data.army[i].popT = 0;
         }
+        if (data.army[i].flexT) {
+            data.army[i].flexT += dt;
+            if (data.army[i].flexT > 0.3) data.army[i].flexT = 0;
+        }
     }
     updateParticles(dt);
     updateDmgNums(dt);
+    updateWords(dt);
     updateChutes(dt);
+    updateFlyCoins(dt);
     if (state === 'battle') {
-        updateBattle(dt * timeScale);
+        /* final-KO slow motion: run the battle sim at reduced speed for a beat */
+        var bScale = timeScale;
+        if (slowmoT > 0) { slowmoT = Math.max(0, slowmoT - dt); bScale *= 0.3; }
+        updateBattle(dt * bScale);
     } else if (state === 'buy') {
         if (!bonusCoin) {
             nextCoinIn -= dt;
@@ -1954,12 +2279,42 @@ function getSprite(cls, era, team, box) {
     return spr;
 }
 
-function drawToy(x, y, cls, level, team, scale, isBoss, withBars, hpFrac) {
+function drawToy(x, y, cls, level, team, scale, isBoss, withBars, hpFrac, idKey) {
     var era = eraOf(level);
     var base = isBoss ? 220 : 116;
     var box = base * scale;
     ctx.drawImage(getSprite(cls, era, team, base), (x - box / 2) | 0, (y - box / 2) | 0, box, box);
-    /* cosmic aura, drawn live so it rotates */
+    /* level 13+ toys get little spark accents twinkling around them */
+    if (level >= 13 && !isBoss) {
+        var sk = (idKey || 0) * 2.1;
+        for (var s3 = 0; s3 < 2; s3++) {
+            var sa = time * 2 + sk + s3 * Math.PI;
+            var sr2 = box * 0.42;
+            var tw = 0.5 + 0.5 * Math.sin(time * 6 + sk + s3);
+            ctx.globalAlpha = tw;
+            ctx.fillStyle = '#FFE14D';
+            drawStarShape(ctx, x + Math.cos(sa) * sr2, y - box * 0.28 + Math.sin(sa) * sr2 * 0.4, 2.6 + tw * 1.4, sa);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+    /* idle blink: a quick eyelid dash over the eyes every few seconds (skip bosses) */
+    if (!isBoss && idKey != null) {
+        var blinkPhase = (time * 0.9 + idKey * 0.7) % 3.4;
+        if (blinkPhase < 0.12) {
+            var sc = box / 128;
+            var faceY = (cls === 'bonker' ? -6 : (cls === 'popper' ? -10 : 6));
+            var ey = y + faceY * sc;
+            ctx.strokeStyle = INK;
+            ctx.lineWidth = 3 * sc;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(x - 15 * sc, ey); ctx.lineTo(x - 5 * sc, ey);
+            ctx.moveTo(x + 5 * sc, ey); ctx.lineTo(x + 15 * sc, ey);
+            ctx.stroke();
+        }
+    }
+    /* cosmic aura, drawn live so it rotates (star shapes, not alpha compositing) */
     if (era === 5) {
         ctx.fillStyle = 'rgba(255,225,77,0.9)';
         for (var a = 0; a < 3; a++) {
@@ -2019,11 +2374,13 @@ function drawHud() {
         ctx.font = '800 15px Nunito, sans-serif';
         ctx.fillText('BOSS LEVEL!', W / 2, 66);
     }
-    /* coins, top right, large */
+    /* coins, top right, large. Uses the eased/ticking display value, not the raw
+       balance, so purchases count down and victory payouts count up coin-by-coin. */
     var flash = coinFlashT > 0 ? 1.18 : 1;
     ctx.font = '800 ' + Math.round(27 * flash) + 'px Nunito, sans-serif';
     ctx.textAlign = 'right';
-    var cs = String(data.coins);
+    var shownVal = (coinsLandRemaining > 0) ? coinTickShown : (coinCountShown === null ? data.coins : coinCountShown);
+    var cs = String(Math.round(shownVal));
     ctx.fillStyle = '#FFFFFF';
     var tw = ctx.measureText(cs).width;
     rr(ctx, W - 22 - tw - 40, 58, tw + 52, 34, 17);
@@ -2113,29 +2470,36 @@ function drawShopBar() {
         var cls = CLASS_LIST[i];
         var x = 20 + i * ((W - 40) / 3) + 4;
         var cw = (W - 40) / 3 - 8;
+        /* press-bounce: card dips then springs back after a purchase */
+        var bo = 0;
+        if (cardBounce[i]) {
+            var bk = cardBounce[i] / 0.28;
+            bo = Math.sin(bk * Math.PI) * 6 * (bk < 0.3 ? 1 : (1 - (bk - 0.3) / 0.7));
+        }
+        var sy = SHOP_Y + bo;
         var afford = data.coins >= cost && !full;
         ctx.globalAlpha = afford ? 1 : 0.45;
         ctx.fillStyle = '#E8DECC';
-        rr(ctx, x, SHOP_Y + 4, cw, SHOP_H - 16, 16);
+        rr(ctx, x, sy + 4, cw, SHOP_H - 16, 16);
         ctx.fill();
         ctx.fillStyle = '#FFFFFF';
-        rr(ctx, x, SHOP_Y, cw, SHOP_H - 16, 16);
+        rr(ctx, x, sy, cw, SHOP_H - 16, 16);
         ctx.fill();
         ctx.strokeStyle = 'rgba(43,35,80,0.18)';
         ctx.lineWidth = 2.5;
-        rr(ctx, x, SHOP_Y, cw, SHOP_H - 16, 16);
+        rr(ctx, x, sy, cw, SHOP_H - 16, 16);
         ctx.stroke();
-        drawToy(x + cw / 2, SHOP_Y + 34, cls, lvl, 0, 0.52, false, false, 1);
+        drawToy(x + cw / 2, sy + 34, cls, lvl, 0, 0.52, false, false, 1);
         ctx.fillStyle = INK;
         ctx.font = '800 12px Nunito, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(CLASSES[cls].label, x + cw / 2, SHOP_Y + 62);
-        drawCoinIcon(x + cw / 2 - 22, SHOP_Y + 78, 8);
+        ctx.fillText(CLASSES[cls].label, x + cw / 2, sy + 62);
+        drawCoinIcon(x + cw / 2 - 22, sy + 78, 8);
         ctx.fillStyle = '#C79212';
         ctx.font = '800 16px Nunito, sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(String(cost), x + cw / 2 - 11, SHOP_Y + 79);
+        ctx.fillText(String(cost), x + cw / 2 - 11, sy + 79);
         ctx.textAlign = 'center';
         ctx.globalAlpha = 1;
     }
@@ -2198,6 +2562,32 @@ function drawParticles() {
             ctx.stroke();
             continue;
         }
+        if (p.type === 7) {
+            /* impact shockwave: fast thick flash ring + white core flash */
+            var g7 = p.life / p.ttl;
+            ctx.strokeStyle = p.color;
+            ctx.lineWidth = 7 * (1 - g7);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size + g7 * (p.size * 2.6), 0, Math.PI * 2);
+            ctx.stroke();
+            if (g7 < 0.4) {
+                ctx.globalAlpha = a * 0.9;
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * (1 - g7 / 0.4) * 0.9, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            continue;
+        }
+        if (p.type === 9) {
+            /* motion trail dot: soft round, fades fast */
+            ctx.globalAlpha = a * 0.5;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * (0.4 + 0.6 * a), 0, Math.PI * 2);
+            ctx.fill();
+            continue;
+        }
         ctx.fillStyle = p.color;
         if (p.type === 1) {
             ctx.save();
@@ -2239,6 +2629,41 @@ function drawDmgNums() {
         ctx.strokeText(d.txt, d.x, d.y);
         ctx.fillStyle = d.color;
         ctx.fillText(d.txt, d.x, d.y);
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawWords() {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (var i = 0; i < words.length; i++) {
+        var w = words[i];
+        if (!w.active) continue;
+        var k = w.t / w.ttl;
+        var pop = k < 0.25 ? easeOutBack(k / 0.25) : 1;
+        var wob = Math.sin(w.t * 22 + w.seed) * 0.14 * (1 - k);
+        ctx.save();
+        ctx.translate(w.x, w.y);
+        ctx.rotate(wob);
+        ctx.scale(pop * 1.1, pop * 1.1);
+        ctx.globalAlpha = k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1;
+        ctx.font = '800 26px Nunito, sans-serif';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = 5;
+        ctx.strokeText(w.txt, 0, 0);
+        ctx.fillStyle = w.color;
+        ctx.fillText(w.txt, 0, 0);
+        ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawFlyCoins() {
+    for (var i = 0; i < flyCoins.length; i++) {
+        var f = flyCoins[i];
+        if (!f.active || f.delay > 0) continue;
+        drawCoinIcon(f.x, f.y, 8);
     }
     ctx.globalAlpha = 1;
 }
@@ -2342,7 +2767,15 @@ function render() {
         shx = (Math.random() * 2 - 1) * amp;
         shy = (Math.random() * 2 - 1) * amp;
     }
-    ctx.setTransform(S, 0, 0, S, OX + shx * S, OY + shy * S);
+    /* final-KO zoom punch: briefly scale up around the KO point, then settle */
+    var zs = 1;
+    if (zoomPunchT > 0) {
+        var zk = zoomPunchT / 0.4;
+        zs = 1 + 0.12 * Math.sin(zk * Math.PI);
+    }
+    var effS = S * zs;
+    var pivotX = OX + zoomCX * S, pivotY = OY + zoomCY * S;
+    ctx.setTransform(effS, 0, 0, effS, pivotX - zoomCX * effS + shx * S, pivotY - zoomCY * effS + shy * S);
 
     /* playroom floor */
     if (!floorTile) buildFloorTile();
@@ -2353,6 +2786,13 @@ function render() {
     }
     /* era backdrop wall behind the enemy half */
     ctx.drawImage(getBackdrop(backdropEra(data.campaignLevel)), 0, WALL_TOP, W, WALL_BOT - WALL_TOP);
+    /* backdrop flash on an era jump */
+    if (backdropFlashT > 0) {
+        ctx.globalAlpha = (backdropFlashT / 0.9) * 0.7;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, WALL_TOP, W, WALL_BOT - WALL_TOP);
+        ctx.globalAlpha = 1;
+    }
     /* top frame band */
     ctx.fillStyle = CREAM;
     ctx.fillRect(0, 0, W, WALL_TOP);
@@ -2370,7 +2810,7 @@ function render() {
         for (i = 0; i < sorted.length; i++) {
             var f = sorted[i];
             var squish = f.atkAnim > 0 ? 1 + Math.sin(f.atkAnim / 0.28 * Math.PI) * 0.12 : 1;
-            drawToy(f.x, f.y, f.cls, f.level, f.team, squish * (f.isBoss ? 1 : 1) , f.isBoss, true, clamp(f.hp / f.maxHp, 0, 1));
+            drawToy(f.x, f.y, f.cls, f.level, f.team, squish, f.isBoss, true, clamp(f.hp / f.maxHp, 0, 1), f.slot + f.team * 13);
         }
         drawProjs();
         drawBattleBars();
@@ -2379,16 +2819,19 @@ function render() {
         for (i = 0; i < pendingEnemies.length; i++) {
             var e = pendingEnemies[i];
             var eb = Math.sin(time * 2.2 + i * 1.3) * 3;
-            drawToy(e.x, e.y + eb, e.cls, e.level, 1, 1, e.isBoss, true, 1);
+            drawToy(e.x, e.y + eb, e.cls, e.level, 1, 1, e.isBoss, true, 1, 100 + i);
         }
-        /* player army in slots */
+        /* player army in slots, idle bob + merge flex pose */
         for (i = 0; i < data.army.length; i++) {
             u = data.army[i];
             if (dragging && dragging.u === u) continue;
             p2 = slotXY(u.slot);
             var bob = Math.sin(time * 2.2 + u.slot) * 2.5;
             var pop = u.popT ? (u.popT < 0.4 ? 0.5 + 0.5 * easeOutBack(u.popT / 0.4) : 1) : 1;
-            drawToy(p2.x, p2.y + bob, u.cls, u.level, 0, pop, false, true, 1);
+            /* fresh-merge flex: a quick springy overshoot pose for ~300ms */
+            var flex = 1;
+            if (u.flexT && u.flexT < 0.3) flex = 1 + Math.sin(u.flexT / 0.3 * Math.PI) * 0.16;
+            drawToy(p2.x, p2.y + bob, u.cls, u.level, 0, pop * flex, false, true, 1, u.slot);
         }
         if (state === 'buy' || state === 'menu') {
             drawFightButton();
@@ -2401,14 +2844,81 @@ function render() {
             ctx.beginPath();
             ctx.ellipse(dragging.x, dragging.y - 6, 30, 9, 0, 0, Math.PI * 2);
             ctx.fill();
-            drawToy(dragging.x, dragging.y - 36, dragging.u.cls, dragging.u.level, 0, 1.28, false, true, 1);
+            drawToy(dragging.x, dragging.y - 36, dragging.u.cls, dragging.u.level, 0, 1.28, false, true, 1, dragging.fromSlot);
         }
     }
 
     drawParticles();
     drawChutes();
+    drawFlyCoins();
     drawDmgNums();
+    drawWords();
+
+    /* defeat: gentle gray wash + a single sad deflating balloon (stay friendly) */
+    if (state === 'lose') drawDefeatWash();
+    /* era celebration banner over everything */
+    if (eraBanner.ttl > 0) drawEraBanner();
+
     drawHud();
+}
+
+/* Gentle gray wash and one sad balloon slowly deflating on defeat */
+var sadBalloon = { t: 0 };
+function drawDefeatWash() {
+    ctx.globalAlpha = 0.28;
+    ctx.fillStyle = '#6B6394';
+    ctx.fillRect(0, WALL_TOP, W, H - WALL_TOP);
+    ctx.globalAlpha = 1;
+    sadBalloon.t += 0.016;
+    var t = (time % 6);
+    var deflate = clamp(t / 3, 0, 1);
+    var bx = W / 2, by = 300 + deflate * 40;
+    var rx = 26 * (1 - deflate * 0.7), ry = 32 * (1 - deflate * 0.55);
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = '#8ABDE8';
+    ctx.beginPath(); ctx.ellipse(bx, by, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.ellipse(bx, by, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+    /* knot + string */
+    ctx.beginPath(); ctx.moveTo(bx, by + ry); ctx.lineTo(bx, by + ry + 3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx, by + ry + 3);
+    ctx.quadraticCurveTo(bx + 10, by + ry + 20, bx - 6, by + ry + 34); ctx.stroke();
+    /* small sad face */
+    ctx.fillStyle = INK;
+    ctx.beginPath(); ctx.arc(bx - 7, by - 3, 2, 0, Math.PI * 2); ctx.arc(bx + 7, by - 3, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(bx, by + 12, 6, Math.PI + 0.4, -0.4); ctx.stroke();
+    ctx.globalAlpha = 1;
+}
+
+/* Bold era celebration banner sliding in and out */
+function drawEraBanner() {
+    var k = eraBanner.t / eraBanner.ttl;
+    var slide = k < 0.15 ? easeOutBack(k / 0.15) : (k > 0.85 ? 1 - (k - 0.85) / 0.15 : 1);
+    var alpha = k > 0.85 ? (1 - (k - 0.85) / 0.15) : 1;
+    var ec = ERAS[eraBanner.era] || ERAS[0];
+    var by = 250, bh = 74;
+    ctx.globalAlpha = alpha;
+    ctx.save();
+    ctx.translate(W / 2, by);
+    ctx.scale(slide, slide);
+    ctx.fillStyle = ec.body2;
+    rr(ctx, -170, -bh / 2, 340, bh, 18); ctx.fill();
+    ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 4;
+    rr(ctx, -170, -bh / 2, 340, bh, 18); ctx.stroke();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 30px Nunito, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = ec.detail; ctx.lineWidth = 5;
+    ctx.strokeText(eraBanner.name, 0, 2);
+    ctx.fillText(eraBanner.name, 0, 2);
+    ctx.font = '800 13px Nunito, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText('NEW TOYS UNLOCKED', 0, 26);
+    ctx.restore();
+    ctx.globalAlpha = 1;
 }
 function easeOutBack(t) {
     var c1 = 1.70158, c3 = c1 + 1;
