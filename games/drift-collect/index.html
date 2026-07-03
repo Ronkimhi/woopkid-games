@@ -1,0 +1,2324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Drift &amp; Collect | WoopKid</title>
+<meta name="description" content="Play Drift &amp; Collect free online! Drift a chunky toy racecar around a night carnival track, grab risky coin lines and build wild combos. No ads, kid-safe, one finger to play.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="canonical" href="https://woopkid.com/games/drift-collect/">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#12152E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    "name": "Drift & Collect",
+    "description": "A one touch drift racer. Hold to drift your toy racecar to the inside of a night carnival track, grab coin lines, build combos and dodge cones. Free, no ads, kid-safe.",
+    "url": "https://woopkid.com/games/drift-collect/",
+    "genre": "Casual",
+    "gamePlatform": ["Web Browser", "Mobile Web"],
+    "applicationCategory": "Game",
+    "operatingSystem": "Any",
+    "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+    },
+    "author": {
+        "@type": "Organization",
+        "name": "WoopKid",
+        "url": "https://woopkid.com"
+    }
+}
+</script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+    height: 100%;
+    overflow: hidden;
+    background: #12152E;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+}
+#game { position: fixed; inset: 0; display: block; }
+
+.btn {
+    position: fixed;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: rgba(255, 253, 247, 0.92);
+    border: none;
+    box-shadow: 0 3px 0 rgba(10, 8, 30, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    font-size: 22px;
+    font-weight: 800;
+    color: #241F4B;
+    z-index: 40;
+    cursor: pointer;
+    text-decoration: none;
+    line-height: 1;
+}
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(10, 8, 30, 0.45); }
+#backBtn { top: 14px; left: 14px; font-size: 26px; }
+#muteBtn { top: 14px; right: 14px; }
+#pauseBtn { top: 14px; right: 72px; display: none; font-size: 16px; letter-spacing: 2px; }
+
+#score {
+    position: fixed;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-weight: 800;
+    font-size: min(15vw, 62px);
+    color: #FFFDF7;
+    text-shadow: 0 4px 0 rgba(10, 8, 30, 0.5);
+    z-index: 20;
+    display: none;
+    pointer-events: none;
+}
+#score.pop { animation: scorePop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes scorePop {
+    0% { transform: translateX(-50%) scale(1); }
+    40% { transform: translateX(-50%) scale(1.35); }
+    100% { transform: translateX(-50%) scale(1); }
+}
+#comboPill {
+    position: fixed;
+    top: min(15vw, 62px);
+    margin-top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #FF5470, #FF8A3D);
+    color: #FFFDF7;
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: 1px;
+    padding: 5px 16px;
+    border-radius: 999px;
+    box-shadow: 0 3px 0 rgba(10, 8, 30, 0.4);
+    z-index: 20;
+    display: none;
+    pointer-events: none;
+}
+#comboPill.pop { animation: pillPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes pillPop {
+    0% { transform: translateX(-50%) scale(0.6); }
+    60% { transform: translateX(-50%) scale(1.25); }
+    100% { transform: translateX(-50%) scale(1); }
+}
+#magnetChip {
+    position: fixed;
+    bottom: 26px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 253, 247, 0.94);
+    color: #B0338A;
+    font-weight: 800;
+    font-size: 16px;
+    padding: 6px 18px;
+    border-radius: 999px;
+    box-shadow: 0 3px 0 rgba(10, 8, 30, 0.4);
+    z-index: 20;
+    display: none;
+    pointer-events: none;
+}
+
+#title {
+    position: fixed;
+    top: 11%;
+    width: 100%;
+    text-align: center;
+    z-index: 20;
+    pointer-events: none;
+}
+#title h1 {
+    font-weight: 800;
+    font-size: min(13.5vw, 76px);
+    color: #FFFDF7;
+    letter-spacing: 2px;
+    text-shadow: 0 5px 0 rgba(10, 8, 30, 0.55), 0 12px 24px rgba(10, 8, 30, 0.4);
+    animation: titleBob 2.6s ease-in-out infinite;
+}
+@keyframes titleBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+#title p {
+    margin-top: 6px;
+    font-weight: 700;
+    font-size: min(4.6vw, 20px);
+    color: #FFD166;
+    text-shadow: 0 2px 0 rgba(10, 8, 30, 0.5);
+}
+#menuBest {
+    margin-top: 12px;
+    display: inline-block;
+    background: rgba(255, 253, 247, 0.92);
+    color: #241F4B;
+    font-weight: 800;
+    font-size: 16px;
+    padding: 6px 18px;
+    border-radius: 999px;
+    box-shadow: 0 3px 0 rgba(10, 8, 30, 0.4);
+}
+
+#tapHint {
+    position: fixed;
+    top: 66%;
+    width: 100%;
+    text-align: center;
+    font-weight: 800;
+    font-size: min(8vw, 34px);
+    color: #FFFDF7;
+    text-shadow: 0 3px 0 rgba(10, 8, 30, 0.55);
+    z-index: 20;
+    pointer-events: none;
+    display: none;
+    animation: pulse 1.1s ease-in-out infinite;
+}
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.12); opacity: 0.82; }
+}
+
+#pauseOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 8, 30, 0.55);
+    z-index: 50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    color: #FFFDF7;
+    text-align: center;
+}
+#pauseOverlay h2 { font-weight: 800; font-size: 44px; text-shadow: 0 3px 0 rgba(0, 0, 0, 0.3); }
+#pauseOverlay p { font-weight: 700; font-size: 18px; opacity: 0.9; }
+
+#overPanel {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: min(88vw, 360px);
+    background: #FFFDF7;
+    border-radius: 28px;
+    padding: 24px 22px 22px;
+    box-shadow: 0 10px 0 rgba(10, 8, 30, 0.3), 0 24px 60px rgba(10, 8, 30, 0.5);
+    text-align: center;
+    z-index: 60;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -46%) scale(0.7);
+}
+#overPanel.show {
+    animation: panelIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    pointer-events: auto;
+}
+@keyframes panelIn {
+    from { opacity: 0; transform: translate(-50%, -44%) scale(0.7); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+#stickerBanner {
+    display: none;
+    background: linear-gradient(135deg, #FF8A3D, #FFB040);
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: 17px;
+    padding: 10px 14px;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 0 rgba(216, 106, 34, 0.5);
+    animation: bannerPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes bannerPop {
+    0% { transform: scale(0) rotate(-8deg); }
+    60% { transform: scale(1.15) rotate(3deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+#newBest {
+    display: none;
+    color: #FF5470;
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+    animation: bestBounce 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) infinite alternate;
+}
+@keyframes bestBounce {
+    from { transform: scale(1) rotate(-1.5deg); }
+    to { transform: scale(1.1) rotate(1.5deg); }
+}
+#overPanel h2 { color: #241F4B; font-weight: 800; font-size: 26px; margin-bottom: 4px; }
+#panelScore {
+    font-weight: 800;
+    font-size: 62px;
+    color: #241F4B;
+    line-height: 1.05;
+}
+#panelBestRow, #panelCoins {
+    color: #6B6394;
+    font-weight: 700;
+    font-size: 17px;
+    margin-top: 2px;
+}
+#panelCombo {
+    display: none;
+    color: #C77B12;
+    font-weight: 800;
+    font-size: 16px;
+    margin-top: 6px;
+}
+#nearMiss {
+    display: none;
+    color: #FF5FA2;
+    font-weight: 800;
+    font-size: 17px;
+    margin-top: 8px;
+}
+#playBtn {
+    margin-top: 16px;
+    width: 100%;
+    min-height: 64px;
+    border: none;
+    border-radius: 20px;
+    background: #FF5470;
+    color: #FFFFFF;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 25px;
+    letter-spacing: 1px;
+    box-shadow: 0 5px 0 #C93956;
+    cursor: pointer;
+}
+#playBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #C93956; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<a id="backBtn" class="btn" href="../../index.html" aria-label="Back to WoopKid World">&#8592;</a>
+<button id="muteBtn" class="btn" aria-label="Toggle sound">&#128266;</button>
+<button id="pauseBtn" class="btn" aria-label="Pause">&#10074;&#10074;</button>
+
+<div id="score">0</div>
+<div id="comboPill">COMBO x2</div>
+<div id="magnetChip">&#129522; MAGNET 5s</div>
+
+<div id="title">
+    <h1>DRIFT &amp; COLLECT</h1>
+    <p>Hold to drift inside. Grab the coins!</p>
+    <div><span id="menuBest" style="display:none;"></span></div>
+</div>
+<div id="tapHint">HOLD TO DRIFT</div>
+
+<div id="pauseOverlay">
+    <h2>PAUSED</h2>
+    <p>tap anywhere to keep drifting</p>
+</div>
+
+<div id="overPanel">
+    <div id="stickerBanner"></div>
+    <div id="newBest">NEW BEST!</div>
+    <h2 id="panelTitle">WIPEOUT!</h2>
+    <div id="panelScore">0</div>
+    <div id="panelBestRow">Your best: <span id="panelBest">0</span></div>
+    <div id="panelCoins"></div>
+    <div id="panelCombo"></div>
+    <div id="nearMiss"></div>
+    <button id="playBtn">PLAY AGAIN</button>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+/* ================= DOM ================= */
+var canvas = document.getElementById('game');
+var ctx = canvas.getContext('2d', { alpha: false });
+var scoreEl = document.getElementById('score');
+var comboPill = document.getElementById('comboPill');
+var magnetChip = document.getElementById('magnetChip');
+var titleEl = document.getElementById('title');
+var menuBestEl = document.getElementById('menuBest');
+var tapHintEl = document.getElementById('tapHint');
+var pauseBtn = document.getElementById('pauseBtn');
+var muteBtn = document.getElementById('muteBtn');
+var pauseOverlay = document.getElementById('pauseOverlay');
+var overPanel = document.getElementById('overPanel');
+var stickerBanner = document.getElementById('stickerBanner');
+var newBestEl = document.getElementById('newBest');
+var panelScoreEl = document.getElementById('panelScore');
+var panelBestEl = document.getElementById('panelBest');
+var panelCoinsEl = document.getElementById('panelCoins');
+var panelComboEl = document.getElementById('panelCombo');
+var nearMissEl = document.getElementById('nearMiss');
+var playBtn = document.getElementById('playBtn');
+
+/* ================= Storage (per game) ================= */
+var STORAGE_KEY = 'woopkid_drift-collect';
+var defaultData = {
+    highScore: 0,
+    totalPlays: 0,
+    totalCoins: 0,
+    bestCombo: 0,
+    unlocks: [],
+    muted: false,
+    lastPlayed: null
+};
+function loadData() {
+    try {
+        var d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        return d ? Object.assign({}, defaultData, d) : Object.assign({}, defaultData);
+    } catch (e) {
+        return Object.assign({}, defaultData);
+    }
+}
+function saveData() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+        /* localStorage full or unavailable, fail silently */
+    }
+}
+var data = loadData();
+
+/* ================= Shared profile (verbatim contract module) ================= */
+const WoopProfile = {
+  KEY: 'woopkid_profile',
+  load() {
+    try { return JSON.parse(localStorage.getItem(this.KEY)) || this._blank(); }
+    catch { return this._blank(); }
+  },
+  _blank() {
+    return { totalPlays: 0, games: {}, stickers: [], streak: { current: 0, best: 0, lastDay: null } };
+  },
+  save(p) { try { localStorage.setItem(this.KEY, JSON.stringify(p)); } catch {} },
+  // Call once per finished run. slug: game slug. score: the run's primary number.
+  // thresholds: {bronze, silver, gold} score values for stickers.
+  reportRun(slug, score, thresholds) {
+    const p = this.load();
+    p.totalPlays++;
+    const g = p.games[slug] || (p.games[slug] = { best: 0, plays: 0, lastPlayed: null });
+    g.plays++;
+    g.lastPlayed = new Date().toISOString().slice(0, 10);
+    if (score > g.best) g.best = score;
+    const earned = [];
+    for (const tier of ['bronze', 'silver', 'gold']) {
+      const id = slug + '-' + tier;
+      if (score >= thresholds[tier] && !p.stickers.includes(id)) { p.stickers.push(id); earned.push(tier); }
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    if (p.streak.lastDay !== today) {
+      const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      p.streak.current = (p.streak.lastDay === y) ? p.streak.current + 1 : 1;
+      if (p.streak.current > p.streak.best) p.streak.best = p.streak.current;
+      p.streak.lastDay = today;
+    }
+    this.save(p);
+    return earned; // array of tier names newly earned this run, show celebration per tier
+  }
+};
+
+/* ================= Helpers ================= */
+function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+function rand(a, b) { return a + Math.random() * (b - a); }
+function rr(c, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+}
+function normAngle(a) {
+    while (a > Math.PI) a -= Math.PI * 2;
+    while (a < -Math.PI) a += Math.PI * 2;
+    return a;
+}
+/* squared world distance between two polar points around track center */
+function polarDist2(r1, a1, r2, a2) {
+    return r1 * r1 + r2 * r2 - 2 * r1 * r2 * Math.cos(a1 - a2);
+}
+
+/* ================= Audio (procedural, Web Audio only) ================= */
+var audioCtx = null;
+var noiseBuf = null;
+var activeVoices = 0;
+var MAX_VOICES = 6;
+var engineOsc = null, engineGain = null, engineLp = null;
+
+function ensureAudio() {
+    if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+function canPlay() { return !!audioCtx && !data.muted && activeVoices < MAX_VOICES; }
+function voiceDone() { activeVoices = Math.max(0, activeVoices - 1); }
+function pitchVar() { return rand(0.95, 1.05); } /* plus or minus 5 percent */
+function getNoise() {
+    if (!noiseBuf) {
+        var len = Math.floor(audioCtx.sampleRate * 0.4);
+        noiseBuf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+        var ch = noiseBuf.getChannelData(0);
+        for (var i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuf;
+}
+
+/* Coin chime: pitch rises with the combo streak */
+function sfxChime(combo) {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var base = 620 * Math.pow(2, Math.min(combo, 24) / 18);
+    var o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(base * p, t);
+    o.frequency.setValueAtTime(base * 1.335 * p, t + 0.06);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.16, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.22);
+}
+
+/* Short tire squeal when the drift flips direction */
+function sfxDrift(inward) {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var src = audioCtx.createBufferSource();
+    src.buffer = getNoise();
+    var bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 5;
+    var f = inward ? 1500 : 950;
+    bp.frequency.setValueAtTime(f * p, t);
+    bp.frequency.exponentialRampToValueAtTime(f * 0.66 * p, t + 0.1);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.09, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+    src.connect(bp); bp.connect(g); g.connect(audioCtx.destination);
+    src.onended = voiceDone;
+    src.start(t);
+    src.stop(t + 0.15);
+}
+
+/* Comedy puddle splash: watery plop plus a little slide whistle */
+function sfxSplash() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var src = audioCtx.createBufferSource();
+    src.buffer = getNoise();
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(900, t);
+    lp.frequency.exponentialRampToValueAtTime(300, t + 0.18);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.2, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    src.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
+    src.onended = voiceDone;
+    src.start(t);
+    src.stop(t + 0.24);
+    if (activeVoices < MAX_VOICES) {
+        activeVoices++;
+        var o = audioCtx.createOscillator();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(500 * p, t + 0.03);
+        o.frequency.exponentialRampToValueAtTime(1100 * p, t + 0.2);
+        o.frequency.exponentialRampToValueAtTime(420 * p, t + 0.42);
+        var g2 = audioCtx.createGain();
+        g2.gain.setValueAtTime(0.0001, t + 0.03);
+        g2.gain.exponentialRampToValueAtTime(0.08, t + 0.06);
+        g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+        o.connect(g2); g2.connect(audioCtx.destination);
+        o.onended = voiceDone;
+        o.start(t + 0.03);
+        o.stop(t + 0.47);
+    }
+}
+
+/* Crash: soft thud plus a sad trombone slide, never harsh */
+function sfxCrash() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var src = audioCtx.createBufferSource();
+    src.buffer = getNoise();
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(1400, t);
+    lp.frequency.linearRampToValueAtTime(350, t + 0.3);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.24, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.34);
+    src.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
+    src.onended = voiceDone;
+    src.start(t);
+    src.stop(t + 0.36);
+    if (activeVoices < MAX_VOICES) {
+        activeVoices++;
+        var o = audioCtx.createOscillator();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(392 * p, t + 0.08);
+        o.frequency.linearRampToValueAtTime(330 * p, t + 0.24);
+        o.frequency.linearRampToValueAtTime(277 * p, t + 0.4);
+        o.frequency.exponentialRampToValueAtTime(110 * p, t + 0.75);
+        var lp2 = audioCtx.createBiquadFilter();
+        lp2.type = 'lowpass';
+        lp2.frequency.setValueAtTime(1000, t);
+        lp2.frequency.linearRampToValueAtTime(380, t + 0.7);
+        var g2 = audioCtx.createGain();
+        g2.gain.setValueAtTime(0.0001, t + 0.08);
+        g2.gain.exponentialRampToValueAtTime(0.18, t + 0.11);
+        g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.78);
+        o.connect(lp2); lp2.connect(g2); g2.connect(audioCtx.destination);
+        o.onended = voiceDone;
+        o.start(t + 0.08);
+        o.stop(t + 0.8);
+    }
+}
+
+/* Crowd cheer: swelling band passed noise plus two happy blips */
+function sfxCheer() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var src = audioCtx.createBufferSource();
+    src.buffer = getNoise();
+    src.loop = true;
+    var bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 0.8;
+    bp.frequency.setValueAtTime(1500, t);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.12, t + 0.12);
+    g.gain.setValueAtTime(0.12, t + 0.35);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+    src.connect(bp); bp.connect(g); g.connect(audioCtx.destination);
+    src.onended = voiceDone;
+    src.start(t);
+    src.stop(t + 0.72);
+    if (activeVoices < MAX_VOICES) {
+        activeVoices++;
+        var o = audioCtx.createOscillator();
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(1047, t + 0.05);
+        o.frequency.setValueAtTime(1319, t + 0.18);
+        var g2 = audioCtx.createGain();
+        g2.gain.setValueAtTime(0.0001, t + 0.05);
+        g2.gain.exponentialRampToValueAtTime(0.1, t + 0.08);
+        g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+        o.connect(g2); g2.connect(audioCtx.destination);
+        o.onended = voiceDone;
+        o.start(t + 0.05);
+        o.stop(t + 0.42);
+    }
+}
+
+/* Magnet star pickup: rising sparkle chime */
+function sfxMagnet() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(1047 * p, t);
+    o.frequency.setValueAtTime(1319 * p, t + 0.07);
+    o.frequency.setValueAtTime(1568 * p, t + 0.14);
+    o.frequency.setValueAtTime(2093 * p, t + 0.21);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.15, t + 0.015);
+    g.gain.setValueAtTime(0.15, t + 0.22);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.44);
+}
+
+/* Soft womp when a combo breaks */
+function sfxMiss() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var o = audioCtx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(330, t);
+    o.frequency.exponentialRampToValueAtTime(196, t + 0.14);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.08, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.2);
+}
+
+/* Little fanfare for new best or sticker */
+function sfxFanfare() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(523 * p, t);
+    o.frequency.setValueAtTime(659 * p, t + 0.1);
+    o.frequency.setValueAtTime(784 * p, t + 0.2);
+    o.frequency.setValueAtTime(1047 * p, t + 0.3);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+    g.gain.setValueAtTime(0.16, t + 0.32);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.62);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.64);
+}
+
+/* Continuous engine hum, pitch follows speed and drift */
+function engineStart() {
+    if (!audioCtx || engineOsc) return;
+    try {
+        engineOsc = audioCtx.createOscillator();
+        engineOsc.type = 'sawtooth';
+        engineOsc.frequency.value = 58;
+        engineLp = audioCtx.createBiquadFilter();
+        engineLp.type = 'lowpass';
+        engineLp.frequency.value = 260;
+        engineGain = audioCtx.createGain();
+        engineGain.gain.value = 0.0001;
+        engineGain.gain.setTargetAtTime(data.muted ? 0.0001 : 0.045, audioCtx.currentTime, 0.15);
+        engineOsc.connect(engineLp);
+        engineLp.connect(engineGain);
+        engineGain.connect(audioCtx.destination);
+        engineOsc.start();
+    } catch (e) { engineOsc = null; }
+}
+function engineStop() {
+    if (!engineOsc) return;
+    try {
+        var o = engineOsc, g = engineGain;
+        g.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.06);
+        o.stop(audioCtx.currentTime + 0.3);
+    } catch (e) {}
+    engineOsc = null; engineGain = null; engineLp = null;
+}
+function engineUpdate(speedPx, kick) {
+    if (!engineOsc || !audioCtx) return;
+    try {
+        var f = 55 + 45 * ((speedPx / carScale - BASE_SPEED) / (MAX_SPEED - BASE_SPEED)) + Math.abs(kick) * 20;
+        engineOsc.frequency.setTargetAtTime(f, audioCtx.currentTime, 0.1);
+        engineGain.gain.setTargetAtTime(data.muted ? 0.0001 : 0.045, audioCtx.currentTime, 0.1);
+    } catch (e) {}
+}
+
+/* ================= Constants ================= */
+var BASE_SPEED = 145;      /* logical px per second at reference size 640 */
+var MAX_SPEED = 260;
+var SPEED_RAMP = 1.15;     /* px per second gained each second */
+var MISS_ANG = 0.5;        /* radians behind the car before a coin counts as missed */
+var MAGNET_TIME = 5;       /* seconds of coin magnet per star */
+var OBSTACLE_GRACE = 6;    /* no obstacles in the first seconds of a run */
+var COMBO_STEP = 5;        /* coins per multiplier level */
+var MAX_MULT = 5;
+
+function comboMult(c) { return Math.min(MAX_MULT, 1 + Math.floor(c / COMBO_STEP)); }
+
+var State = {
+    MENU: 'menu',
+    PLAYING: 'playing',
+    PAUSED: 'paused',
+    CRASHING: 'crashing',
+    GAME_OVER: 'gameOver'
+};
+var currentState = State.MENU;
+
+/* ================= Geometry + sprites ================= */
+var dpr = 1;
+var W = 0, H = 0;          /* logical CSS pixels */
+var size = 0, cx = 0, cy = 0;
+var midR = 0, trackIn = 0, trackOut = 0, laneIn = 0, laneOut = 0, midLane = 0;
+var hardIn = 0, hardOut = 0;
+var carScale = 1;
+var MAX_RVEL = 0;          /* max radial speed in px per second */
+var SPRING = 56, DAMP = 11;
+
+var bgSpr = null, trackSpr = null, trackSide = 0;
+var glowGold = null, glowPink = null, coinSpr = null, coneSpr = null, puddleSpr = null;
+var blobSprs = [];
+var BLOB_COLORS = ['#FF8FA3', '#8AF3C2', '#9AD1FF', '#FFC94D', '#C6A9FF'];
+var LIGHT_COLORS = ['#FFD166', '#FF8FA3', '#8AF3C2', '#9AD1FF', '#FFC94D'];
+
+function makeCanvas(w, h) {
+    var c = document.createElement('canvas');
+    c.width = Math.max(1, Math.ceil(w));
+    c.height = Math.max(1, Math.ceil(h));
+    return c;
+}
+function makeGlow(color) {
+    var s = 64 * dpr;
+    var c = makeCanvas(s, s);
+    var g = c.getContext('2d');
+    var grad = g.createRadialGradient(s / 2, s / 2, s * 0.04, s / 2, s / 2, s / 2);
+    grad.addColorStop(0, color);
+    grad.addColorStop(0.55, color.slice(0, 7) + '44');
+    grad.addColorStop(1, color.slice(0, 7) + '00');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, s, s);
+    return c;
+}
+
+function buildSprites() {
+    var ts = dpr;
+    var cs = carScale;
+
+    glowGold = makeGlow('#FFD23FCC');
+    glowPink = makeGlow('#FF6FD8CC');
+
+    /* Gold coin with ink outline and star emblem */
+    var D = 30 * cs;
+    coinSpr = makeCanvas(D * ts, D * ts);
+    var cc = coinSpr.getContext('2d');
+    cc.scale(ts, ts);
+    cc.fillStyle = '#FFD23F';
+    cc.beginPath();
+    cc.arc(D / 2, D / 2, D / 2 - 1.5, 0, Math.PI * 2);
+    cc.fill();
+    cc.lineWidth = 2.6;
+    cc.strokeStyle = '#241F4B';
+    cc.stroke();
+    cc.fillStyle = '#FFE68A';
+    cc.beginPath();
+    cc.arc(D / 2, D / 2, D * 0.32, 0, Math.PI * 2);
+    cc.fill();
+    cc.fillStyle = '#E8A20C';
+    cc.beginPath();
+    var sr = D * 0.2;
+    for (var si = 0; si < 10; si++) {
+        var sa = si * Math.PI / 5 - Math.PI / 2;
+        var srr = (si % 2 === 0) ? sr : sr * 0.45;
+        var sx2 = D / 2 + Math.cos(sa) * srr;
+        var sy2 = D / 2 + Math.sin(sa) * srr;
+        if (si === 0) cc.moveTo(sx2, sy2); else cc.lineTo(sx2, sy2);
+    }
+    cc.closePath();
+    cc.fill();
+
+    /* Traffic cone seen from above: square base plus stripe rings */
+    var CN = 34 * cs;
+    coneSpr = makeCanvas(CN * ts, CN * ts);
+    var kc = coneSpr.getContext('2d');
+    kc.scale(ts, ts);
+    kc.fillStyle = '#D8571C';
+    rr(kc, CN * 0.08, CN * 0.08, CN * 0.84, CN * 0.84, CN * 0.16);
+    kc.fill();
+    kc.lineWidth = 2.4;
+    kc.strokeStyle = '#241F4B';
+    kc.stroke();
+    kc.fillStyle = '#FF8A3D';
+    kc.beginPath();
+    kc.arc(CN / 2, CN / 2, CN * 0.34, 0, Math.PI * 2);
+    kc.fill();
+    kc.stroke();
+    kc.fillStyle = '#FFF6E8';
+    kc.beginPath();
+    kc.arc(CN / 2, CN / 2, CN * 0.22, 0, Math.PI * 2);
+    kc.fill();
+    kc.fillStyle = '#FF8A3D';
+    kc.beginPath();
+    kc.arc(CN / 2, CN / 2, CN * 0.11, 0, Math.PI * 2);
+    kc.fill();
+
+    /* Puddle: friendly blue blob with a shine */
+    var PW = 74 * cs, PH = 56 * cs;
+    puddleSpr = makeCanvas(PW * ts, PH * ts);
+    var pc = puddleSpr.getContext('2d');
+    pc.scale(ts, ts);
+    pc.fillStyle = '#3D9BE9';
+    pc.beginPath();
+    pc.ellipse(PW * 0.42, PH * 0.5, PW * 0.34, PH * 0.36, 0, 0, Math.PI * 2);
+    pc.fill();
+    pc.beginPath();
+    pc.ellipse(PW * 0.66, PH * 0.42, PW * 0.24, PH * 0.26, 0.3, 0, Math.PI * 2);
+    pc.fill();
+    pc.beginPath();
+    pc.ellipse(PW * 0.6, PH * 0.66, PW * 0.2, PH * 0.18, -0.2, 0, Math.PI * 2);
+    pc.fill();
+    pc.globalAlpha = 0.85;
+    pc.fillStyle = '#7CC4F5';
+    pc.beginPath();
+    pc.ellipse(PW * 0.42, PH * 0.46, PW * 0.22, PH * 0.2, 0, 0, Math.PI * 2);
+    pc.fill();
+    pc.globalAlpha = 1;
+    pc.strokeStyle = '#2C6FB0';
+    pc.lineWidth = 2.2;
+    pc.beginPath();
+    pc.ellipse(PW * 0.42, PH * 0.5, PW * 0.34, PH * 0.36, 0, 0.4, Math.PI * 1.4);
+    pc.stroke();
+    pc.strokeStyle = '#D8F1FF';
+    pc.lineWidth = 2.6;
+    pc.beginPath();
+    pc.ellipse(PW * 0.36, PH * 0.4, PW * 0.12, PH * 0.08, -0.4, 0, Math.PI);
+    pc.stroke();
+
+    /* Crowd blobs: one sprite per candy color */
+    blobSprs = [];
+    var B = 26 * cs;
+    for (var b = 0; b < BLOB_COLORS.length; b++) {
+        var bs = makeCanvas(B * ts, B * ts);
+        var bctx = bs.getContext('2d');
+        bctx.scale(ts, ts);
+        bctx.fillStyle = BLOB_COLORS[b];
+        bctx.beginPath();
+        bctx.arc(B / 2, B / 2, B / 2 - 2, 0, Math.PI * 2);
+        bctx.fill();
+        bctx.lineWidth = 2.2;
+        bctx.strokeStyle = '#241F4B';
+        bctx.stroke();
+        bctx.fillStyle = '#FFFFFF';
+        bctx.beginPath();
+        bctx.arc(B * 0.38, B * 0.42, B * 0.11, 0, Math.PI * 2);
+        bctx.arc(B * 0.62, B * 0.42, B * 0.11, 0, Math.PI * 2);
+        bctx.fill();
+        bctx.fillStyle = '#241F4B';
+        bctx.beginPath();
+        bctx.arc(B * 0.38, B * 0.44, B * 0.05, 0, Math.PI * 2);
+        bctx.arc(B * 0.62, B * 0.44, B * 0.05, 0, Math.PI * 2);
+        bctx.fill();
+        blobSprs.push(bs);
+    }
+
+    /* Night vignette over the whole screen */
+    bgSpr = makeCanvas(W * ts, H * ts);
+    var bg = bgSpr.getContext('2d');
+    bg.scale(ts, ts);
+    bg.fillStyle = '#12152E';
+    bg.fillRect(0, 0, W, H);
+    var vg = bg.createRadialGradient(cx, cy, size * 0.2, cx, cy, Math.max(W, H) * 0.75);
+    vg.addColorStop(0, 'rgba(48,44,110,0.35)');
+    vg.addColorStop(0.55, 'rgba(18,21,46,0)');
+    vg.addColorStop(1, 'rgba(4,5,18,0.8)');
+    bg.fillStyle = vg;
+    bg.fillRect(0, 0, W, H);
+
+    /* The whole track prerendered once: infield carnival, asphalt, curbs, dashes */
+    var pad = 26 * cs;
+    trackSide = Math.ceil((trackOut + pad) * 2);
+    trackSpr = makeCanvas(trackSide * ts, trackSide * ts);
+    var tc = trackSpr.getContext('2d');
+    tc.scale(ts, ts);
+    var C = trackSide / 2;
+
+    /* infield lawn */
+    tc.fillStyle = '#17383F';
+    tc.beginPath();
+    tc.arc(C, C, trackIn, 0, Math.PI * 2);
+    tc.fill();
+
+    /* circus tent seen from above: striped pinwheel */
+    var tentR = trackIn * 0.52;
+    for (var wgt = 0; wgt < 12; wgt++) {
+        tc.fillStyle = wgt % 2 ? '#FF5470' : '#FFF6E8';
+        tc.beginPath();
+        tc.moveTo(C, C);
+        tc.arc(C, C, tentR, wgt * Math.PI / 6, (wgt + 1) * Math.PI / 6);
+        tc.closePath();
+        tc.fill();
+    }
+    tc.lineWidth = 3 * cs;
+    tc.strokeStyle = '#241F4B';
+    tc.beginPath();
+    tc.arc(C, C, tentR, 0, Math.PI * 2);
+    tc.stroke();
+    tc.fillStyle = '#FFD166';
+    tc.beginPath();
+    tc.arc(C, C, tentR * 0.16, 0, Math.PI * 2);
+    tc.fill();
+    tc.strokeStyle = '#241F4B';
+    tc.lineWidth = 2 * cs;
+    tc.stroke();
+    /* little bushes on the lawn */
+    var bushA = [0.5, 2.2, 4.1];
+    for (var bu = 0; bu < bushA.length; bu++) {
+        var bx = C + Math.cos(bushA[bu]) * trackIn * 0.78;
+        var by = C + Math.sin(bushA[bu]) * trackIn * 0.78;
+        tc.fillStyle = '#2E6B4F';
+        tc.beginPath();
+        tc.arc(bx, by, 9 * cs, 0, Math.PI * 2);
+        tc.fill();
+        tc.fillStyle = '#3F8A64';
+        tc.beginPath();
+        tc.arc(bx - 3 * cs, by - 3 * cs, 5 * cs, 0, Math.PI * 2);
+        tc.fill();
+    }
+
+    /* asphalt ring: deep blue */
+    tc.beginPath();
+    tc.arc(C, C, trackOut, 0, Math.PI * 2);
+    tc.arc(C, C, trackIn, 0, Math.PI * 2, true);
+    tc.fillStyle = '#2A3161';
+    tc.fill('evenodd');
+    /* speckles for texture */
+    for (var sp = 0; sp < 130; sp++) {
+        var spa = rand(0, Math.PI * 2);
+        var spr2 = rand(trackIn + 8 * cs, trackOut - 8 * cs);
+        tc.fillStyle = sp % 3 ? 'rgba(255,255,255,0.05)' : 'rgba(10,8,30,0.25)';
+        tc.fillRect(C + Math.cos(spa) * spr2, C + Math.sin(spa) * spr2, 2.4 * cs, 2.4 * cs);
+    }
+    /* dashed center line (world locked, so it streams past the car) */
+    tc.lineCap = 'butt';
+    tc.strokeStyle = 'rgba(255,253,247,0.3)';
+    tc.lineWidth = 4 * cs;
+    var dashN = 36;
+    for (var dn = 0; dn < dashN; dn++) {
+        var da = dn * Math.PI * 2 / dashN;
+        tc.beginPath();
+        tc.arc(C, C, midR, da, da + 0.075);
+        tc.stroke();
+    }
+    /* festival curbs on both edges */
+    var curbN = 56;
+    for (var cn = 0; cn < curbN; cn++) {
+        var ca = cn * Math.PI * 2 / curbN;
+        var cw = Math.PI * 2 / curbN;
+        tc.lineWidth = 7 * cs;
+        tc.strokeStyle = cn % 2 ? '#FF5470' : '#FFF6E8';
+        tc.beginPath();
+        tc.arc(C, C, trackOut - 3.5 * cs, ca, ca + cw);
+        tc.stroke();
+        tc.beginPath();
+        tc.arc(C, C, trackIn + 3.5 * cs, ca, ca + cw);
+        tc.stroke();
+    }
+    /* ink outlines on the ring */
+    tc.lineWidth = 2.6 * cs;
+    tc.strokeStyle = '#241F4B';
+    tc.beginPath();
+    tc.arc(C, C, trackOut, 0, Math.PI * 2);
+    tc.stroke();
+    tc.beginPath();
+    tc.arc(C, C, trackIn, 0, Math.PI * 2);
+    tc.stroke();
+}
+
+function resize() {
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    cx = W / 2;
+    cy = H / 2;
+    var oldSize = size;
+    size = Math.min(W, H);
+    carScale = size / 640;
+    midR = size * 0.34;
+    trackIn = midR - size * 0.14;
+    trackOut = midR + size * 0.14;
+    laneIn = trackIn + size * 0.048;
+    laneOut = trackOut - size * 0.048;
+    midLane = (laneIn + laneOut) / 2;
+    hardIn = trackIn + 16 * carScale;
+    hardOut = trackOut - 16 * carScale;
+    MAX_RVEL = 3.6 * (laneOut - laneIn);
+    /* rescale existing world radii so a mid-run resize stays fair */
+    if (oldSize > 0 && oldSize !== size) {
+        var f = size / oldSize;
+        car.radius *= f;
+        var i;
+        for (i = 0; i < coins.length; i++) if (coins[i].active) coins[i].radius *= f;
+        for (i = 0; i < obstacles.length; i++) {
+            if (obstacles[i].active) {
+                obstacles[i].radius *= f;
+                obstacles[i].r0 *= f;
+                obstacles[i].r1 *= f;
+            }
+        }
+        for (i = 0; i < skid.length; i++) skid[i].life = skid[i].ttl; /* expire old marks */
+        for (i = 0; i < parts.length; i++) if (!parts[i].screen) parts[i].active = false;
+    }
+    buildSprites();
+    initCrowd();
+    initDots();
+}
+window.addEventListener('resize', resize);
+
+/* ================= World state ================= */
+var time = 0;
+var elapsed = 0;
+var score = 0;
+var runCoins = 0;
+var combo = 0;
+var topCombo = 0;
+var magnetT = 0;
+var slideT = 0;
+var prevBest = 0;
+var newBest = false;
+var earnedTiers = [];
+var crashT = 0;
+var panelShown = false;
+var trauma = 0;
+var flash = 0;
+var holding = false;
+var autoSpawn = true;      /* test hook: headless harness turns spawning off */
+var spawnCooldown = 0;
+var obstacleCooldown = 0;
+var starTimer = 14;
+var lastSpawnEnd = 0;
+var cheerT = 0;
+var magnetShown = -1;
+
+var car = {
+    angle: 0,
+    radius: 0,
+    rvel: 0,
+    kick: 0,       /* visual drift angle of the body vs travel direction */
+    spin: 0,       /* extra rotation during a crash */
+    wobble: 0,
+    exhaustT: 0,
+    blinkIn: rand(1.5, 4),
+    blinkT: 0
+};
+
+function currentSpeed() {
+    return Math.min(MAX_SPEED, BASE_SPEED + elapsed * SPEED_RAMP + runCoins * 0.4) * carScale;
+}
+function angularSpeed() { return currentSpeed() / midR; }
+
+/* ================= Pools: never allocate during gameplay ================= */
+var coins = [];
+for (var ci = 0; ci < 44; ci++) coins.push({ active: false, angle: 0, radius: 0, phase: 0, kind: 'coin', pid: -1 });
+var obstacles = [];
+for (var oi = 0; oi < 12; oi++) obstacles.push({ active: false, kind: 'cone', angle: 0, radius: 0, r0: 0, r1: 0, halfAng: 0, hit: false });
+var parts = [];
+for (var qi = 0; qi < 220; qi++) {
+    parts.push({ active: false, type: 0, screen: false, x: 0, y: 0, vx: 0, vy: 0, rot: 0, vr: 0, life: 0, ttl: 1, size: 4, color: '#fff', seed: 0 });
+}
+var skid = [];
+for (var ki = 0; ki < 260; ki++) skid.push({ life: 1, ttl: 1, x: 0, y: 0, w: 3 });
+var skidHead = 0;
+
+/* coin pattern registry: tracks full line pickups for crowd cheers */
+var patterns = [];
+for (var pi = 0; pi < 16; pi++) patterns.push({ total: 0, got: 0, broken: false });
+var nextPid = 0;
+
+/* particle types: 1 spark, 2 exhaust puff, 3 splash drop, 4 coin burst, 5 confetti (screen space) */
+function spawnPart(type, x, y, vx, vy, ttl, sizePx, color, screen) {
+    for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        if (!p.active) {
+            p.active = true;
+            p.type = type;
+            p.screen = !!screen;
+            p.x = x; p.y = y; p.vx = vx; p.vy = vy;
+            p.rot = rand(0, Math.PI * 2);
+            p.vr = rand(-7, 7);
+            p.life = 0; p.ttl = ttl; p.size = sizePx; p.color = color;
+            p.seed = rand(0, 10);
+            return;
+        }
+    }
+}
+function carWorldX() { return cx + Math.cos(car.angle) * car.radius; }
+function carWorldY() { return cy + Math.sin(car.angle) * car.radius; }
+
+var SPARK_COLORS = ['#FFE14D', '#FF8A3D', '#FFFDF7'];
+function burstSparks(x, y, n) {
+    for (var i = 0; i < n; i++) {
+        var a = rand(0, Math.PI * 2);
+        var sp = rand(40, 200) * carScale;
+        spawnPart(1, x, y, Math.cos(a) * sp, Math.sin(a) * sp, rand(0.3, 0.6), rand(2.5, 5) * carScale, SPARK_COLORS[i % SPARK_COLORS.length]);
+    }
+}
+var GOLD_COLORS = ['#FFD23F', '#FFE68A', '#FFB040'];
+function burstGold(x, y) {
+    for (var i = 0; i < 8; i++) {
+        var a = rand(0, Math.PI * 2);
+        var sp = rand(50, 190) * carScale;
+        spawnPart(4, x, y, Math.cos(a) * sp, Math.sin(a) * sp, rand(0.3, 0.55), rand(3, 5.5) * carScale, GOLD_COLORS[i % GOLD_COLORS.length]);
+    }
+}
+function burstSplash(x, y) {
+    for (var i = 0; i < 10; i++) {
+        var a = rand(0, Math.PI * 2);
+        var sp = rand(40, 170) * carScale;
+        spawnPart(3, x, y, Math.cos(a) * sp, Math.sin(a) * sp, rand(0.3, 0.6), rand(2.5, 5) * carScale, i % 3 ? '#7CC4F5' : '#D8F1FF');
+    }
+}
+var CONFETTI_COLORS = ['#FF5470', '#8AF3C2', '#9AD1FF', '#FFD166', '#FF8FA3', '#C6A9FF'];
+function burstConfetti() {
+    for (var i = 0; i < 70; i++) {
+        spawnPart(5, rand(W * 0.15, W * 0.85), rand(-60, -10), rand(-70, 70), rand(50, 190), rand(2, 3.2), rand(5, 9), CONFETTI_COLORS[i % CONFETTI_COLORS.length], true);
+    }
+}
+
+/* String lights around both track edges */
+var lightsOut = [], lightsIn = [];
+function initLightRings() {
+    lightsOut = [];
+    lightsIn = [];
+    var i;
+    for (i = 0; i < 40; i++) lightsOut.push({ a: i * Math.PI * 2 / 40, c: i % LIGHT_COLORS.length, ph: rand(0, 6) });
+    for (i = 0; i < 26; i++) lightsIn.push({ a: i * Math.PI * 2 / 26, c: (i + 2) % LIGHT_COLORS.length, ph: rand(0, 6) });
+}
+initLightRings();
+
+/* Crowd of blob spectators around the outside of the track */
+var crowd = [];
+function initCrowd() {
+    crowd = [];
+    for (var i = 0; i < 26; i++) {
+        crowd.push({
+            a: rand(0, Math.PI * 2),
+            r: trackOut + rand(30, 64) * carScale,
+            spr: i % blobSprs.length,
+            ph: rand(0, 6),
+            s: rand(0.8, 1.2)
+        });
+    }
+}
+function crowdCheer() {
+    cheerT = 1.2;
+    sfxCheer();
+}
+
+/* faint world-locked ground flecks so rotation is always readable */
+var dots = [];
+function initDots() {
+    dots = [];
+    var maxR = Math.hypot(W, H) / 2;
+    for (var i = 0; i < 46; i++) {
+        dots.push({ a: rand(0, Math.PI * 2), r: rand(trackOut + 80 * carScale, maxR), al: rand(0.04, 0.1) });
+    }
+}
+
+/* ================= Spawning ================= */
+function coinSlot() {
+    for (var i = 0; i < coins.length; i++) if (!coins[i].active) return coins[i];
+    return null;
+}
+function spawnCoin(angle, radius, kind, pid) {
+    var c = coinSlot();
+    if (!c) return null;
+    c.active = true;
+    c.angle = angle;
+    c.radius = clamp(radius, laneIn, laneOut);
+    c.phase = rand(0, Math.PI * 2);
+    c.kind = kind || 'coin';
+    c.pid = (pid === undefined) ? -1 : pid;
+    return c;
+}
+function allocPattern() {
+    nextPid = (nextPid + 1) % patterns.length;
+    patterns[nextPid].total = 0;
+    patterns[nextPid].got = 0;
+    patterns[nextPid].broken = false;
+    return nextPid;
+}
+
+/* Every pattern keeps consecutive coins inside the drift envelope:
+   the radial change between neighbours is always doable at MAX_SPEED. */
+function spawnPattern(kind) {
+    var pid = allocPattern();
+    var base = Math.max(car.angle + 1.7, lastSpawnEnd + 0.4) + rand(0, 0.25);
+    var lastA = base;
+    var gap = laneOut - laneIn;
+    var i, n, a, r;
+    function put(a2, r2) {
+        if (spawnCoin(a2, r2, 'coin', pid)) {
+            patterns[pid].total++;
+            if (a2 > lastA) lastA = a2;
+        }
+    }
+    if (kind === 'outer') {
+        n = 7;
+        for (i = 0; i < n; i++) put(base + i * 0.17, laneOut);
+    } else if (kind === 'inner') {
+        /* the risky line hugging the infield */
+        n = 8;
+        for (i = 0; i < n; i++) put(base + i * 0.17, laneIn);
+    } else if (kind === 'sine') {
+        n = 9;
+        for (i = 0; i < n; i++) {
+            a = base + i * 0.24;
+            r = midLane + Math.sin(i * Math.PI / 4) * gap * 0.5;
+            put(a, r);
+        }
+    } else if (kind === 'zigzag') {
+        n = 6;
+        for (i = 0; i < n; i++) put(base + i * 0.5, i % 2 ? laneOut : laneIn);
+    } else { /* ring: rare full circle jackpot */
+        n = 16;
+        for (i = 0; i < n; i++) put(base + i * Math.PI * 2 / n, midLane);
+        lastA = base + Math.PI * 2;
+    }
+    lastSpawnEnd = lastA;
+    return pid;
+}
+function choosePattern() {
+    var roll = Math.random();
+    if (roll < 0.28) return 'outer';
+    if (roll < 0.6) return 'inner';
+    if (roll < 0.82) return 'sine';
+    if (roll < 0.95) return 'zigzag';
+    return 'ring';
+}
+function maintainCoins(dt) {
+    spawnCooldown -= dt;
+    if (spawnCooldown > 0) return;
+    var active = 0;
+    for (var i = 0; i < coins.length; i++) if (coins[i].active && coins[i].kind === 'coin') active++;
+    if (active >= 14) { spawnCooldown = 0.4; return; }
+    if (lastSpawnEnd - car.angle > 5.6) { spawnCooldown = 0.3; return; }
+    spawnPattern(choosePattern());
+    spawnCooldown = 0.5;
+}
+function maintainStar(dt) {
+    if (magnetT > 0) return;
+    starTimer -= dt;
+    if (starTimer > 0) return;
+    spawnCoin(car.angle + rand(2, 2.6), midLane, 'star', -1);
+    starTimer = rand(13, 20);
+}
+
+function obstacleSlot() {
+    for (var i = 0; i < obstacles.length; i++) if (!obstacles[i].active) return obstacles[i];
+    return null;
+}
+function placeObstacle(kind, angle, radius) {
+    var o = obstacleSlot();
+    if (!o) return null;
+    o.active = true;
+    o.kind = kind;
+    o.angle = angle;
+    o.hit = false;
+    o.halfAng = 0;
+    o.r0 = 0;
+    o.r1 = 0;
+    if (kind === 'barrier') {
+        /* blocks one half of the track: drive the other lane */
+        var innerSide = radius < midR;
+        o.r0 = innerSide ? trackIn + 6 * carScale : midR;
+        o.r1 = innerSide ? midR : trackOut - 6 * carScale;
+        o.radius = (o.r0 + o.r1) / 2;
+        o.halfAng = 0.085;
+    } else {
+        o.radius = radius;
+    }
+    /* clear coins that would be a trap right on top of it */
+    for (var i = 0; i < coins.length; i++) {
+        var c = coins[i];
+        if (!c.active) continue;
+        var ad = Math.abs(normAngle(c.angle - o.angle));
+        var overlap = (kind === 'barrier')
+            ? (ad < o.halfAng + 0.09 && c.radius > o.r0 - 34 * carScale && c.radius < o.r1 + 34 * carScale)
+            : (ad < 0.14 && Math.abs(c.radius - o.radius) < 50 * carScale);
+        if (overlap) {
+            c.active = false;
+            if (c.pid >= 0) patterns[c.pid].total = Math.max(0, patterns[c.pid].total - 1);
+        }
+    }
+    return o;
+}
+function maintainObstacles(dt) {
+    if (elapsed < OBSTACLE_GRACE) return;
+    obstacleCooldown -= dt;
+    if (obstacleCooldown > 0) return;
+    var roll = Math.random();
+    var kind = roll < 0.45 ? 'cone' : (roll < 0.75 ? 'puddle' : 'barrier');
+    var angle = car.angle + rand(2.4, 3.1);
+    var radius;
+    if (kind === 'cone') {
+        var lanes = [laneIn, midLane, laneOut];
+        radius = lanes[Math.floor(rand(0, 3))] + rand(-0.02, 0.02) * size;
+        radius = clamp(radius, laneIn, laneOut);
+    } else if (kind === 'puddle') {
+        radius = rand(laneIn, laneOut);
+    } else {
+        radius = Math.random() < 0.5 ? trackIn + 1 : trackOut - 1;
+    }
+    placeObstacle(kind, angle, radius);
+    obstacleCooldown = Math.max(1.7, 3.4 - elapsed * 0.012) + rand(0, 0.8);
+}
+
+/* ================= Run control ================= */
+function resetRun() {
+    var i;
+    for (i = 0; i < coins.length; i++) coins[i].active = false;
+    for (i = 0; i < obstacles.length; i++) obstacles[i].active = false;
+    for (i = 0; i < parts.length; i++) parts[i].active = false;
+    for (i = 0; i < skid.length; i++) skid[i].life = skid[i].ttl;
+    for (i = 0; i < patterns.length; i++) { patterns[i].total = 0; patterns[i].got = 0; patterns[i].broken = false; }
+    score = 0;
+    runCoins = 0;
+    combo = 0;
+    topCombo = 0;
+    magnetT = 0;
+    slideT = 0;
+    elapsed = 0;
+    crashT = 0;
+    trauma = 0;
+    flash = 0;
+    cheerT = 0;
+    newBest = false;
+    earnedTiers = [];
+    panelShown = false;
+    holding = false;
+    spawnCooldown = 0;
+    obstacleCooldown = 2;
+    starTimer = 14;
+    magnetShown = -1;
+    car.angle = 0;
+    car.radius = laneOut;
+    car.rvel = 0;
+    car.kick = 0;
+    car.spin = 0;
+    car.wobble = 0;
+    lastSpawnEnd = car.angle + 0.8;
+    scoreEl.textContent = '0';
+    comboPill.style.display = 'none';
+    magnetChip.style.display = 'none';
+}
+
+function showMenu() {
+    currentState = State.MENU;
+    engineStop();
+    resetRun();
+    titleEl.style.display = 'block';
+    tapHintEl.style.display = 'block';
+    scoreEl.style.display = 'none';
+    pauseBtn.style.display = 'none';
+    overPanel.classList.remove('show');
+    if (data.highScore > 0) {
+        menuBestEl.textContent = 'BEST: ' + data.highScore;
+        menuBestEl.style.display = 'inline-block';
+    }
+}
+
+function startRun() {
+    resetRun();
+    currentState = State.PLAYING;
+    prevBest = data.highScore;
+    titleEl.style.display = 'none';
+    tapHintEl.style.display = 'none';
+    scoreEl.style.display = 'block';
+    pauseBtn.style.display = 'flex';
+    overPanel.classList.remove('show');
+    if (autoSpawn) spawnPattern('outer');
+    engineStart();
+}
+
+function updateScoreHud() {
+    scoreEl.textContent = score;
+    scoreEl.classList.remove('pop');
+    void scoreEl.offsetWidth;
+    scoreEl.classList.add('pop');
+}
+function updateComboHud() {
+    var m = comboMult(combo);
+    if (combo >= COMBO_STEP && m >= 2) {
+        comboPill.textContent = 'COMBO x' + m;
+        comboPill.style.display = 'block';
+        comboPill.classList.remove('pop');
+        void comboPill.offsetWidth;
+        comboPill.classList.add('pop');
+    } else {
+        comboPill.style.display = 'none';
+    }
+}
+function breakCombo() {
+    if (combo >= COMBO_STEP) sfxMiss();
+    combo = 0;
+    comboPill.style.display = 'none';
+}
+
+function collectCoin(c) {
+    c.active = false;
+    var mult = comboMult(combo);
+    score += mult;
+    runCoins++;
+    combo++;
+    if (combo > topCombo) topCombo = combo;
+    var wx = cx + Math.cos(c.angle) * c.radius;
+    var wy = cy + Math.sin(c.angle) * c.radius;
+    burstGold(wx, wy);
+    sfxChime(combo);
+    updateScoreHud();
+    updateComboHud();
+    if (c.pid >= 0) {
+        var p = patterns[c.pid];
+        p.got++;
+        if (!p.broken && p.total >= 6 && p.got >= p.total) crowdCheer();
+    }
+}
+function collectStar(c) {
+    c.active = false;
+    magnetT = MAGNET_TIME;
+    magnetShown = -1;
+    burstSparks(carWorldX(), carWorldY(), 12);
+    sfxMagnet();
+    magnetChip.style.display = 'block';
+}
+
+function crash() {
+    if (currentState !== State.PLAYING) return;
+    currentState = State.CRASHING;
+    crashT = 0;
+    trauma = 0.7;
+    flash = 0.3;
+    holding = false;
+    car.spin = 0;
+    engineStop();
+    sfxCrash();
+    burstSparks(carWorldX(), carWorldY(), 16);
+    pauseBtn.style.display = 'none';
+    comboPill.style.display = 'none';
+    magnetChip.style.display = 'none';
+
+    /* record the run immediately */
+    newBest = score > prevBest;
+    data.totalPlays++;
+    data.totalCoins += runCoins;
+    if (score > data.highScore) data.highScore = score;
+    if (topCombo > data.bestCombo) data.bestCombo = topCombo;
+    data.lastPlayed = new Date().toISOString();
+    saveData();
+    earnedTiers = WoopProfile.reportRun('drift-collect', score, { bronze: 100, silver: 350, gold: 900 });
+}
+
+var TIER_LABELS = { bronze: '🥉 BRONZE', silver: '🥈 SILVER', gold: '🥇 GOLD' };
+function showPanel() {
+    if (panelShown) return;
+    panelShown = true;
+    currentState = State.GAME_OVER;
+    scoreEl.style.display = 'none';
+    panelScoreEl.textContent = score;
+    panelBestEl.textContent = data.highScore;
+    panelCoinsEl.textContent = '🪙 ' + runCoins + ' coin' + (runCoins === 1 ? '' : 's') + ' grabbed';
+    newBestEl.style.display = newBest ? 'block' : 'none';
+    document.getElementById('panelTitle').textContent = newBest ? 'CHAMPION DRIFT!' : 'WIPEOUT!';
+    if (topCombo > 0) {
+        panelComboEl.textContent = 'Top combo: x' + comboMult(Math.max(0, topCombo - 1)) + ' (' + topCombo + ' in a row)';
+        panelComboEl.style.display = 'block';
+    } else {
+        panelComboEl.style.display = 'none';
+    }
+    var diff = prevBest - score;
+    if (!newBest && prevBest >= 30 && score < prevBest && diff <= prevBest * 0.2) {
+        nearMissEl.textContent = 'SO CLOSE! ' + diff + ' away from your best';
+        nearMissEl.style.display = 'block';
+    } else {
+        nearMissEl.style.display = 'none';
+    }
+    if (earnedTiers.length > 0) {
+        var labels = [];
+        for (var i = 0; i < earnedTiers.length; i++) labels.push(TIER_LABELS[earnedTiers[i]]);
+        stickerBanner.textContent = 'STICKER EARNED! ' + labels.join(' + ');
+        stickerBanner.style.display = 'block';
+    } else {
+        stickerBanner.style.display = 'none';
+    }
+    if (earnedTiers.length > 0 || newBest) {
+        burstConfetti();
+        sfxFanfare();
+    }
+    overPanel.classList.add('show');
+}
+
+/* ================= Update ================= */
+function updateCarCosmetics(dt) {
+    if (car.blinkT > 0) {
+        car.blinkT -= dt;
+    } else {
+        car.blinkIn -= dt;
+        if (car.blinkIn <= 0) {
+            car.blinkT = 0.12;
+            car.blinkIn = rand(1.6, 4.5);
+        }
+    }
+    /* exhaust puffs putt-putt out of the tail pipes */
+    car.exhaustT -= dt;
+    if (car.exhaustT <= 0) {
+        car.exhaustT = rand(0.09, 0.16);
+        var backA = car.angle - (14 * carScale) / Math.max(40, car.radius);
+        var px = cx + Math.cos(backA) * car.radius;
+        var py = cy + Math.sin(backA) * car.radius;
+        spawnPart(2, px, py, rand(-14, 14), rand(-14, 14), rand(0.4, 0.8), rand(3, 6) * carScale, 'rgba(214,218,240,0.7)');
+    }
+}
+
+function pushSkid() {
+    /* two rear wheel marks in world space */
+    var heading = car.angle + Math.PI / 2 + car.kick; /* world heading of the body */
+    var bx = carWorldX() - Math.cos(heading) * 15 * carScale;
+    var by = carWorldY() - Math.sin(heading) * 15 * carScale;
+    var side = heading + Math.PI / 2;
+    for (var s = -1; s <= 1; s += 2) {
+        var m = skid[skidHead];
+        skidHead = (skidHead + 1) % skid.length;
+        m.life = 0;
+        m.ttl = 1.1;
+        m.x = bx + Math.cos(side) * 10 * carScale * s;
+        m.y = by + Math.sin(side) * 10 * carScale * s;
+        m.w = (2.6 + Math.abs(car.kick) * 3) * carScale;
+    }
+}
+
+function updateGame(dt) {
+    elapsed += dt;
+    var speed = currentSpeed();
+    car.angle += (speed / midR) * dt;
+
+    /* one touch drift: hold pulls to the inside lane, release floats back out */
+    var target = holding ? laneIn : laneOut;
+    var spring = SPRING, damp = DAMP;
+    if (slideT > 0) { spring *= 0.12; damp *= 0.5; slideT -= dt; }
+    var acc = (target - car.radius) * spring - car.rvel * damp;
+    car.rvel = clamp(car.rvel + acc * dt, -MAX_RVEL, MAX_RVEL);
+    car.radius += car.rvel * dt;
+    if (car.radius < hardIn) { car.radius = hardIn; car.rvel = Math.abs(car.rvel) * 0.25; }
+    if (car.radius > hardOut) { car.radius = hardOut; car.rvel = -Math.abs(car.rvel) * 0.25; }
+
+    /* visible drift kick of the body plus puddle wobble */
+    var kickTarget = Math.atan2(car.rvel, speed) * 2.4;
+    kickTarget = clamp(kickTarget, -0.85, 0.85);
+    car.kick += (kickTarget - car.kick) * Math.min(1, 10 * dt);
+    car.wobble = slideT > 0 ? Math.sin(time * 26) * 0.32 * Math.min(1, slideT * 2) : car.wobble * (1 - Math.min(1, 8 * dt));
+
+    if (Math.abs(car.kick) > 0.16) pushSkid();
+    if (Math.abs(car.kick) > 0.45) {
+        var heading = car.angle + Math.PI / 2 + car.kick;
+        var sideDir = heading + (car.kick > 0 ? -Math.PI / 2 : Math.PI / 2);
+        var sx = carWorldX() - Math.cos(heading) * 15 * carScale + Math.cos(sideDir) * 10 * carScale;
+        var sy = carWorldY() - Math.sin(heading) * 15 * carScale + Math.sin(sideDir) * 10 * carScale;
+        spawnPart(1, sx, sy, rand(-60, 60), rand(-60, 60), rand(0.15, 0.3), rand(1.8, 3.4) * carScale, SPARK_COLORS[(Math.random() * 3) | 0]);
+    }
+
+    updateCarCosmetics(dt);
+    engineUpdate(speed, car.kick);
+
+    /* magnet countdown chip */
+    if (magnetT > 0) {
+        magnetT -= dt;
+        var whole = Math.ceil(Math.max(0, magnetT));
+        if (whole !== magnetShown) {
+            magnetShown = whole;
+            magnetChip.textContent = '🧲 MAGNET ' + whole + 's';
+        }
+        if (magnetT <= 0) magnetChip.style.display = 'none';
+    }
+
+    /* coins and stars */
+    var collectR = 32 * carScale;
+    var magnetRange = size * 0.28;
+    var i, c;
+    for (i = 0; i < coins.length; i++) {
+        c = coins[i];
+        if (!c.active) continue;
+        var rel = normAngle(c.angle - car.angle);
+        if (rel < -MISS_ANG) {
+            /* drifted past it: the streak breaks */
+            c.active = false;
+            if (c.kind === 'coin') {
+                if (c.pid >= 0) patterns[c.pid].broken = true;
+                breakCombo();
+            }
+            continue;
+        }
+        if (magnetT > 0 && c.kind === 'coin') {
+            var d2m = polarDist2(c.radius, c.angle, car.radius, car.angle);
+            if (d2m < magnetRange * magnetRange) {
+                var pull = Math.min(1, 6 * dt);
+                c.angle += normAngle(car.angle - c.angle) * pull;
+                c.radius += (car.radius - c.radius) * pull;
+            }
+        }
+        var hitR = c.kind === 'star' ? collectR + 6 * carScale : collectR;
+        if (polarDist2(c.radius, c.angle, car.radius, car.angle) < hitR * hitR) {
+            if (c.kind === 'star') collectStar(c); else collectCoin(c);
+        }
+    }
+
+    /* obstacles */
+    var carHitR = 15 * carScale;
+    for (i = 0; i < obstacles.length; i++) {
+        var o = obstacles[i];
+        if (!o.active) continue;
+        var orel = normAngle(o.angle - car.angle);
+        if (orel < -0.8) { o.active = false; continue; }
+        if (o.kind === 'barrier') {
+            if (Math.abs(orel) < o.halfAng + carHitR / Math.max(60, car.radius) &&
+                car.radius > o.r0 - carHitR * 0.6 && car.radius < o.r1 + carHitR * 0.6) {
+                crash();
+                return;
+            }
+        } else if (o.kind === 'cone') {
+            var d2c = polarDist2(o.radius, o.angle, car.radius, car.angle);
+            var rc = 13 * carScale + carHitR;
+            if (d2c < rc * rc) {
+                crash();
+                return;
+            }
+        } else { /* puddle: comedy slide, never death */
+            if (!o.hit) {
+                var d2p = polarDist2(o.radius, o.angle, car.radius, car.angle);
+                var rp = 24 * carScale + carHitR * 0.6;
+                if (d2p < rp * rp) {
+                    o.hit = true;
+                    slideT = 0.9;
+                    breakCombo();
+                    burstSplash(carWorldX(), carWorldY());
+                    sfxSplash();
+                }
+            }
+        }
+    }
+
+    if (autoSpawn) {
+        maintainCoins(dt);
+        maintainStar(dt);
+        maintainObstacles(dt);
+    }
+    updateParticles(dt);
+    updateSkid(dt);
+}
+
+function updateMenu(dt) {
+    /* attract mode: the car cruises the outer lane past the carnival */
+    car.angle += (120 * carScale / midR) * dt;
+    car.radius += (laneOut - car.radius) * Math.min(1, 3 * dt);
+    car.rvel = 0;
+    car.kick *= (1 - Math.min(1, 6 * dt));
+    updateCarCosmetics(dt);
+    updateParticles(dt);
+    updateSkid(dt);
+}
+
+function updateCrashing(dt) {
+    /* slow motion spin out with dizzy stars */
+    var ts = crashT < 0.55 ? 0.3 : 1;
+    var dts = dt * ts;
+    crashT += dt;
+    var fade = Math.max(0, 1 - crashT * 0.9);
+    car.angle += angularSpeed() * 0.45 * fade * dts;
+    car.spin += 12 * fade * dts;
+    car.radius += car.rvel * dts;
+    car.rvel *= (1 - Math.min(1, 3 * dts));
+    if (car.radius < hardIn) car.radius = hardIn;
+    if (car.radius > hardOut) car.radius = hardOut;
+    if (crashT < 0.5 && Math.random() < 0.5) {
+        spawnPart(2, carWorldX(), carWorldY(), rand(-30, 30), rand(-30, 30), rand(0.5, 0.9), rand(4, 8) * carScale, 'rgba(214,218,240,0.65)');
+    }
+    updateParticles(dts);
+    updateSkid(dts);
+    if (crashT > 1.45) showPanel();
+}
+
+function updateParticles(dt) {
+    for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        if (!p.active) continue;
+        p.life += dt;
+        if (p.life >= p.ttl) { p.active = false; continue; }
+        if (p.type === 1 || p.type === 4) {
+            p.vx *= (1 - Math.min(1, 4 * dt));
+            p.vy *= (1 - Math.min(1, 4 * dt));
+        } else if (p.type === 2) {
+            p.vx *= (1 - Math.min(1, 2 * dt));
+            p.vy *= (1 - Math.min(1, 2 * dt));
+        } else if (p.type === 3) {
+            p.vy += 260 * carScale * dt;
+        } else {
+            p.vy = Math.min(240, p.vy + 220 * dt);
+            p.x += Math.sin(p.life * 5 + p.seed) * 26 * dt;
+        }
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.rot += p.vr * dt;
+    }
+}
+function updateSkid(dt) {
+    for (var i = 0; i < skid.length; i++) {
+        if (skid[i].life < skid[i].ttl) skid[i].life += dt;
+    }
+}
+
+function update(dt) {
+    time += dt;
+    if (trauma > 0) trauma = Math.max(0, trauma - 2.2 * dt);
+    if (flash > 0) flash = Math.max(0, flash - 2.4 * dt);
+    if (cheerT > 0) cheerT = Math.max(0, cheerT - dt);
+    switch (currentState) {
+        case State.MENU: updateMenu(dt); break;
+        case State.PLAYING: updateGame(dt); break;
+        case State.PAUSED: break;
+        case State.CRASHING: updateCrashing(dt); break;
+        case State.GAME_OVER: updateParticles(dt); break;
+    }
+}
+
+/* ================= Render ================= */
+function drawLights() {
+    var i, L, tw, lr;
+    var bulb = 3.2 * carScale;
+    var g = 16 * carScale;
+    for (i = 0; i < lightsOut.length; i++) {
+        L = lightsOut[i];
+        tw = 0.55 + 0.45 * Math.sin(time * 2.2 + L.ph);
+        lr = trackOut + 13 * carScale;
+        var x = cx + Math.cos(L.a) * lr;
+        var y = cy + Math.sin(L.a) * lr;
+        ctx.globalAlpha = tw;
+        ctx.drawImage(glowGold, (x - g) | 0, (y - g) | 0, g * 2, g * 2);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = LIGHT_COLORS[L.c];
+        ctx.beginPath();
+        ctx.arc(x, y, bulb, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    for (i = 0; i < lightsIn.length; i++) {
+        L = lightsIn[i];
+        tw = 0.55 + 0.45 * Math.sin(time * 2.2 + L.ph);
+        lr = trackIn - 13 * carScale;
+        var x2 = cx + Math.cos(L.a) * lr;
+        var y2 = cy + Math.sin(L.a) * lr;
+        ctx.globalAlpha = tw;
+        ctx.drawImage(glowGold, (x2 - g) | 0, (y2 - g) | 0, g * 2, g * 2);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = LIGHT_COLORS[L.c];
+        ctx.beginPath();
+        ctx.arc(x2, y2, bulb, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function drawCrowd() {
+    var env = cheerT > 0 ? Math.sin(Math.min(1, (1.2 - cheerT) / 1.2) * Math.PI) : 0;
+    for (var i = 0; i < crowd.length; i++) {
+        var b = crowd[i];
+        var idle = Math.sin(time * 2 + b.ph) * 1.5 * carScale;
+        var jump = env * Math.abs(Math.sin(time * 11 + b.ph)) * 10 * carScale;
+        var s = 26 * carScale * b.s * (1 + env * 0.12);
+        var x = cx + Math.cos(b.a) * (b.r - jump);
+        var y = cy + Math.sin(b.a) * (b.r - jump);
+        ctx.drawImage(blobSprs[b.spr], (x - s / 2) | 0, (y - s / 2 + idle) | 0, s, s);
+    }
+}
+
+function drawSkid() {
+    ctx.fillStyle = '#151A3D';
+    for (var i = 0; i < skid.length; i++) {
+        var m = skid[i];
+        if (m.life >= m.ttl) continue;
+        ctx.globalAlpha = 0.4 * (1 - m.life / m.ttl);
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, m.w, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawObstacles() {
+    for (var i = 0; i < obstacles.length; i++) {
+        var o = obstacles[i];
+        if (!o.active) continue;
+        var x = cx + Math.cos(o.angle) * o.radius;
+        var y = cy + Math.sin(o.angle) * o.radius;
+        if (o.kind === 'puddle') {
+            var pw = 74 * carScale, ph = 56 * carScale;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(o.angle);
+            ctx.globalAlpha = 0.92;
+            ctx.drawImage(puddleSpr, -pw / 2, -ph / 2, pw, ph);
+            ctx.globalAlpha = 1;
+            ctx.restore();
+        } else if (o.kind === 'cone') {
+            var cn = 34 * carScale;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(o.angle);
+            ctx.drawImage(coneSpr, -cn / 2, -cn / 2, cn, cn);
+            ctx.restore();
+        } else {
+            /* striped barrier arc */
+            var rc = (o.r0 + o.r1) / 2;
+            var w2 = o.r1 - o.r0;
+            ctx.lineWidth = w2;
+            ctx.strokeStyle = '#FF5470';
+            ctx.beginPath();
+            ctx.arc(cx, cy, rc, o.angle - o.halfAng, o.angle + o.halfAng);
+            ctx.stroke();
+            ctx.strokeStyle = '#FFF6E8';
+            var seg = (o.halfAng * 2) / 5;
+            for (var k2 = 0; k2 < 5; k2 += 2) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, rc, o.angle - o.halfAng + k2 * seg, o.angle - o.halfAng + (k2 + 1) * seg);
+                ctx.stroke();
+            }
+            ctx.lineWidth = 2.4 * carScale;
+            ctx.strokeStyle = '#241F4B';
+            ctx.beginPath();
+            ctx.arc(cx, cy, o.r0, o.angle - o.halfAng, o.angle + o.halfAng);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cx, cy, o.r1, o.angle - o.halfAng, o.angle + o.halfAng);
+            ctx.stroke();
+        }
+    }
+}
+
+function drawStarShape(x, y, r, rot) {
+    ctx.beginPath();
+    for (var i = 0; i < 10; i++) {
+        var a = rot + i * Math.PI / 5 - Math.PI / 2;
+        var rr2 = (i % 2 === 0) ? r : r * 0.45;
+        var px = x + Math.cos(a) * rr2;
+        var py = y + Math.sin(a) * rr2;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+}
+
+function drawCoins() {
+    var D = 30 * carScale;
+    var g = 22 * carScale;
+    for (var i = 0; i < coins.length; i++) {
+        var c = coins[i];
+        if (!c.active) continue;
+        var bob = Math.sin(time * 3 + c.phase) * 2 * carScale;
+        var x = cx + Math.cos(c.angle) * (c.radius + bob);
+        var y = cy + Math.sin(c.angle) * (c.radius + bob);
+        if (c.kind === 'star') {
+            var pulse = 1 + 0.12 * Math.sin(time * 5 + c.phase);
+            ctx.drawImage(glowPink, (x - g * 1.5) | 0, (y - g * 1.5) | 0, g * 3, g * 3);
+            drawStarShape(x, y, 15 * carScale * pulse, time * 1.6 + c.phase);
+            ctx.fillStyle = '#FFE14D';
+            ctx.fill();
+            ctx.lineWidth = 3 * carScale;
+            ctx.strokeStyle = '#241F4B';
+            ctx.stroke();
+        } else {
+            var sq = 0.35 + 0.65 * Math.abs(Math.cos(time * 3.2 + c.phase));
+            ctx.drawImage(glowGold, (x - g) | 0, (y - g) | 0, g * 2, g * 2);
+            ctx.drawImage(coinSpr, (x - (D * sq) / 2) | 0, (y - D / 2) | 0, D * sq, D);
+        }
+    }
+}
+
+function drawParticlesWorld() {
+    for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        if (!p.active || p.screen) continue;
+        var a = 1 - p.life / p.ttl;
+        ctx.globalAlpha = p.type === 2 ? a * 0.7 : a;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        var rad = p.type === 2 ? p.size * (0.6 + (p.life / p.ttl) * 1.2) : p.size * a;
+        ctx.arc(p.x, p.y, Math.max(0.5, rad), 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawParticlesScreen() {
+    for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        if (!p.active || !p.screen) continue;
+        ctx.globalAlpha = 1 - p.life / p.ttl;
+        ctx.fillStyle = p.color;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillRect(-p.size / 2, -p.size * 0.75, p.size, p.size * 1.5);
+        ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawCar() {
+    var cs2 = carScale;
+    var x = cx + car.radius;
+    var y = cy;
+    var rot = Math.PI / 2 + car.kick + car.wobble + car.spin;
+    var L = 46 * cs2, Wd = 30 * cs2;
+
+    /* magnet field */
+    if (magnetT > 0 && currentState === State.PLAYING) {
+        var mr = size * 0.28;
+        ctx.globalAlpha = 0.25 + 0.1 * Math.sin(time * 6);
+        ctx.drawImage(glowPink, x - mr, y - mr, mr * 2, mr * 2);
+        ctx.globalAlpha = 0.7;
+        ctx.strokeStyle = '#FF6FD8';
+        ctx.lineWidth = 2.5 * cs2;
+        ctx.beginPath();
+        var segs = 10;
+        for (var ms = 0; ms < segs; ms++) {
+            var a0 = time * 1.8 + ms * Math.PI * 2 / segs;
+            ctx.beginPath();
+            ctx.arc(x, y, mr * 0.82, a0, a0 + 0.32);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+
+    /* soft shadow */
+    ctx.fillStyle = 'rgba(8,6,24,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(0, 3 * cs2, L * 0.52, Wd * 0.62, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    /* wheels */
+    ctx.fillStyle = '#241F4B';
+    rr(ctx, L * 0.16, -Wd * 0.62, L * 0.24, Wd * 0.22, 3 * cs2); ctx.fill();
+    rr(ctx, L * 0.16, Wd * 0.4, L * 0.24, Wd * 0.22, 3 * cs2); ctx.fill();
+    rr(ctx, -L * 0.42, -Wd * 0.64, L * 0.28, Wd * 0.26, 3 * cs2); ctx.fill();
+    rr(ctx, -L * 0.42, Wd * 0.38, L * 0.28, Wd * 0.26, 3 * cs2); ctx.fill();
+
+    /* body: chunky cherry red toy racer */
+    ctx.fillStyle = '#FF4757';
+    rr(ctx, -L / 2, -Wd / 2, L, Wd, Wd * 0.38);
+    ctx.fill();
+    ctx.lineWidth = 3 * cs2;
+    ctx.strokeStyle = '#241F4B';
+    ctx.stroke();
+
+    /* nose highlight */
+    ctx.fillStyle = '#FF6B7A';
+    rr(ctx, L * 0.18, -Wd * 0.36, L * 0.26, Wd * 0.72, Wd * 0.3);
+    ctx.fill();
+
+    /* racing stripe with number */
+    ctx.fillStyle = '#FFF6E8';
+    rr(ctx, -L * 0.46, -Wd * 0.14, L * 0.88, Wd * 0.28, Wd * 0.12);
+    ctx.fill();
+    ctx.fillStyle = '#241F4B';
+    ctx.font = '800 ' + Math.round(11 * cs2) + 'px Nunito, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('7', -L * 0.06, 0.5 * cs2);
+
+    /* windshield */
+    ctx.fillStyle = '#3D4C8F';
+    rr(ctx, -L * 0.02, -Wd * 0.32, L * 0.16, Wd * 0.64, 3 * cs2);
+    ctx.fill();
+
+    /* spoiler */
+    ctx.fillStyle = '#241F4B';
+    rr(ctx, -L * 0.56, -Wd * 0.44, 6 * cs2, Wd * 0.88, 2.5 * cs2);
+    ctx.fill();
+
+    /* exhaust pipes */
+    ctx.fillStyle = '#9BA3C7';
+    ctx.beginPath();
+    ctx.arc(-L * 0.52, -Wd * 0.18, 3.4 * cs2, 0, Math.PI * 2);
+    ctx.arc(-L * 0.52, Wd * 0.18, 3.4 * cs2, 0, Math.PI * 2);
+    ctx.fill();
+
+    /* big headlight eyes at the front */
+    var ex = L * 0.36;
+    var look = clamp(car.kick * 6 * cs2, -3 * cs2, 3 * cs2);
+    var blink = car.blinkT > 0;
+    for (var e = -1; e <= 1; e += 2) {
+        var ey = e * Wd * 0.26;
+        if (blink) {
+            ctx.strokeStyle = '#241F4B';
+            ctx.lineWidth = 2.4 * cs2;
+            ctx.beginPath();
+            ctx.arc(ex, ey, 5.5 * cs2, -Math.PI * 0.35, Math.PI * 0.35);
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = '#FFFDF7';
+            ctx.beginPath();
+            ctx.arc(ex, ey, 6.4 * cs2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 2.2 * cs2;
+            ctx.strokeStyle = '#241F4B';
+            ctx.stroke();
+            ctx.fillStyle = '#241F4B';
+            ctx.beginPath();
+            ctx.arc(ex + 1.4 * cs2, ey + look, 3 * cs2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#FFFDF7';
+            ctx.beginPath();
+            ctx.arc(ex + 2.4 * cs2, ey + look - 1.2 * cs2, 1.1 * cs2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    ctx.restore();
+
+    /* dizzy stars while spinning out */
+    if (currentState === State.CRASHING || (currentState === State.GAME_OVER && !panelShown)) {
+        for (var d = 0; d < 3; d++) {
+            var da = crashT * 6 + d * (Math.PI * 2 / 3);
+            var dx = x + Math.cos(da) * 32 * cs2;
+            var dy = y + Math.sin(da) * 32 * cs2 - 6 * cs2;
+            drawStarShape(dx, dy, 7 * cs2, da * 1.5);
+            ctx.fillStyle = '#FFE14D';
+            ctx.fill();
+            ctx.lineWidth = 1.8 * cs2;
+            ctx.strokeStyle = '#241F4B';
+            ctx.stroke();
+        }
+    }
+}
+
+function drawHelp() {
+    if (currentState !== State.PLAYING || elapsed > 6 || data.totalPlays > 2) return;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '800 ' + Math.round(16 * carScale) + 'px Nunito, sans-serif';
+    ctx.fillStyle = 'rgba(255,253,247,' + Math.max(0, 1 - elapsed / 6) + ')';
+    ctx.fillText(holding ? 'DRIFTING INSIDE!' : 'HOLD = DRIFT INSIDE', cx, cy + trackOut + 34 * carScale);
+}
+
+function render() {
+    var ox = 0, oy = 0;
+    if (trauma > 0) {
+        var amp = trauma * trauma * 9;
+        ox = (Math.random() * 2 - 1) * amp;
+        oy = (Math.random() * 2 - 1) * amp;
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, ox * dpr, oy * dpr);
+
+    /* night carnival grounds */
+    ctx.drawImage(bgSpr, 0, 0, W, H);
+
+    /* world space: everything rotates around the track center under the car */
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-car.angle);
+    ctx.translate(-cx, -cy);
+
+    ctx.fillStyle = 'rgba(255,253,247,1)';
+    for (var i = 0; i < dots.length; i++) {
+        var d = dots[i];
+        ctx.globalAlpha = d.al;
+        ctx.fillRect((cx + Math.cos(d.a) * d.r) | 0, (cy + Math.sin(d.a) * d.r) | 0, 2, 2);
+    }
+    ctx.globalAlpha = 1;
+
+    ctx.drawImage(trackSpr, (cx - trackSide / 2) | 0, (cy - trackSide / 2) | 0, trackSide, trackSide);
+    drawSkid();
+    drawLights();
+    drawCrowd();
+    drawObstacles();
+    drawCoins();
+    drawParticlesWorld();
+
+    ctx.restore();
+
+    drawCar();
+    drawParticlesScreen();
+    drawHelp();
+
+    if (flash > 0) {
+        ctx.fillStyle = 'rgba(255,253,247,' + Math.min(0.5, flash) + ')';
+        ctx.fillRect(0, 0, W, H);
+    }
+}
+
+/* ================= Input ================= */
+function primaryDown() {
+    ensureAudio();
+    if (currentState === State.MENU) {
+        startRun();
+        holding = true;
+        sfxDrift(true);
+    } else if (currentState === State.PLAYING) {
+        if (!holding) sfxDrift(true);
+        holding = true;
+    }
+}
+function primaryUp() {
+    if (currentState === State.PLAYING && holding) {
+        holding = false;
+        sfxDrift(false);
+    }
+    holding = false;
+}
+
+canvas.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    primaryDown();
+});
+window.addEventListener('pointerup', function () { primaryUp(); });
+window.addEventListener('pointercancel', function () { primaryUp(); });
+/* block scrolling and double tap zoom on mobile */
+document.addEventListener('touchstart', function (e) { if (e.target === canvas) e.preventDefault(); }, { passive: false });
+document.addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
+
+window.addEventListener('keydown', function (e) {
+    if (e.code === 'Space' || e.code === 'ArrowDown' || e.code === 'KeyS') {
+        e.preventDefault();
+        if (e.repeat) return;
+        if (currentState === State.PAUSED) { resumeGame(); return; }
+        if (currentState === State.GAME_OVER && panelShown) { restart(); return; }
+        primaryDown();
+    } else if (e.code === 'KeyP' || e.code === 'Escape') {
+        if (currentState === State.PLAYING) pauseGame();
+        else if (currentState === State.PAUSED) resumeGame();
+    } else if (e.code === 'KeyM') {
+        toggleMute();
+    }
+});
+window.addEventListener('keyup', function (e) {
+    if (e.code === 'Space' || e.code === 'ArrowDown' || e.code === 'KeyS') primaryUp();
+});
+
+function pauseGame() {
+    if (currentState !== State.PLAYING) return;
+    currentState = State.PAUSED;
+    holding = false;
+    engineStop();
+    pauseOverlay.style.display = 'flex';
+}
+function resumeGame() {
+    if (currentState !== State.PAUSED) return;
+    currentState = State.PLAYING;
+    engineStart();
+    pauseOverlay.style.display = 'none';
+}
+pauseBtn.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    ensureAudio();
+    if (currentState === State.PLAYING) pauseGame();
+});
+pauseOverlay.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    resumeGame();
+});
+document.addEventListener('visibilitychange', function () {
+    if (document.hidden && currentState === State.PLAYING) pauseGame();
+});
+
+function toggleMute() {
+    data.muted = !data.muted;
+    saveData();
+    setMuteIcon();
+    if (engineGain && audioCtx) {
+        try { engineGain.gain.setTargetAtTime(data.muted ? 0.0001 : 0.045, audioCtx.currentTime, 0.05); } catch (e) {}
+    }
+}
+function setMuteIcon() {
+    muteBtn.textContent = data.muted ? '🔇' : '🔊';
+}
+muteBtn.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    ensureAudio();
+    toggleMute();
+});
+
+function restart() {
+    ensureAudio();
+    startRun(); /* instant: crashing to driving in well under a second */
+}
+playBtn.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    restart();
+});
+
+/* ================= Main loop ================= */
+var last = performance.now();
+function loop(now) {
+    var dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    update(dt);
+    render();
+    requestAnimationFrame(loop);
+}
+
+resize();
+setMuteIcon();
+showMenu();
+requestAnimationFrame(loop);
+
+/* ================= Headless test hooks (no gameplay effect) ================= */
+window.__driftTest = {
+    state: function () { return currentState; },
+    data: function () { return data; },
+    car: function () { return car; },
+    score: function () { return score; },
+    combo: function () { return combo; },
+    topCombo: function () { return topCombo; },
+    runCoins: function () { return runCoins; },
+    mult: function () { return comboMult(combo); },
+    magnetT: function () { return magnetT; },
+    slideT: function () { return slideT; },
+    coins: function () { return coins.filter(function (c) { return c.active; }); },
+    obstacles: function () { return obstacles.filter(function (o) { return o.active; }); },
+    geom: function () {
+        return { size: size, midR: midR, laneIn: laneIn, laneOut: laneOut, trackIn: trackIn, trackOut: trackOut,
+                 maxRVel: MAX_RVEL, maxSpeedPx: MAX_SPEED * carScale, carScale: carScale };
+    },
+    setAutoSpawn: function (v) { autoSpawn = !!v; },
+    setElapsed: function (v) { elapsed = v; },
+    clearCoins: function () { for (var i = 0; i < coins.length; i++) coins[i].active = false; },
+    clearObstacles: function () { for (var i = 0; i < obstacles.length; i++) obstacles[i].active = false; },
+    forceCoin: function (dAng, dRad) { return spawnCoin(car.angle + dAng, clamp(car.radius + (dRad || 0), trackIn, trackOut), 'coin', -1); },
+    forceStar: function (dAng) { return spawnCoin(car.angle + dAng, car.radius, 'star', -1); },
+    forceObstacle: function (kind, dAng, dRad) { return placeObstacle(kind, car.angle + dAng, clamp(car.radius + (dRad || 0), trackIn, trackOut)); },
+    spawnPattern: spawnPattern,
+    startRun: startRun,
+    setHolding: function (v) { holding = !!v; },
+    step: function (seconds) {
+        var left = seconds;
+        while (left > 0) {
+            var dt = Math.min(0.05, left);
+            update(dt);
+            left -= dt;
+        }
+    }
+};
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Beat Bounce | WoopKid</title>
+<meta name="description" content="Play Beat Bounce free online! A one tap rhythm dash: bounce your neon cube over spikes and gaps that land right on the music. Three levels, procedural chiptune beats, no ads, kid-safe.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="canonical" href="https://woopkid.com/games/beat-bounce/">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0A0F2E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    "name": "Beat Bounce",
+    "description": "A one tap rhythm dash. Bounce a neon cube over spikes, gaps and columns that land right on the beat of a procedural chiptune track. Three levels, free, no ads, kid-safe.",
+    "url": "https://woopkid.com/games/beat-bounce/",
+    "genre": "Casual",
+    "gamePlatform": ["Web Browser", "Mobile Web"],
+    "applicationCategory": "Game",
+    "operatingSystem": "Any",
+    "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+    },
+    "author": {
+        "@type": "Organization",
+        "name": "WoopKid",
+        "url": "https://woopkid.com"
+    }
+}
+</script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+    height: 100%;
+    overflow: hidden;
+    background: #0A0F2E;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+}
+#game { position: fixed; inset: 0; display: block; }
+
+.btn {
+    position: fixed;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    font-size: 22px;
+    font-weight: 800;
+    color: #FFFFFF;
+    z-index: 40;
+    cursor: pointer;
+    text-decoration: none;
+    line-height: 1;
+    backdrop-filter: blur(4px);
+}
+.btn:active { transform: scale(0.92); }
+#backBtn { top: 14px; left: 14px; font-size: 26px; }
+#muteBtn { top: 14px; right: 14px; }
+#pauseBtn { top: 14px; right: 72px; display: none; font-size: 15px; letter-spacing: 2px; }
+
+#hud {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(60vw, 300px);
+    text-align: center;
+    z-index: 20;
+    display: none;
+    pointer-events: none;
+}
+#pct {
+    font-weight: 800;
+    font-size: min(13vw, 54px);
+    color: #FFFFFF;
+    text-shadow: 0 0 18px rgba(255, 255, 255, 0.35), 0 3px 0 rgba(0, 0, 0, 0.4);
+    line-height: 1.05;
+}
+#pct.pop { animation: pctPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes pctPop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+}
+#barWrap {
+    position: relative;
+    height: 8px;
+    margin-top: 6px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.16);
+    overflow: visible;
+}
+#barFill {
+    height: 100%;
+    width: 0%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #2BE8FF, #FF3DD4);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+#barBest {
+    position: absolute;
+    top: -4px;
+    left: 0%;
+    width: 3px;
+    height: 16px;
+    border-radius: 2px;
+    background: #FFE84D;
+    box-shadow: 0 0 6px rgba(255, 232, 77, 0.8);
+}
+#attemptTag {
+    margin-top: 6px;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+#recordFlash {
+    position: fixed;
+    top: 34%;
+    width: 100%;
+    text-align: center;
+    font-weight: 800;
+    font-size: min(9vw, 44px);
+    color: #FFE84D;
+    text-shadow: 0 0 22px rgba(255, 232, 77, 0.55), 0 3px 0 rgba(0, 0, 0, 0.45);
+    z-index: 45;
+    pointer-events: none;
+    opacity: 0;
+}
+#recordFlash.show { animation: recordIn 1.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes recordIn {
+    0% { opacity: 0; transform: scale(0.4) rotate(-4deg); }
+    18% { opacity: 1; transform: scale(1.15) rotate(2deg); }
+    30% { transform: scale(1) rotate(0deg); }
+    78% { opacity: 1; }
+    100% { opacity: 0; transform: scale(1.05); }
+}
+#stickerToast {
+    position: fixed;
+    top: 46%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #FF8A3D, #FFB040);
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: 16px;
+    padding: 10px 18px;
+    border-radius: 16px;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
+    z-index: 46;
+    pointer-events: none;
+    opacity: 0;
+    white-space: nowrap;
+}
+#stickerToast.show { animation: toastIn 1.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes toastIn {
+    0% { opacity: 0; transform: translateX(-50%) scale(0.3); }
+    15% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+    25% { transform: translateX(-50%) scale(1); }
+    82% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(-50%) scale(0.96); }
+}
+
+#menu {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 70px 16px 24px;
+    overflow-y: auto;
+}
+#menu h1 {
+    font-weight: 800;
+    font-size: min(13vw, 68px);
+    color: #FFFFFF;
+    letter-spacing: 4px;
+    text-shadow: 0 0 26px rgba(43, 232, 255, 0.55), 0 4px 0 rgba(0, 0, 0, 0.4);
+    animation: titleBob 2.4s ease-in-out infinite;
+}
+@keyframes titleBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+}
+#menu .sub {
+    font-weight: 700;
+    font-size: min(4.2vw, 17px);
+    color: rgba(255, 255, 255, 0.65);
+}
+#totalChip {
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 1px;
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    padding: 6px 18px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+}
+.cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: min(90vw, 380px);
+}
+.card {
+    position: relative;
+    border-radius: 20px;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 2px solid var(--ac, #2BE8FF);
+    box-shadow: 0 0 16px -6px var(--ac, #2BE8FF);
+    cursor: pointer;
+    color: #FFFFFF;
+    text-align: left;
+}
+.card:active { transform: scale(0.97); }
+.card.locked {
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: none;
+    opacity: 0.6;
+    cursor: default;
+}
+.card .cname { font-weight: 800; font-size: 21px; letter-spacing: 1px; color: var(--ac, #FFF); }
+.card.locked .cname { color: rgba(255, 255, 255, 0.7); }
+.card .cmeta { font-weight: 700; font-size: 13px; color: rgba(255, 255, 255, 0.6); margin-top: 2px; }
+.card .cbar {
+    height: 7px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.14);
+    margin-top: 8px;
+    overflow: hidden;
+}
+.card .cbar i {
+    display: block;
+    height: 100%;
+    border-radius: 99px;
+    background: var(--ac, #2BE8FF);
+}
+.card .cbest {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    font-weight: 800;
+    font-size: 24px;
+    color: #FFFFFF;
+}
+#menu .hint { font-weight: 700; font-size: 13px; color: rgba(255, 255, 255, 0.4); margin-top: 6px; }
+
+#pauseOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 6, 18, 0.6);
+    z-index: 50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    color: #FFFFFF;
+    text-align: center;
+}
+#pauseOverlay h2 { font-weight: 800; font-size: 44px; letter-spacing: 3px; text-shadow: 0 0 20px rgba(255, 255, 255, 0.3); }
+#pauseOverlay p { font-weight: 700; font-size: 17px; opacity: 0.85; }
+
+#completePanel {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: min(88vw, 370px);
+    background: rgba(12, 16, 40, 0.96);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 28px;
+    padding: 24px 22px 22px;
+    box-shadow: 0 0 40px -8px rgba(43, 232, 255, 0.5), 0 24px 60px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    z-index: 60;
+    color: #FFFFFF;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -46%) scale(0.7);
+}
+#completePanel.show {
+    animation: panelIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    pointer-events: auto;
+}
+@keyframes panelIn {
+    from { opacity: 0; transform: translate(-50%, -44%) scale(0.7); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+#cpSticker {
+    display: none;
+    background: linear-gradient(135deg, #FF8A3D, #FFB040);
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: 16px;
+    padding: 10px 14px;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
+    animation: bannerPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes bannerPop {
+    0% { transform: scale(0) rotate(-8deg); }
+    60% { transform: scale(1.15) rotate(3deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+#completePanel h2 { font-weight: 800; font-size: 27px; letter-spacing: 1px; margin-bottom: 4px; }
+#cpPct {
+    font-weight: 800;
+    font-size: 66px;
+    line-height: 1.05;
+    color: #FFE84D;
+    text-shadow: 0 0 20px rgba(255, 232, 77, 0.5);
+}
+#cpTotal { font-weight: 700; font-size: 16px; color: rgba(255, 255, 255, 0.7); margin-top: 4px; }
+.panelBtn {
+    margin-top: 14px;
+    width: 100%;
+    min-height: 60px;
+    border: none;
+    border-radius: 18px;
+    background: #2BE8FF;
+    color: #06122E;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: 1px;
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+}
+.panelBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3); }
+.panelBtn.ghost {
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+    min-height: 50px;
+    font-size: 17px;
+    margin-top: 10px;
+}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<a id="backBtn" class="btn" href="../../index.html" aria-label="Back to WoopKid World">&#8592;</a>
+<button id="muteBtn" class="btn" aria-label="Toggle sound">&#128266;</button>
+<button id="pauseBtn" class="btn" aria-label="Pause">&#10074;&#10074;</button>
+
+<div id="hud">
+    <div id="pct">0%</div>
+    <div id="barWrap"><div id="barFill"></div><div id="barBest"></div></div>
+    <div id="attemptTag">ATTEMPT 1</div>
+</div>
+
+<div id="recordFlash">NEW RECORD: 0%</div>
+<div id="stickerToast">STICKER EARNED!</div>
+
+<div id="menu">
+    <h1>BEAT BOUNCE</h1>
+    <p class="sub">jump on the beat, ride the music to 100%</p>
+    <div id="totalChip">TOTAL 0 / 300</div>
+    <div class="cards">
+        <div class="card" id="card0"></div>
+        <div class="card" id="card1"></div>
+        <div class="card" id="card2"></div>
+    </div>
+    <p class="hint">tap or press SPACE to jump. one touch is all you need</p>
+</div>
+
+<div id="pauseOverlay">
+    <h2>PAUSED</h2>
+    <p>tap anywhere to drop back on the beat</p>
+</div>
+
+<div id="completePanel">
+    <div id="cpSticker"></div>
+    <h2 id="cpTitle">LEVEL COMPLETE!</h2>
+    <div id="cpPct">100%</div>
+    <div id="cpTotal">TOTAL 100 / 300</div>
+    <button id="cpNext" class="panelBtn">NEXT LEVEL</button>
+    <button id="cpMenu" class="panelBtn ghost">LEVEL SELECT</button>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+/* ================= DOM ================= */
+var canvas = document.getElementById('game');
+var ctx = canvas.getContext('2d', { alpha: false });
+var hudEl = document.getElementById('hud');
+var pctEl = document.getElementById('pct');
+var barFillEl = document.getElementById('barFill');
+var barBestEl = document.getElementById('barBest');
+var attemptTagEl = document.getElementById('attemptTag');
+var recordFlashEl = document.getElementById('recordFlash');
+var stickerToastEl = document.getElementById('stickerToast');
+var menuEl = document.getElementById('menu');
+var totalChipEl = document.getElementById('totalChip');
+var cardEls = [document.getElementById('card0'), document.getElementById('card1'), document.getElementById('card2')];
+var pauseBtn = document.getElementById('pauseBtn');
+var muteBtn = document.getElementById('muteBtn');
+var pauseOverlay = document.getElementById('pauseOverlay');
+var completePanel = document.getElementById('completePanel');
+var cpStickerEl = document.getElementById('cpSticker');
+var cpTitleEl = document.getElementById('cpTitle');
+var cpPctEl = document.getElementById('cpPct');
+var cpTotalEl = document.getElementById('cpTotal');
+var cpNextBtn = document.getElementById('cpNext');
+var cpMenuBtn = document.getElementById('cpMenu');
+
+/* ================= Storage (per game) ================= */
+var STORAGE_KEY = 'woopkid_beat-bounce';
+function freshData() {
+    return { best: [0, 0, 0], attempts: [0, 0, 0], muted: false, totalPlays: 0, lastPlayed: null };
+}
+function loadData() {
+    var base = freshData();
+    try {
+        var d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (d) {
+            var i;
+            if (Object.prototype.toString.call(d.best) === '[object Array]') {
+                for (i = 0; i < 3; i++) base.best[i] = Math.max(0, Math.min(100, d.best[i] | 0));
+            }
+            if (Object.prototype.toString.call(d.attempts) === '[object Array]') {
+                for (i = 0; i < 3; i++) base.attempts[i] = Math.max(0, d.attempts[i] | 0);
+            }
+            base.muted = !!d.muted;
+            base.totalPlays = d.totalPlays | 0;
+            base.lastPlayed = d.lastPlayed || null;
+        }
+    } catch (e) { /* corrupted storage, start fresh */ }
+    return base;
+}
+function saveData() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+        /* localStorage full or unavailable, fail silently */
+    }
+}
+var data = loadData();
+
+/* ================= Shared profile (verbatim contract module) ================= */
+const WoopProfile = {
+  KEY: 'woopkid_profile',
+  load() {
+    try { return JSON.parse(localStorage.getItem(this.KEY)) || this._blank(); }
+    catch { return this._blank(); }
+  },
+  _blank() {
+    return { totalPlays: 0, games: {}, stickers: [], streak: { current: 0, best: 0, lastDay: null } };
+  },
+  save(p) { try { localStorage.setItem(this.KEY, JSON.stringify(p)); } catch {} },
+  // Call once per finished run. slug: game slug. score: the run's primary number.
+  // thresholds: {bronze, silver, gold} score values for stickers.
+  reportRun(slug, score, thresholds) {
+    const p = this.load();
+    p.totalPlays++;
+    const g = p.games[slug] || (p.games[slug] = { best: 0, plays: 0, lastPlayed: null });
+    g.plays++;
+    g.lastPlayed = new Date().toISOString().slice(0, 10);
+    if (score > g.best) g.best = score;
+    const earned = [];
+    for (const tier of ['bronze', 'silver', 'gold']) {
+      const id = slug + '-' + tier;
+      if (score >= thresholds[tier] && !p.stickers.includes(id)) { p.stickers.push(id); earned.push(tier); }
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    if (p.streak.lastDay !== today) {
+      const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      p.streak.current = (p.streak.lastDay === y) ? p.streak.current + 1 : 1;
+      if (p.streak.current > p.streak.best) p.streak.best = p.streak.current;
+      p.streak.lastDay = today;
+    }
+    this.save(p);
+    return earned; // array of tier names newly earned this run, show celebration per tier
+  }
+};
+var THRESHOLDS = { bronze: 100, silver: 200, gold: 300 };
+
+/* ================= Helpers ================= */
+function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+function rand(a, b) { return a + Math.random() * (b - a); }
+function rr(c, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+}
+
+/* ================= Audio: shared context, procedural only ================= */
+var audioCtx = null;
+var noiseBuf = null;
+var activeVoices = 0;
+var MAX_VOICES = 5;
+
+function ensureAudio() {
+    if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+function canPlaySfx() { return !!audioCtx && !data.muted && activeVoices < MAX_VOICES; }
+function voiceDone() { activeVoices = Math.max(0, activeVoices - 1); }
+function pitchVar() { return rand(0.95, 1.05); } /* plus or minus 5 percent */
+function getNoise() {
+    if (!noiseBuf) {
+        var len = Math.floor(audioCtx.sampleRate * 0.3);
+        noiseBuf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+        var ch = noiseBuf.getChannelData(0);
+        for (var i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuf;
+}
+
+/* Jump: quick square blip sliding up */
+function sfxJump() {
+    if (!canPlaySfx()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'square';
+    o.frequency.setValueAtTime(340 * p, t);
+    o.frequency.exponentialRampToValueAtTime(620 * p, t + 0.07);
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 2400;
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.09, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+    o.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.12);
+}
+
+/* Jump pad: rising zap */
+function sfxPad() {
+    if (!canPlaySfx()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(220 * p, t);
+    o.frequency.exponentialRampToValueAtTime(1100 * p, t + 0.16);
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 2600;
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.12, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    o.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.22);
+}
+
+/* Death: soft descending womp, never harsh */
+function sfxDeath() {
+    if (!canPlaySfx()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(330 * p, t);
+    o.frequency.exponentialRampToValueAtTime(90 * p, t + 0.4);
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(1200, t);
+    lp.frequency.linearRampToValueAtTime(350, t + 0.4);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+    o.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.47);
+}
+
+/* Fanfare for level complete, records and stickers */
+function sfxFanfare() {
+    if (!canPlaySfx()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(523 * p, t);
+    o.frequency.setValueAtTime(659 * p, t + 0.11);
+    o.frequency.setValueAtTime(784 * p, t + 0.22);
+    o.frequency.setValueAtTime(1047 * p, t + 0.33);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+    g.gain.setValueAtTime(0.16, t + 0.36);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.72);
+}
+
+/* ================= Music: procedural chiptune loop, beat locked ================= */
+/* Driving four on the floor kick, offbeat hats, one square bassline per level. */
+var music = { on: false, timer: null, next: 0, stepDur: 0, startT: 0, level: 0 };
+
+function musicStart(li, offset) {
+    musicStop();
+    if (!audioCtx) return;
+    music.level = li;
+    music.stepDur = 30 / LEVELS[li].bpm; /* one step = half a beat */
+    music.startT = audioCtx.currentTime + 0.08 - offset;
+    music.next = Math.max(0, Math.ceil((offset - 0.04) / music.stepDur));
+    music.on = true;
+    music.timer = setInterval(musicTick, 25);
+    musicTick();
+}
+function musicStop() {
+    music.on = false;
+    if (music.timer) { clearInterval(music.timer); music.timer = null; }
+}
+function musicTick() {
+    if (!music.on || !audioCtx) return;
+    var horizon = audioCtx.currentTime + 0.14;
+    var guard = 0;
+    while (music.startT + music.next * music.stepDur < horizon && guard < 64) {
+        if (!data.muted) scheduleStep(music.next, music.startT + music.next * music.stepDur);
+        music.next++;
+        guard++;
+    }
+}
+function scheduleStep(step, t) {
+    if (t < audioCtx.currentTime - 0.02) return;
+    if (step % 2 === 0) playKick(t);
+    else playHat(t);
+    var f = LEVELS[music.level].bass[step % 8];
+    if (f > 0) playBass(f, t, music.stepDur * 0.85);
+}
+function playKick(t) {
+    var o = audioCtx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(150, t);
+    o.frequency.exponentialRampToValueAtTime(46, t + 0.11);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.4, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t); o.stop(t + 0.14);
+}
+function playHat(t) {
+    var src = audioCtx.createBufferSource();
+    src.buffer = getNoise();
+    var hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 6500;
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.07, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+    src.connect(hp); hp.connect(g); g.connect(audioCtx.destination);
+    src.start(t); src.stop(t + 0.06);
+}
+function playBass(f, t, dur) {
+    var o = audioCtx.createOscillator();
+    o.type = 'square';
+    o.frequency.value = f;
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 750;
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.1, t + 0.008);
+    g.gain.setValueAtTime(0.1, t + dur * 0.6);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+}
+
+/* ================= Constants ================= */
+var H = 720;                 /* logical world height */
+var GROUND_Y = 560;
+var CUBE_S = 44;             /* cube size */
+var HCUBE = 22;
+var HALF_PI = Math.PI / 2;
+var GRAV = 3400;
+var JUMP_V = 731;            /* airtime 0.43s, height 78 */
+var JUMP_T = 2 * JUMP_V / GRAV;
+var PAD_V = 1290;            /* pad bounce: airtime 0.76s, height 245 */
+var PAD_T = 2 * PAD_V / GRAV;
+var BEAT_DIST = 220;         /* world pixels per beat, hazards sit on beats */
+var SPIKE_HW = 23, SPIKE_H = 38;
+var COL_W = 46, COL_H = 48;
+var BLOCK_W = 46, BLOCK_H = 110;
+var GAP_HW = 60;
+var PAD_HW = 28;
+var SIDE_TOL = 14;           /* land if within this of a solid top at overlap entry */
+var OVERL = 15;              /* forgiving horizontal hitbox extension */
+
+var State = {
+    MENU: 'menu',
+    PLAYING: 'playing',
+    PAUSED: 'paused',
+    DYING: 'dying',
+    COMPLETE: 'complete'
+};
+var currentState = State.MENU;
+
+/* ================= Levels ================= */
+/* One character per beat. Hazards land ON beats so clean play plays the drum part.
+   .  empty beat
+   s  spike (jump over)
+   d  double spike (one wider jump)
+   g  gap in the floor (jump over)
+   c  column (jump over, or land on top)
+   p  jump pad (auto bounce, no tap needed)
+   b  high block, always placed one beat after its pad          */
+var LEVELS = [
+    {
+        name: 'NEON GROOVE', bpm: 124,
+        bg: '#0A0F2E', ground: '#131A45',
+        a: [43, 232, 255], b: [255, 61, 212],
+        bass: [130.81, 130.81, 155.56, 130.81, 174.61, 174.61, 196.00, 233.08],
+        pattern:
+            '........' +
+            's...s...s...s...' +
+            's.s.....s.s.....' +
+            'c...c...' +
+            'g...s...g...s...' +
+            'd...d...s.s.s...' +
+            'pb......pb......' +
+            's.g.....d...c...' +
+            's...........'
+    },
+    {
+        name: 'SUNSET CIRCUIT', bpm: 128,
+        bg: '#190A30', ground: '#26113F',
+        a: [255, 154, 43], b: [255, 232, 77],
+        bass: [110.00, 110.00, 110.00, 98.00, 110.00, 130.81, 110.00, 98.00],
+        pattern:
+            '........' +
+            's...s...s...s...' +
+            's...s.s.s...s.s.' +
+            'g...s...g.s...s.' +
+            'c.s...c.s...d...' +
+            'pb..s...pb..s...' +
+            's.s.s...g...d...' +
+            'g.g.....g.g.....' +
+            'c...s.s.c...s.s.' +
+            'pb..d...s...c...' +
+            's.g.s...d.s...s.' +
+            's.s.s.s.g...g...' +
+            's.......'
+    },
+    {
+        name: 'VENOM VOLTAGE', bpm: 132,
+        bg: '#070A0D', ground: '#0F141A',
+        a: [77, 255, 136], b: [255, 95, 162],
+        bass: [82.41, 82.41, 98.00, 82.41, 123.47, 110.00, 98.00, 73.42],
+        pattern:
+            '........' +
+            's...s.s.d...s.s.' +
+            'g.s...g.s...d...' +
+            'c.s.s...c.s.s...' +
+            'pb..s.s.pb..s.s.' +
+            's.s.s.s.s.s.d...' +
+            'g.g.s...g.g.s...' +
+            'd.s...d.s...s.s.' +
+            'c.s.c.s.c.s.d...' +
+            'pb..d.s.pb..d.s.' +
+            's.g.d...s.g.d...' +
+            'g.s.g.s.g.s.d...' +
+            'd...s.s.s.s.g...' +
+            'c.d...s.g...s.s.' +
+            'pb..s.g.s...d.s.' +
+            's.s.g.s.d...s.g.' +
+            'd...s...........'
+    }
+];
+(function precompute() {
+    for (var i = 0; i < LEVELS.length; i++) {
+        var L = LEVELS[i];
+        L.beatDur = 60 / L.bpm;
+        L.speed = BEAT_DIST / L.beatDur;
+        L.beats = L.pattern.length;
+        L.finishX = L.beats * BEAT_DIST;
+    }
+})();
+
+/* ================= Canvas sizing + prerendered glow sprites ================= */
+var S = 1;    /* device pixels per logical unit */
+var VW = 400; /* logical view width */
+var glowASpr = null, glowBSpr = null, floorGlowSpr = null;
+var curPalIx = 0;
+
+function makeCanvas(w, h) {
+    var c = document.createElement('canvas');
+    c.width = Math.max(1, Math.ceil(w));
+    c.height = Math.max(1, Math.ceil(h));
+    return c;
+}
+function rgba(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+
+function buildSprites(li) {
+    curPalIx = li;
+    var L = LEVELS[li];
+    var ts = Math.max(0.5, S);
+
+    glowASpr = makeCanvas(96 * ts, 96 * ts);
+    var ga = glowASpr.getContext('2d');
+    ga.scale(ts, ts);
+    var gr = ga.createRadialGradient(48, 48, 4, 48, 48, 48);
+    gr.addColorStop(0, rgba(L.a, 0.6));
+    gr.addColorStop(0.5, rgba(L.a, 0.18));
+    gr.addColorStop(1, rgba(L.a, 0));
+    ga.fillStyle = gr;
+    ga.fillRect(0, 0, 96, 96);
+
+    glowBSpr = makeCanvas(96 * ts, 96 * ts);
+    var gb = glowBSpr.getContext('2d');
+    gb.scale(ts, ts);
+    var gr2 = gb.createRadialGradient(48, 48, 4, 48, 48, 48);
+    gr2.addColorStop(0, rgba(L.b, 0.6));
+    gr2.addColorStop(0.5, rgba(L.b, 0.18));
+    gr2.addColorStop(1, rgba(L.b, 0));
+    gb.fillStyle = gr2;
+    gb.fillRect(0, 0, 96, 96);
+
+    floorGlowSpr = makeCanvas(8, 64 * ts);
+    var fg = floorGlowSpr.getContext('2d');
+    var lg = fg.createLinearGradient(0, 0, 0, 64 * ts);
+    lg.addColorStop(0, rgba(L.a, 0));
+    lg.addColorStop(1, rgba(L.a, 0.34));
+    fg.fillStyle = lg;
+    fg.fillRect(0, 0, 8, 64 * ts);
+}
+
+function resize() {
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    S = canvas.height / H;
+    VW = canvas.width / S;
+    buildSprites(curPalIx);
+}
+window.addEventListener('resize', resize);
+
+/* ================= World state ================= */
+var time = 0;
+var songTime = 0;
+var levelIx = 0;
+var attemptNum = 1;
+var deathT = 0;
+var trauma = 0;
+var lastPctShown = -1;
+var earnedTiers = [];
+var trailAcc = 0;
+
+var cube = { x: 0, y: GROUND_Y, vy: 0, rot: 0, rotV: 0, squash: 0, grounded: true, coyote: 0 };
+var jumpBuffer = 0;
+
+/* Hazard arrays, rebuilt per level (bounded by design, no per-frame allocation) */
+var spikes = [];  /* {x} */
+var solids = [];  /* {x, hw, h, entered, safe} columns and blocks */
+var gaps = [];    /* {x0, x1} */
+var pads = [];    /* {x, used} */
+var jumpTimes = []; /* seconds: ideal takeoff time per tap hazard, also drives TAP hints */
+
+function buildLevel(li) {
+    spikes.length = 0;
+    solids.length = 0;
+    gaps.length = 0;
+    pads.length = 0;
+    jumpTimes.length = 0;
+    var L = LEVELS[li];
+    for (var k = 0; k < L.pattern.length; k++) {
+        var ch = L.pattern.charAt(k);
+        var x = k * BEAT_DIST;
+        var t = k * L.beatDur;
+        if (ch === 's') {
+            spikes.push({ x: x });
+            jumpTimes.push(t - JUMP_T / 2);
+        } else if (ch === 'd') {
+            spikes.push({ x: x - SPIKE_HW });
+            spikes.push({ x: x + SPIKE_HW });
+            jumpTimes.push(t - JUMP_T / 2);
+        } else if (ch === 'g') {
+            gaps.push({ x0: x - GAP_HW, x1: x + GAP_HW });
+            jumpTimes.push(t - JUMP_T / 2);
+        } else if (ch === 'c') {
+            solids.push({ x: x, hw: COL_W / 2, h: COL_H, entered: false, safe: false });
+            jumpTimes.push(t - JUMP_T / 2);
+        } else if (ch === 'b') {
+            solids.push({ x: x, hw: BLOCK_W / 2, h: BLOCK_H, entered: false, safe: false });
+        } else if (ch === 'p') {
+            pads.push({ x: x, used: false });
+        }
+    }
+    jumpTimes.sort(function (a, b2) { return a - b2; });
+}
+
+/* Background geometry: two parallax layers that pulse on the beat */
+var bgShapes = [];
+(function buildBg() {
+    for (var i = 0; i < 18; i++) {
+        bgShapes.push({
+            px: rand(0, 2400),
+            y: rand(40, 460),
+            s: rand(18, 64),
+            kind: i % 3,
+            par: i < 9 ? 0.14 : 0.32,
+            rs: rand(-0.5, 0.5),
+            ph: rand(0, Math.PI * 2),
+            col: i % 2
+        });
+    }
+})();
+
+/* Speed lines (screen space) */
+var speedLines = [];
+(function buildLines() {
+    for (var i = 0; i < 10; i++) {
+        speedLines.push({ x: rand(0, 1600), y: rand(50, 500), len: rand(70, 170) });
+    }
+})();
+
+/* Particle pool: 1 trail, 2 shard, 3 confetti, 4 spark, 5 dust */
+var parts = [];
+(function buildParts() {
+    for (var i = 0; i < 160; i++) {
+        parts.push({ active: false, type: 0, x: 0, y: 0, vx: 0, vy: 0, rot: 0, vr: 0, life: 0, ttl: 1, size: 4, ca: true });
+    }
+})();
+function spawnPart(type, x, y, vx, vy, ttl, size, ca) {
+    for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        if (!p.active) {
+            p.active = true;
+            p.type = type;
+            p.x = x; p.y = y; p.vx = vx; p.vy = vy;
+            p.rot = rand(0, Math.PI * 2);
+            p.vr = rand(-8, 8);
+            p.life = 0; p.ttl = ttl; p.size = size;
+            p.ca = ca;
+            return;
+        }
+    }
+}
+function shatterCube() {
+    for (var i = 0; i < 16; i++) {
+        spawnPart(2, cube.x + rand(-14, 14), cube.y - HCUBE + rand(-14, 14),
+            rand(-160, 420), rand(-540, 60), rand(0.5, 0.9), rand(6, 13), true);
+    }
+}
+function burstConfetti() {
+    for (var i = 0; i < 70; i++) {
+        spawnPart(3, cube.x + rand(-VW * 0.4, VW * 0.4), rand(-60, 40),
+            rand(-70, 70), rand(60, 200), rand(1.6, 2.6), rand(5, 9), i % 2 === 0);
+    }
+}
+function padSparks(x) {
+    for (var i = 0; i < 10; i++) {
+        spawnPart(4, x + rand(-20, 20), GROUND_Y - rand(0, 8), rand(-60, 60), rand(-380, -140), rand(0.3, 0.55), rand(3, 6), true);
+    }
+}
+function landDust() {
+    for (var i = 0; i < 3; i++) {
+        spawnPart(5, cube.x + rand(-16, 16), cube.y - 2, rand(-90, 30), rand(-70, -20), rand(0.25, 0.4), rand(3, 6), false);
+    }
+}
+function updateParticles(dt) {
+    for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        if (!p.active) continue;
+        p.life += dt;
+        if (p.life >= p.ttl) { p.active = false; continue; }
+        if (p.type === 2) {
+            p.vy += 1500 * dt;
+        } else if (p.type === 3) {
+            p.vy = Math.min(240, p.vy + 200 * dt);
+            p.x += Math.sin(p.life * 5 + p.rot) * 26 * dt;
+        } else if (p.type === 4) {
+            p.vy += 700 * dt;
+        } else if (p.type === 5) {
+            p.vx *= (1 - Math.min(1, 3 * dt));
+        }
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.rot += p.vr * dt;
+    }
+}
+
+/* ================= Progress and scoring ================= */
+function progressPct() {
+    return clamp(Math.floor(cube.x / LEVELS[levelIx].finishX * 100), 0, 100);
+}
+function totalScore() {
+    return data.best[0] + data.best[1] + data.best[2];
+}
+function isUnlocked(li) {
+    if (li === 0) return true;
+    return data.best[li - 1] >= 100;
+}
+
+/* ================= Run control ================= */
+function resetAttempt() {
+    var i;
+    for (i = 0; i < solids.length; i++) { solids[i].entered = false; solids[i].safe = false; }
+    for (i = 0; i < pads.length; i++) pads[i].used = false;
+    for (i = 0; i < parts.length; i++) parts[i].active = false;
+    songTime = 0;
+    cube.x = 0;
+    cube.y = GROUND_Y;
+    cube.vy = 0;
+    cube.rot = 0;
+    cube.rotV = 0;
+    cube.squash = 0;
+    cube.grounded = true;
+    cube.coyote = 0;
+    jumpBuffer = 0;
+    trailAcc = 0;
+    trauma = 0;
+    lastPctShown = -1;
+    attemptNum = data.attempts[levelIx] + 1;
+    attemptTagEl.textContent = 'ATTEMPT ' + attemptNum;
+    barBestEl.style.left = data.best[levelIx] + '%';
+    updateHud();
+}
+function updateHud() {
+    var pct = progressPct();
+    if (pct !== lastPctShown) {
+        lastPctShown = pct;
+        pctEl.textContent = pct + '%';
+        barFillEl.style.width = pct + '%';
+        if (pct > 0 && pct % 25 === 0) {
+            pctEl.classList.remove('pop');
+            void pctEl.offsetWidth;
+            pctEl.classList.add('pop');
+        }
+    }
+}
+
+function startLevel(li) {
+    levelIx = li;
+    buildLevel(li);
+    buildSprites(li);
+    menuEl.style.display = 'none';
+    completePanel.classList.remove('show');
+    hudEl.style.display = 'block';
+    pauseBtn.style.display = 'flex';
+    var grad = 'linear-gradient(90deg, ' + rgba(LEVELS[li].a, 1) + ', ' + rgba(LEVELS[li].b, 1) + ')';
+    barFillEl.style.background = grad;
+    resetAttempt();
+    currentState = State.PLAYING;
+    musicStart(li, 0);
+}
+
+function restartAttempt() {
+    resetAttempt();
+    currentState = State.PLAYING;
+    musicStart(levelIx, 0);
+}
+
+function die() {
+    if (currentState !== State.PLAYING) return;
+    currentState = State.DYING;
+    deathT = 0;
+    trauma = 0.45;
+    musicStop();
+    shatterCube();
+    sfxDeath();
+
+    var pct = progressPct();
+    data.attempts[levelIx]++;
+    var isRecord = pct > data.best[levelIx];
+    if (isRecord) {
+        data.best[levelIx] = pct;
+        recordFlashEl.textContent = 'NEW RECORD: ' + pct + '%';
+        recordFlashEl.classList.remove('show');
+        void recordFlashEl.offsetWidth;
+        recordFlashEl.classList.add('show');
+        sfxFanfare();
+    }
+    data.totalPlays++;
+    data.lastPlayed = new Date().toISOString();
+    saveData();
+    earnedTiers = WoopProfile.reportRun('beat-bounce', totalScore(), THRESHOLDS);
+    if (earnedTiers.length > 0) showStickerToast(earnedTiers);
+}
+
+var TIER_LABELS = { bronze: '🥉 BRONZE', silver: '🥈 SILVER', gold: '🥇 GOLD' };
+function showStickerToast(tiers) {
+    var labels = [];
+    for (var i = 0; i < tiers.length; i++) labels.push(TIER_LABELS[tiers[i]]);
+    stickerToastEl.textContent = 'STICKER EARNED! ' + labels.join(' + ');
+    stickerToastEl.classList.remove('show');
+    void stickerToastEl.offsetWidth;
+    stickerToastEl.classList.add('show');
+}
+
+function completeLevel() {
+    if (currentState !== State.PLAYING) return;
+    currentState = State.COMPLETE;
+    musicStop();
+    sfxFanfare();
+    burstConfetti();
+    trauma = 0.25;
+
+    data.best[levelIx] = 100;
+    data.totalPlays++;
+    data.lastPlayed = new Date().toISOString();
+    saveData();
+    earnedTiers = WoopProfile.reportRun('beat-bounce', totalScore(), THRESHOLDS);
+
+    lastPctShown = -1;
+    updateHud();
+    pauseBtn.style.display = 'none';
+    cpTitleEl.textContent = levelIx === 2 ? 'ALL LEVELS CLEARED!' : 'LEVEL COMPLETE!';
+    cpPctEl.textContent = '100%';
+    cpTotalEl.textContent = 'TOTAL ' + totalScore() + ' / 300';
+    if (earnedTiers.length > 0) {
+        var labels = [];
+        for (var i = 0; i < earnedTiers.length; i++) labels.push(TIER_LABELS[earnedTiers[i]]);
+        cpStickerEl.textContent = 'STICKER EARNED! ' + labels.join(' + ');
+        cpStickerEl.style.display = 'block';
+    } else {
+        cpStickerEl.style.display = 'none';
+    }
+    cpNextBtn.textContent = levelIx < 2 ? 'NEXT LEVEL' : 'PLAY AGAIN';
+    completePanel.classList.add('show');
+}
+
+function showMenu() {
+    currentState = State.MENU;
+    musicStop();
+    hudEl.style.display = 'none';
+    pauseBtn.style.display = 'none';
+    completePanel.classList.remove('show');
+    menuEl.style.display = 'flex';
+    /* menu shows the palette of the furthest unlocked level */
+    var mi = 0;
+    if (isUnlocked(2)) mi = 2; else if (isUnlocked(1)) mi = 1;
+    buildSprites(mi);
+    updateMenuUI();
+}
+
+function updateMenuUI() {
+    totalChipEl.textContent = 'TOTAL ' + totalScore() + ' / 300';
+    for (var i = 0; i < 3; i++) {
+        var L = LEVELS[i];
+        var el = cardEls[i];
+        var ac = rgba(L.a, 1);
+        el.style.setProperty('--ac', ac);
+        if (isUnlocked(i)) {
+            el.className = 'card';
+            el.innerHTML =
+                '<div class="cname">' + (i + 1) + '. ' + L.name + '</div>' +
+                '<div class="cmeta">' + L.bpm + ' BPM &middot; ' + Math.round(L.beats * L.beatDur) + 's &middot; ' +
+                (data.attempts[i] > 0 ? data.attempts[i] + ' attempts' : 'new') + '</div>' +
+                '<div class="cbar"><i style="width:' + data.best[i] + '%"></i></div>' +
+                '<div class="cbest">' + (data.best[i] >= 100 ? '💯' : data.best[i] + '%') + '</div>';
+        } else {
+            el.className = 'card locked';
+            el.innerHTML =
+                '<div class="cname">🔒 ' + (i + 1) + '. ' + L.name + '</div>' +
+                '<div class="cmeta">reach 100% on level ' + i + ' to unlock</div>';
+        }
+    }
+}
+
+/* ================= Gameplay update ================= */
+function doJump(v, rotDur) {
+    cube.vy = -v;
+    cube.grounded = false;
+    cube.coyote = 0;
+    cube.rotV = HALF_PI / rotDur;
+    cube.squash = -0.45;
+    jumpBuffer = 0;
+}
+function press() {
+    if (currentState === State.PLAYING) {
+        if (cube.grounded || cube.coyote > 0) {
+            doJump(JUMP_V, JUMP_T);
+            sfxJump();
+        } else {
+            jumpBuffer = 0.1;
+        }
+    }
+}
+function landOn(fl) {
+    cube.y = fl;
+    cube.vy = 0;
+    cube.grounded = true;
+    cube.coyote = 0;
+    cube.rot = Math.round(cube.rot / HALF_PI) * HALF_PI;
+    cube.rotV = 0;
+    cube.squash = 1;
+    landDust();
+}
+function floorAt(cx) {
+    var f = GROUND_Y;
+    var i;
+    for (i = 0; i < gaps.length; i++) {
+        if (cx > gaps[i].x0 && cx < gaps[i].x1) { f = 1e9; break; }
+    }
+    for (i = 0; i < solids.length; i++) {
+        var s = solids[i];
+        if (s.safe && cx > s.x - s.hw - OVERL && cx < s.x + s.hw + OVERL) {
+            var top = GROUND_Y - s.h;
+            if (top < f) f = top;
+        }
+    }
+    return f;
+}
+
+function updatePlaying(dt) {
+    var L = LEVELS[levelIx];
+
+    /* clock: dt driven, softly locked to the audio clock so hazards stay on the kick */
+    songTime += dt;
+    if (music.on && audioCtx) {
+        var at = audioCtx.currentTime - music.startT;
+        var diff = at - songTime;
+        if (diff > -0.25 && diff < 0.25) songTime += diff * Math.min(1, 3 * dt);
+    }
+    cube.x = songTime * L.speed;
+
+    /* vertical physics */
+    if (!cube.grounded) {
+        cube.vy = Math.min(1600, cube.vy + GRAV * dt);
+        cube.y += cube.vy * dt;
+        cube.rot += cube.rotV * dt;
+        if (cube.coyote > 0) cube.coyote -= dt;
+    }
+    if (jumpBuffer > 0) jumpBuffer -= dt;
+    if (cube.squash !== 0) cube.squash *= Math.max(0, 1 - 10 * dt);
+
+    /* solid entry checks: decide side hit vs safe pass exactly once per solid */
+    var i, s;
+    for (i = 0; i < solids.length; i++) {
+        s = solids[i];
+        if (s.entered) continue;
+        if (cube.x > s.x - s.hw - OVERL && cube.x < s.x + s.hw + OVERL) {
+            s.entered = true;
+            if (cube.y > GROUND_Y - s.h + SIDE_TOL) { die(); return; }
+            s.safe = true;
+        }
+    }
+
+    /* support and landing */
+    var fl = floorAt(cube.x);
+    if (cube.grounded) {
+        if (fl > cube.y + 1) {
+            /* walked off an edge or onto a gap */
+            cube.grounded = false;
+            cube.vy = 0;
+            cube.coyote = 0.07;
+        } else {
+            cube.y = fl;
+        }
+    } else if (cube.vy >= 0 && cube.y >= fl && fl < 9e8) {
+        landOn(fl);
+    }
+    if (cube.grounded && jumpBuffer > 0) {
+        doJump(JUMP_V, JUMP_T);
+        sfxJump();
+    }
+
+    /* spikes: forgiving triangle hitbox */
+    for (i = 0; i < spikes.length; i++) {
+        var sp = spikes[i];
+        var dx = cube.x - sp.x;
+        if (dx > -31 && dx < 31 && cube.y > GROUND_Y - 30) { die(); return; }
+    }
+
+    /* jump pads: auto bounce */
+    for (i = 0; i < pads.length; i++) {
+        var pd = pads[i];
+        if (!pd.used && Math.abs(cube.x - pd.x) < PAD_HW + 6 && cube.y > GROUND_Y - 22 && cube.vy >= -60) {
+            pd.used = true;
+            cube.y = GROUND_Y;
+            doJump(PAD_V, PAD_T / 2); /* two quarter turns over the big bounce */
+            padSparks(pd.x);
+            sfxPad();
+            trauma = Math.max(trauma, 0.15);
+        }
+    }
+
+    /* fell into a gap */
+    if (cube.y > GROUND_Y + 50) { die(); return; }
+
+    /* particle trail */
+    trailAcc += dt;
+    while (trailAcc > 0.03) {
+        trailAcc -= 0.03;
+        spawnPart(1, cube.x - 16 + rand(-4, 4), cube.y - rand(4, 16), -60, rand(-20, 20), 0.32, rand(5, 8), false);
+    }
+
+    updateParticles(dt);
+    updateSpeedLines(dt, L.speed);
+    updateHud();
+
+    if (cube.x >= L.finishX) { completeLevel(); return; }
+}
+
+function updateDying(dt) {
+    deathT += dt;
+    updateParticles(dt);
+    if (deathT >= 0.5) restartAttempt(); /* instant restart, under 500ms */
+}
+
+function updateSpeedLines(dt, sp) {
+    for (var i = 0; i < speedLines.length; i++) {
+        var l = speedLines[i];
+        l.x -= sp * 1.8 * dt;
+        if (l.x + l.len < 0) {
+            l.x = VW + rand(0, 260);
+            l.y = rand(50, GROUND_Y - 60);
+            l.len = rand(70, 170);
+        }
+    }
+}
+
+function update(dt) {
+    time += dt;
+    if (trauma > 0) trauma = Math.max(0, trauma - 2.4 * dt);
+    switch (currentState) {
+        case State.MENU: updateParticles(dt); break;
+        case State.PLAYING: updatePlaying(dt); break;
+        case State.PAUSED: break;
+        case State.DYING: updateDying(dt); break;
+        case State.COMPLETE: updateParticles(dt); break;
+    }
+}
+
+/* ================= Render ================= */
+function beatEnv() {
+    var L = LEVELS[curPalIx];
+    var tt = (currentState === State.PLAYING || currentState === State.DYING) ? songTime : time;
+    var frac = (tt / L.beatDur) % 1;
+    if (frac < 0) frac += 1;
+    return Math.exp(-5 * frac);
+}
+
+function drawBgShapes(camX, env) {
+    var L = LEVELS[curPalIx];
+    var WR = VW + 340;
+    ctx.lineWidth = 2.5;
+    for (var i = 0; i < bgShapes.length; i++) {
+        var sh = bgShapes[i];
+        var sx = (((sh.px - camX * sh.par) % WR) + WR) % WR - 170;
+        if (sx < -140 || sx > VW + 140) continue;
+        var col = sh.col === 0 ? L.a : L.b;
+        var alpha = (sh.par < 0.2 ? 0.1 : 0.2) * (0.55 + env * 0.45);
+        var sc = sh.s * (1 + env * 0.22);
+        var rot = time * sh.rs + sh.ph;
+        ctx.strokeStyle = rgba(col, alpha);
+        ctx.save();
+        ctx.translate(sx | 0, sh.y | 0);
+        ctx.rotate(rot);
+        if (sh.kind === 0) {
+            ctx.beginPath();
+            ctx.moveTo(0, -sc);
+            ctx.lineTo(sc * 0.87, sc * 0.5);
+            ctx.lineTo(-sc * 0.87, sc * 0.5);
+            ctx.closePath();
+            ctx.stroke();
+        } else if (sh.kind === 1) {
+            ctx.strokeRect(-sc / 2, -sc / 2, sc, sc);
+        } else {
+            ctx.beginPath();
+            ctx.arc(0, 0, sc / 2, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+}
+
+function drawFloor(camX, env) {
+    var L = LEVELS[curPalIx];
+    var i;
+    /* ground slab */
+    ctx.fillStyle = L.ground;
+    ctx.fillRect(0, GROUND_Y | 0, VW + 2, H - GROUND_Y);
+    /* gaps cut out of the slab */
+    ctx.fillStyle = L.bg;
+    for (i = 0; i < gaps.length; i++) {
+        var g = gaps[i];
+        var x0 = g.x0 - camX, x1 = g.x1 - camX;
+        if (x1 < -20 || x0 > VW + 20) continue;
+        ctx.fillRect(x0 | 0, GROUND_Y | 0, (x1 - x0) | 0, H - GROUND_Y);
+        /* glowing gap edges */
+        ctx.fillStyle = rgba(L.b, 0.8);
+        ctx.fillRect((x0 - 2) | 0, GROUND_Y | 0, 3, 26);
+        ctx.fillRect(x1 | 0, GROUND_Y | 0, 3, 26);
+        ctx.fillStyle = L.bg;
+    }
+    /* upward glow above the floor line, breathing on the beat */
+    ctx.globalAlpha = 0.5 + env * 0.5;
+    ctx.drawImage(floorGlowSpr, 0, (GROUND_Y - 52) | 0, VW + 2, 52);
+    ctx.globalAlpha = 1;
+    /* floor line */
+    ctx.fillStyle = rgba(L.a, 0.75 + env * 0.25);
+    ctx.fillRect(0, (GROUND_Y - 2) | 0, VW + 2, 3);
+    /* beat ticks on the ground, so the grid is visible */
+    var k0 = Math.max(0, Math.floor(camX / BEAT_DIST));
+    var k1 = Math.floor((camX + VW) / BEAT_DIST) + 1;
+    for (var k = k0; k <= k1; k++) {
+        var tx = k * BEAT_DIST - camX;
+        ctx.fillStyle = rgba(L.a, k % 4 === 0 ? 0.28 : 0.12);
+        ctx.fillRect(tx | 0, (GROUND_Y + 8) | 0, 2, k % 4 === 0 ? 26 : 14);
+    }
+}
+
+function drawHazards(camX, env) {
+    var L = LEVELS[curPalIx];
+    var i, x;
+    /* pads */
+    for (i = 0; i < pads.length; i++) {
+        x = pads[i].x - camX;
+        if (x < -80 || x > VW + 80) continue;
+        var pulse = 1 + env * 0.35;
+        ctx.drawImage(glowBSpr, (x - 34) | 0, (GROUND_Y - 42) | 0, 68, 68);
+        ctx.fillStyle = rgba(L.b, 1);
+        rr(ctx, x - PAD_HW, GROUND_Y - 10 * pulse, PAD_HW * 2, 10 * pulse, 5);
+        ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.moveTo(x, GROUND_Y - 26 * pulse);
+        ctx.lineTo(x + 9, GROUND_Y - 13 * pulse);
+        ctx.lineTo(x - 9, GROUND_Y - 13 * pulse);
+        ctx.closePath();
+        ctx.fill();
+    }
+    /* spikes */
+    ctx.lineWidth = 2;
+    for (i = 0; i < spikes.length; i++) {
+        x = spikes[i].x - camX;
+        if (x < -60 || x > VW + 60) continue;
+        ctx.drawImage(glowASpr, (x - 30) | 0, (GROUND_Y - 52) | 0, 60, 60);
+        ctx.fillStyle = rgba(L.a, 1);
+        ctx.beginPath();
+        ctx.moveTo(x - SPIKE_HW, GROUND_Y);
+        ctx.lineTo(x, GROUND_Y - SPIKE_H);
+        ctx.lineTo(x + SPIKE_HW, GROUND_Y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = rgba(L.b, 0.55);
+        ctx.beginPath();
+        ctx.moveTo(x - SPIKE_HW + 5, GROUND_Y - 1);
+        ctx.lineTo(x, GROUND_Y - SPIKE_H + 6);
+        ctx.lineTo(x + SPIKE_HW - 5, GROUND_Y - 1);
+        ctx.stroke();
+    }
+    /* columns and blocks */
+    for (i = 0; i < solids.length; i++) {
+        var s = solids[i];
+        x = s.x - camX;
+        if (x < -80 || x > VW + 80) continue;
+        var top = GROUND_Y - s.h;
+        ctx.fillStyle = rgba(L.b, 0.22);
+        rr(ctx, x - s.hw, top, s.hw * 2, s.h, 7);
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = rgba(L.b, 0.95);
+        rr(ctx, x - s.hw, top, s.hw * 2, s.h, 7);
+        ctx.stroke();
+        /* chevrons inside */
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = rgba(L.b, 0.4);
+        for (var cy = top + 14; cy < GROUND_Y - 8; cy += 18) {
+            ctx.beginPath();
+            ctx.moveTo(x - s.hw + 8, cy + 5);
+            ctx.lineTo(x, cy - 3);
+            ctx.lineTo(x + s.hw - 8, cy + 5);
+            ctx.stroke();
+        }
+        /* lit top edge */
+        ctx.fillStyle = rgba(L.b, 0.65 + env * 0.35);
+        ctx.fillRect((x - s.hw + 3) | 0, top | 0, s.hw * 2 - 6, 3);
+    }
+}
+
+function drawFinish(camX) {
+    var L = LEVELS[curPalIx];
+    var x = L.finishX - camX;
+    if (x < -80 || x > VW + 120) return;
+    var top = GROUND_Y - 280;
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillRect(x | 0, top, 5, 280);
+    for (var ry = 0; ry < 4; ry++) {
+        for (var rx = 0; rx < 3; rx++) {
+            ctx.fillStyle = (rx + ry) % 2 === 0 ? '#FFFFFF' : rgba(L.b, 1);
+            ctx.fillRect((x + 5 + rx * 13) | 0, top + ry * 13, 13, 13);
+        }
+    }
+    ctx.drawImage(glowBSpr, (x - 44) | 0, top - 40, 96, 96);
+}
+
+function drawParticles(camX) {
+    var L = LEVELS[curPalIx];
+    for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        if (!p.active) continue;
+        var a = 1 - p.life / p.ttl;
+        var x = p.x - camX;
+        if (x < -40 || x > VW + 40) continue;
+        ctx.globalAlpha = a * (p.type === 1 ? 0.55 : 1);
+        ctx.fillStyle = p.ca ? rgba(L.a, 1) : rgba(L.b, 1);
+        if (p.type === 3) ctx.fillStyle = p.ca ? rgba(L.a, 1) : '#FFE84D';
+        if (p.type === 5) ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        var sz = p.type === 1 ? p.size * a : p.size;
+        ctx.save();
+        ctx.translate(x | 0, p.y | 0);
+        ctx.rotate(p.rot);
+        ctx.fillRect(-sz / 2, -sz / 2, sz, sz);
+        ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawCube(camX, env) {
+    var L = LEVELS[curPalIx];
+    ctx.save();
+    ctx.translate((cube.x - camX) | 0, cube.y | 0);
+    var sq = cube.squash;
+    ctx.scale(1 + 0.22 * sq, 1 - 0.26 * sq);
+    ctx.translate(0, -HCUBE);
+    ctx.globalAlpha = 0.3 + env * 0.3;
+    ctx.drawImage(glowASpr, -46, -46, 92, 92);
+    ctx.globalAlpha = 1;
+    ctx.rotate(cube.rot);
+    ctx.fillStyle = rgba(L.a, 1);
+    rr(ctx, -21, -21, 42, 42, 9);
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    rr(ctx, -21, -21, 42, 42, 9);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    rr(ctx, -12, -12, 24, 24, 5);
+    ctx.fill();
+    /* eyes looking ahead */
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(2, -4, 5, 0, Math.PI * 2);
+    ctx.arc(13, -4, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = L.bg;
+    ctx.beginPath();
+    ctx.arc(3.5, -4, 2.4, 0, Math.PI * 2);
+    ctx.arc(14.5, -4, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawSpeedLines() {
+    ctx.fillStyle = 'rgba(255,255,255,0.09)';
+    for (var i = 0; i < speedLines.length; i++) {
+        var l = speedLines[i];
+        if (l.x > VW || l.x + l.len < 0) continue;
+        ctx.fillRect(l.x | 0, l.y | 0, l.len | 0, 2);
+    }
+}
+
+function drawWorldText(camX) {
+    var L = LEVELS[curPalIx];
+    /* attempt marker at the start of the level */
+    var ax = 60 - camX;
+    if (ax > -320 && ax < VW + 40) {
+        ctx.font = '800 34px Nunito, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillText('ATTEMPT ' + attemptNum, ax | 0, (GROUND_Y - 140) | 0);
+    }
+    /* TAP hints for brand new players on level 1 */
+    if (levelIx === 0 && data.attempts[0] < 3) {
+        ctx.font = '800 24px Nunito, sans-serif';
+        ctx.textAlign = 'center';
+        var bob = Math.sin(time * 6) * 6;
+        for (var i = 0; i < Math.min(3, jumpTimes.length); i++) {
+            var hx = jumpTimes[i] * L.speed - camX;
+            if (hx < -60 || hx > VW + 60) continue;
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.fillText('TAP!', hx | 0, (GROUND_Y - 120 + bob) | 0);
+            ctx.beginPath();
+            ctx.moveTo(hx, GROUND_Y - 104 + bob);
+            ctx.lineTo(hx - 7, GROUND_Y - 92 + bob);
+            ctx.lineTo(hx + 7, GROUND_Y - 92 + bob);
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.textAlign = 'left';
+    }
+}
+
+function render() {
+    var ox = 0, oy = 0;
+    if (trauma > 0) {
+        var amp = trauma * trauma * 9;
+        ox = (Math.random() * 2 - 1) * amp;
+        oy = (Math.random() * 2 - 1) * amp;
+    }
+    ctx.setTransform(S, 0, 0, S, ox * S, oy * S);
+
+    var L = LEVELS[curPalIx];
+    var env = beatEnv();
+    ctx.fillStyle = L.bg;
+    ctx.fillRect(-12, -12, VW + 24, H + 24);
+
+    if (currentState === State.MENU) {
+        /* menu backdrop: drifting shapes and an idle cube bouncing to the beat */
+        var mcam = time * 40;
+        drawBgShapes(mcam, env);
+        ctx.fillStyle = L.ground;
+        ctx.fillRect(0, GROUND_Y | 0, VW + 2, H - GROUND_Y);
+        ctx.globalAlpha = 0.5 + env * 0.5;
+        ctx.drawImage(floorGlowSpr, 0, (GROUND_Y - 52) | 0, VW + 2, 52);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = rgba(L.a, 0.75 + env * 0.25);
+        ctx.fillRect(0, (GROUND_Y - 2) | 0, VW + 2, 3);
+        var hop = Math.abs(Math.sin(time * Math.PI / L.beatDur)) * 46;
+        var saveY = cube.y, saveX = cube.x, saveR = cube.rot;
+        cube.x = mcam + VW * 0.5;
+        cube.y = GROUND_Y - hop;
+        cube.rot = time * 1.1;
+        drawCube(mcam, env);
+        cube.y = saveY; cube.x = saveX; cube.rot = saveR;
+        drawParticles(mcam);
+        return;
+    }
+
+    var camX = cube.x - VW * 0.3;
+    drawBgShapes(camX, env);
+    drawFloor(camX, env);
+    drawHazards(camX, env);
+    drawFinish(camX);
+    drawParticles(camX);
+    if (currentState !== State.DYING) drawCube(camX, env);
+    drawSpeedLines();
+    drawWorldText(camX);
+}
+
+/* ================= Input ================= */
+canvas.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    ensureAudio();
+    press();
+});
+/* block scrolling and double tap zoom on mobile */
+document.addEventListener('touchstart', function (e) { if (e.target === canvas) e.preventDefault(); }, { passive: false });
+document.addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
+
+window.addEventListener('keydown', function (e) {
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+        e.preventDefault();
+        ensureAudio();
+        if (currentState === State.PAUSED) { resumeGame(); return; }
+        if (currentState === State.MENU) {
+            var mi = 0;
+            if (isUnlocked(2) && data.best[2] < 100) mi = 2;
+            else if (isUnlocked(1) && data.best[1] < 100) mi = 1;
+            startLevel(mi);
+            return;
+        }
+        if (currentState === State.COMPLETE) { nextFromPanel(); return; }
+        press();
+    } else if (e.code === 'KeyP' || e.code === 'Escape') {
+        if (currentState === State.PLAYING) pauseGame();
+        else if (currentState === State.PAUSED) resumeGame();
+    } else if (e.code === 'KeyM') {
+        toggleMute();
+    }
+});
+
+function pauseGame() {
+    if (currentState !== State.PLAYING) return;
+    currentState = State.PAUSED;
+    musicStop();
+    pauseOverlay.style.display = 'flex';
+}
+function resumeGame() {
+    if (currentState !== State.PAUSED) return;
+    currentState = State.PLAYING;
+    pauseOverlay.style.display = 'none';
+    musicStart(levelIx, songTime);
+}
+pauseBtn.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    ensureAudio();
+    if (currentState === State.PLAYING) pauseGame();
+});
+pauseOverlay.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    ensureAudio();
+    resumeGame();
+});
+document.addEventListener('visibilitychange', function () {
+    if (document.hidden && currentState === State.PLAYING) pauseGame();
+});
+
+function toggleMute() {
+    data.muted = !data.muted;
+    saveData();
+    setMuteIcon();
+}
+function setMuteIcon() {
+    muteBtn.textContent = data.muted ? '🔇' : '🔊';
+}
+muteBtn.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    ensureAudio();
+    toggleMute();
+});
+
+function cardTap(i) {
+    return function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (currentState !== State.MENU) return;
+        if (!isUnlocked(i)) return;
+        ensureAudio();
+        startLevel(i);
+    };
+}
+cardEls[0].addEventListener('pointerdown', cardTap(0));
+cardEls[1].addEventListener('pointerdown', cardTap(1));
+cardEls[2].addEventListener('pointerdown', cardTap(2));
+
+function nextFromPanel() {
+    if (currentState !== State.COMPLETE) return;
+    if (levelIx < 2 && isUnlocked(levelIx + 1)) startLevel(levelIx + 1);
+    else startLevel(levelIx);
+}
+cpNextBtn.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    ensureAudio();
+    nextFromPanel();
+});
+cpMenuBtn.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    ensureAudio();
+    showMenu();
+});
+
+/* ================= Main loop ================= */
+var last = performance.now();
+function loop(now) {
+    var dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    update(dt);
+    render();
+    requestAnimationFrame(loop);
+}
+
+resize();
+setMuteIcon();
+showMenu();
+requestAnimationFrame(loop);
+
+/* ================= Test hook (used by the headless QA harness) ================= */
+window.__bb = {
+    state: function () { return currentState; },
+    cube: cube,
+    songTime: function () { return songTime; },
+    progress: function () { return progressPct(); },
+    data: function () { return data; },
+    levels: LEVELS,
+    jumpTimes: function () { return jumpTimes.slice(); },
+    startLevel: startLevel,
+    press: press,
+    JUMP_T: JUMP_T
+};
+
+})();
+</script>
+</body>
+</html>
