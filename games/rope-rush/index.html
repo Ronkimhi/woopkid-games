@@ -2101,6 +2101,13 @@ function updateHudStars() {
     for (let i = 0; i < 3; i++) el[i].className = player.starsGot[i] ? '' : 'off';
 }
 function refreshStartPanel() {
+    /* keep the menu backdrop in sync with the picked level's world */
+    if (level.idx !== curLevel) {
+        level = buildLevel(curLevel);
+        pal = palForLevel(curLevel);
+        startAttempt(true);
+        camSnap();
+    }
     const lbl = document.getElementById('lvlLabel');
     const st = data.stars[curLevel] || [false, false, false];
     lbl.querySelector('.n').textContent = 'LEVEL ' + curLevel;
