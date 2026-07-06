@@ -993,6 +993,11 @@ function drawMountains() {
     ctx.drawImage(mtnFar, xf | 0, y);
     ctx.drawImage(mtnNear, (xn - W) | 0, y);
     ctx.drawImage(mtnNear, xn | 0, y);
+    /* re-draw the horizon glow line over the mountain feet */
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = BIOMES[biomeIdx].edge;
+    ctx.fillRect(0, (HOR + 2) | 0, W, 2);
+    ctx.globalAlpha = 1;
 }
 
 /* ================= Track (ring buffer of road segments) ================= */
@@ -1930,10 +1935,17 @@ function drawRamps() {
         var x0b = pb.x + (r.x - r.w / 2) * 0.86 * pwb, x1b = pb.x + (r.x + r.w / 2) * 0.86 * pwb;
         var yb = pb.y - lift;
         if (x1f < -40 || x0f > W + 40) continue;
-        /* glow pad */
-        ctx.globalAlpha = 0.25;
-        ctx.fillStyle = '#FFD24A';
-        ctx.fillRect((x0f - 6) | 0, (yb - 4) | 0, (x1f - x0f + 12) | 0, (yf - yb + 10) | 0);
+        /* glow pad hugs the ramp shape */
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = '#FFD24A';
+        ctx.lineWidth = clamp(pwf * 0.16, 3, 10);
+        ctx.beginPath();
+        ctx.moveTo(x0f, yf);
+        ctx.lineTo(x1f, yf);
+        ctx.lineTo(x1b, yb);
+        ctx.lineTo(x0b, yb);
+        ctx.closePath();
+        ctx.stroke();
         ctx.globalAlpha = 1;
         /* ramp face */
         ctx.fillStyle = '#F5B93A';
