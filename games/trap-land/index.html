@@ -109,7 +109,7 @@ h2.head{font-weight:800;color:#2B2350;font-size:min(8vw,42px);text-shadow:0 3px 
 .lv:active{transform:translateY(2px);box-shadow:0 2px 0 #2B2350}
 .lv.locked{background:#E9E4F6;color:#B0A8CE;cursor:default}
 .lv.done{background:#6FDB6F}
-.lv .star{position:absolute;top:-10px;right:-8px;font-size:20px;transform:rotate(12deg)}
+.lv .star{position:absolute;top:-10px;right:-8px;font-size:13px;letter-spacing:-4px;transform:rotate(12deg)}
 #pauseOv{background:rgba(43,35,80,.45)}
 #pauseOv .card{background:#fff;border:3px solid #2B2350;border-radius:24px;padding:34px 46px;box-shadow:0 6px 0 #2B2350}
 #winUi{justify-content:flex-end;padding-bottom:5vh;pointer-events:none;background:transparent}
@@ -217,6 +217,7 @@ const defaultData = {
   levelsCleared: 0,
   totalDeaths: 0,
   levelDeaths: [0,0,0,0,0,0,0,0,0,0,0,0],
+  levelStars: [0,0,0,0,0,0,0,0,0,0,0,0],
   muted: false,
   lastPlayed: null,
 };
@@ -226,6 +227,7 @@ function loadData() {
     if (!d) return JSON.parse(JSON.stringify(defaultData));
     const out = Object.assign(JSON.parse(JSON.stringify(defaultData)), d);
     if (!Array.isArray(out.levelDeaths) || out.levelDeaths.length !== 12) out.levelDeaths = defaultData.levelDeaths.slice();
+    if (!Array.isArray(out.levelStars) || out.levelStars.length !== 12) out.levelStars = defaultData.levelStars.slice();
     return out;
   } catch {
     return JSON.parse(JSON.stringify(defaultData));
@@ -245,7 +247,17 @@ const COYOTE = 0.09, BUFFER = 0.12;
 const INK = '#2B2350', GRASS = '#6FDB6F', GRASSD = '#4CBF5E', GRASSL = '#9BEC9B';
 const SKY = '#A8E4FF', PINK = '#FF5FA2', PINKL = '#FF8FBC', DIRT = '#D9A066', DIRTD = '#B9834E';
 const DOORCOL = '#FFC24D';
+const GOLD = '#FFD24A', GOLDD = '#F5A800';
 const DEATH_WORDS = ['BONK!', 'OOPS!', 'NOPE!', 'WELP!', 'SPLAT!', 'YIKES!'];
+
+/* Area themes: meadow (1-4), sunset (5-8), twilight (9-12) */
+const AREAS = [
+  { sky: ['#A8E4FF', '#CDEFFF', '#DFF6E8'], hillF: '#C6EFD3', hillN: '#A9E4B8', mote: '#FFF3B8', body: 'linear-gradient(#A8E4FF 0%,#CDEFFF 70%,#DFF6E8 100%)', night: false },
+  { sky: ['#FFC98F', '#FFE2BC', '#FFF3DC'], hillF: '#FFC9A1', hillN: '#F2A97E', mote: '#FFD9A0', body: 'linear-gradient(#FFC98F 0%,#FFE2BC 70%,#FFF3DC 100%)', night: false },
+  { sky: ['#B5AAF0', '#D6CBF8', '#F0E6FF'], hillF: '#A99BE3', hillN: '#8F81D4', mote: '#EFE6FF', body: 'linear-gradient(#B5AAF0 0%,#D6CBF8 70%,#F0E6FF 100%)', night: true },
+];
+function areaOf(i) { return i < 4 ? 0 : i < 8 ? 1 : 2; }
+let curArea = 0;
 
 /* ============================================================
    Canvas setup
@@ -265,37 +277,112 @@ function resize() {
   viewScale = s * dpr;
   paintBackground();
 }
+/* Parallax hill layers + glow sprite, all pre-rendered outside the loop */
+const hillFar = document.createElement('canvas');
+const hillNear = document.createElement('canvas');
+const HILLW = W + 160, HILLH = 250;
+const glowCan = document.createElement('canvas');
+(function paintGlow() {
+  glowCan.width = 96; glowCan.height = 96;
+  const g = glowCan.getContext('2d');
+  const rg = g.createRadialGradient(48, 48, 4, 48, 48, 46);
+  rg.addColorStop(0, 'rgba(255,225,120,0.85)');
+  rg.addColorStop(0.5, 'rgba(255,215,90,0.28)');
+  rg.addColorStop(1, 'rgba(255,215,90,0)');
+  g.fillStyle = rg;
+  g.fillRect(0, 0, 96, 96);
+})();
+
+function paintHills() {
+  const A = AREAS[curArea];
+  for (const [cv, col, bumps, hgt] of [[hillFar, A.hillF, 5, 120], [hillNear, A.hillN, 7, 78]]) {
+    cv.width = HILLW * 2; cv.height = HILLH * 2;
+    const b = cv.getContext('2d');
+    b.setTransform(2, 0, 0, 2, 0, 0);
+    b.clearRect(0, 0, HILLW, HILLH);
+    b.fillStyle = col;
+    b.beginPath();
+    b.moveTo(0, HILLH);
+    for (let i = 0; i <= bumps; i++) {
+      const cx = (i + 0.5) / (bumps + 1) * HILLW;
+      const seed = ((i * 73 + bumps * 31 + curArea * 17) % 29) / 29;
+      const r = hgt * (0.65 + seed * 0.5);
+      b.arc(cx, HILLH, r, Math.PI, 0, false);
+    }
+    b.lineTo(HILLW, HILLH);
+    b.closePath();
+    b.fill();
+    // tiny baked trees / rocks on the near ridge
+    if (bumps === 7) {
+      b.fillStyle = 'rgba(43,35,80,0.14)';
+      for (let i = 0; i < 12; i++) {
+        const tx = ((i * 199 + curArea * 61) % HILLW);
+        const ty = HILLH - 26 - ((i * 47) % 34);
+        b.beginPath();
+        b.moveTo(tx, ty); b.lineTo(tx - 6, ty + 15); b.lineTo(tx + 6, ty + 15);
+        b.closePath(); b.fill();
+      }
+    }
+  }
+}
+
 function paintBackground() {
   bgCanvas.width = canvas.width;
   bgCanvas.height = canvas.height;
   const b = bgCanvas.getContext('2d');
+  const A = AREAS[curArea];
   const g = b.createLinearGradient(0, 0, 0, bgCanvas.height);
-  g.addColorStop(0, SKY);
-  g.addColorStop(0.75, '#CDEFFF');
-  g.addColorStop(1, '#DFF6E8');
+  g.addColorStop(0, A.sky[0]);
+  g.addColorStop(0.72, A.sky[1]);
+  g.addColorStop(1, A.sky[2]);
   b.fillStyle = g;
   b.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
-  // Smiling sun, painted once so the game loop stays cheap
   b.save();
   b.scale(viewScale, viewScale);
-  b.translate(96, 86);
-  b.strokeStyle = '#FFD24A'; b.lineWidth = 6; b.lineCap = 'round';
-  for (let i = 0; i < 8; i++) {
-    const a = i / 8 * Math.PI * 2;
-    b.beginPath();
-    b.moveTo(Math.cos(a) * 46, Math.sin(a) * 46);
-    b.lineTo(Math.cos(a) * 58, Math.sin(a) * 58);
-    b.stroke();
+  if (A.night) {
+    // Crescent moon + baked twinkles
+    b.save();
+    b.translate(96, 86);
+    b.fillStyle = '#FFF6D8';
+    b.beginPath(); b.arc(0, 0, 34, 0, Math.PI * 2); b.fill();
+    b.fillStyle = A.sky[0];
+    b.beginPath(); b.arc(13, -8, 28, 0, Math.PI * 2); b.fill();
+    b.restore();
+    b.fillStyle = 'rgba(255,255,255,0.85)';
+    for (let i = 0; i < 26; i++) {
+      const sx = (i * 173 + 40) % W, sy = (i * 97 + 20) % 300;
+      const r = 1 + (i % 3) * 0.6;
+      b.beginPath(); b.arc(sx, sy, r, 0, Math.PI * 2); b.fill();
+    }
+  } else {
+    // Smiling sun, painted once so the game loop stays cheap
+    b.translate(96, 86);
+    const sunCol = curArea === 1 ? '#FFB25E' : '#FFD24A';
+    b.strokeStyle = sunCol; b.lineWidth = 6; b.lineCap = 'round';
+    for (let i = 0; i < 8; i++) {
+      const a = i / 8 * Math.PI * 2;
+      b.beginPath();
+      b.moveTo(Math.cos(a) * 46, Math.sin(a) * 46);
+      b.lineTo(Math.cos(a) * 58, Math.sin(a) * 58);
+      b.stroke();
+    }
+    b.fillStyle = curArea === 1 ? '#FFC97E' : '#FFDE6B';
+    b.beginPath(); b.arc(0, 0, 38, 0, Math.PI * 2); b.fill();
+    b.strokeStyle = '#E8B54A'; b.lineWidth = 3; b.stroke();
+    b.fillStyle = '#B9834E';
+    b.beginPath(); b.arc(-12, -4, 4, 0, Math.PI * 2); b.fill();
+    b.beginPath(); b.arc(12, -4, 4, 0, Math.PI * 2); b.fill();
+    b.strokeStyle = '#B9834E'; b.lineWidth = 3;
+    b.beginPath(); b.arc(0, 6, 12, 0.25 * Math.PI, 0.75 * Math.PI); b.stroke();
   }
-  b.fillStyle = '#FFDE6B';
-  b.beginPath(); b.arc(0, 0, 38, 0, Math.PI * 2); b.fill();
-  b.strokeStyle = '#E8B54A'; b.lineWidth = 3; b.stroke();
-  b.fillStyle = '#B9834E';
-  b.beginPath(); b.arc(-12, -4, 4, 0, Math.PI * 2); b.fill();
-  b.beginPath(); b.arc(12, -4, 4, 0, Math.PI * 2); b.fill();
-  b.strokeStyle = '#B9834E'; b.lineWidth = 3;
-  b.beginPath(); b.arc(0, 6, 12, 0.25 * Math.PI, 0.75 * Math.PI); b.stroke();
   b.restore();
+  paintHills();
+}
+function setArea(a) {
+  if (a === curArea) return;
+  curArea = a;
+  document.body.style.background = AREAS[a].body;
+  paintBackground();
 }
 window.addEventListener('resize', resize);
 
@@ -355,6 +442,9 @@ const sfx = {
   spark()  { tone(1200, 0.08, 'sine', 0.13, 1650); tone(1500, 0.1, 'sine', 0.1, 2050, 0.07); },
   whoosh() { tone(190, 0.26, 'sine', 0.18, 720); },
   click()  { tone(620, 0.05, 'square', 0.1); },
+  star()   { [784, 988, 1319].forEach((f, i) => tone(f, 0.09, 'sine', 0.2, null, i * 0.055)); noiseBurst(0.05, 0.08); },
+  pew()    { tone(760, 0.11, 'square', 0.09, 240); },
+  appear() { tone(520, 0.08, 'sine', 0.1, 820); },
 };
 
 /* ============================================================
@@ -367,12 +457,14 @@ const LEVELS = [
     spawn: [70, 440],
     plats: [[0, 500, 430, 40], [530, 500, 430, 40]],
     spikes: [[434, 540, 92, 1]],
+    stars: [[200, 432], [480, 384], [720, 432]],
     exit: [868, 446], traps: [] },
 
   { name: 'First Betrayal', quip: 'That bridge looks super trustworthy.',
     spawn: [70, 440],
     plats: [[0, 500, 360, 40], [600, 500, 360, 40]],
     spikes: [[364, 540, 232, 1]],
+    stars: [[160, 432], [470, 394], [820, 432]],
     exit: [876, 446],
     traps: [{ type: 'crumble', x: 392, y: 468, w: 156, h: 16, delay: 0.55, respawn: 0 }] },
 
@@ -380,82 +472,101 @@ const LEVELS = [
     spawn: [60, 440],
     plats: [[0, 500, 960, 40], [336, 424, 116, 16], [646, 434, 108, 16]],
     spikes: [],
+    stars: [[394, 386], [560, 466], [700, 396]],
     exit: [880, 446],
     traps: [
       { type: 'pop', x: 330, y: 500, w: 130, mode: 'near', range: 64, up: 0.85, cd: 1.1 },
       { type: 'pop', x: 640, y: 500, w: 120, mode: 'near', range: 52, up: 0.6, cd: 0.8 }] },
 
+  { name: 'Now You See Me', quip: 'These platforms believe in themselves. Sometimes.',
+    spawn: [60, 440],
+    plats: [[0, 500, 240, 40], [720, 500, 240, 40]],
+    spikes: [[244, 540, 472, 1]],
+    stars: [[335, 430], [485, 390], [635, 430]],
+    exit: [860, 446],
+    traps: [
+      { type: 'ghost', x: 290, y: 470, w: 90, h: 14, on: 1.5, off: 0.9, offset: 0 },
+      { type: 'ghost', x: 440, y: 430, w: 90, h: 14, on: 1.5, off: 0.9, offset: 1.2 },
+      { type: 'ghost', x: 590, y: 470, w: 90, h: 14, on: 1.5, off: 0.9, offset: 0 }] },
+
   { name: 'Rude Door', quip: 'The exit is right there. So easy.',
     spawn: [60, 440],
-    plats: [[0, 500, 960, 40], [620, 436, 110, 16], [780, 368, 120, 16]],
+    plats: [[0, 500, 960, 40], [780, 368, 120, 16]],
     spikes: [],
+    stars: [[300, 436], [700, 394], [816, 264]],
     exit: [868, 446],
-    traps: [{ type: 'slide', range: 150, tx: 846, ty: 314 }] },
-
-  { name: 'Crumble Canyon', quip: 'Keep. Moving.',
-    spawn: [50, 420],
-    plats: [[0, 480, 180, 60], [800, 480, 160, 60]],
-    spikes: [[184, 540, 612, 1]],
-    exit: [858, 426],
     traps: [
-      { type: 'crumble', x: 230, y: 450, w: 84, h: 16, delay: 0.35, respawn: 1.8 },
-      { type: 'crumble', x: 362, y: 396, w: 84, h: 16, delay: 0.35, respawn: 1.8 },
-      { type: 'crumble', x: 502, y: 440, w: 84, h: 16, delay: 0.35, respawn: 1.8 },
-      { type: 'crumble', x: 640, y: 384, w: 84, h: 16, delay: 0.35, respawn: 1.8 }] },
+      { type: 'scoot', x: 600, y: 436, w: 110, h: 16, tx: 664, range: 90 },
+      { type: 'slide', range: 150, tx: 846, ty: 314 }] },
 
-  { name: 'Exit? EXIT?', quip: 'There is the exit. Definitely the exit.',
+  { name: 'Swing Set', quip: 'The thorn balls just want a hug.',
     spawn: [60, 440],
-    plats: [[0, 500, 960, 40], [520, 430, 110, 16], [400, 364, 110, 16], [240, 298, 110, 16]],
-    spikes: [[700, 500, 80, 1]],
-    exit: [872, 446],
-    traps: [{ type: 'fake', realx: 268, realy: 244 }] },
+    plats: [[0, 500, 960, 40]],
+    spikes: [],
+    stars: [[300, 468], [530, 388], [760, 468]],
+    exit: [884, 446],
+    traps: [
+      { type: 'swing', ax: 300, ay: 240, len: 230, amp: 0.9, period: 2.4, phase: 0 },
+      { type: 'swing', ax: 530, ay: 230, len: 240, amp: 0.85, period: 2.4, phase: 2.1 },
+      { type: 'swing', ax: 760, ay: 240, len: 230, amp: 0.9, period: 2.4, phase: 4.2 }] },
 
   { name: 'Safety Inspected', quip: 'These platforms passed every safety inspection.',
     spawn: [50, 410],
     plats: [[0, 470, 200, 70], [470, 430, 60, 18], [760, 470, 200, 70]],
     spikes: [[204, 540, 552, 1]],
+    stars: [[345, 392], [500, 368], [645, 392]],
     exit: [862, 416],
     traps: [
-      { type: 'flipper', x: 250, y: 430, w: 190, h: 18, hold: 0.35 },
-      { type: 'flipper', x: 560, y: 430, w: 170, h: 18, hold: 0.3 }] },
+      { type: 'flipper', x: 250, y: 430, w: 190, h: 18, hold: 0.3 },
+      { type: 'flipper', x: 560, y: 430, w: 170, h: 18, hold: 0.25 }] },
 
-  { name: 'Personal Space', quip: 'This meadow totally respects your personal space.',
-    spawn: [60, 440],
-    plats: [[0, 500, 400, 40], [700, 500, 260, 40]],
-    spikes: [[404, 540, 292, 1]],
-    exit: [884, 446],
+  { name: 'Petal Cannons', quip: 'The flowers spit seeds. Extremely rude.',
+    spawn: [50, 400],
+    plats: [[0, 500, 960, 40], [20, 452, 100, 14], [380, 415, 120, 16]],
+    spikes: [],
+    stars: [[200, 464], [750, 464], [440, 318]],
+    exit: [420, 361],
     traps: [
-      { type: 'scoot', x: 448, y: 460, w: 112, h: 16, tx: 512, range: 96 },
-      { type: 'pop', x: 764, y: 500, w: 104, mode: 'timer', period: 1.7, up: 0.55, offset: 0.4 }] },
+      { type: 'shooter', x: 944, y: 476, dir: -1, period: 2.1, offset: 0, speed: 250 },
+      { type: 'shooter', x: 16, y: 476, dir: 1, period: 2.1, offset: 1.05, speed: 250 }] },
+
+  { name: 'Exit? EXIT?', quip: 'There is the exit. Definitely the exit.',
+    spawn: [60, 440],
+    plats: [[0, 500, 960, 40], [520, 430, 110, 16], [400, 364, 110, 16], [240, 298, 110, 16]],
+    spikes: [[600, 500, 70, 1]],
+    stars: [[740, 424], [455, 322], [292, 254]],
+    exit: [872, 446],
+    traps: [
+      { type: 'fake', realx: 268, realy: 244 },
+      { type: 'pop', x: 700, y: 500, w: 100, mode: 'near', range: 50, up: 0.7, cd: 1 }] },
+
+  { name: 'The Coward Door', quip: 'The door has trust issues.',
+    spawn: [60, 440],
+    plats: [[0, 500, 960, 40]],
+    spikes: [],
+    stars: [[180, 430], [480, 466], [700, 430]],
+    exit: [820, 446],
+    traps: [
+      { type: 'run', range: 130, tx: 120 },
+      { type: 'pop', x: 300, y: 500, w: 110, mode: 'timer', period: 1.7, up: 0.5, offset: 0 },
+      { type: 'pop', x: 560, y: 500, w: 110, mode: 'timer', period: 1.7, up: 0.5, offset: 0.85 },
+      { type: 'swing', ax: 480, ay: 210, len: 255, amp: 0.8, period: 2.6, phase: 0 }] },
 
   { name: 'Upside Down', quip: 'What a lovely floor. Wait.',
     spawn: [60, 440],
     plats: [[0, 500, 960, 40], [0, 0, 960, 40], [600, 300, 60, 200]],
     spikes: [[500, 40, 80, -1]],
+    stars: [[300, 464], [455, 84], [740, 110]],
     exit: [868, 40], ceilExit: true,
-    traps: [{ type: 'grav', x: 380, y: 430, r: 26 }] },
-
-  { name: 'The Coward Door', quip: 'The door has trust issues.',
-    spawn: [60, 440],
-    plats: [[0, 500, 960, 40]],
-    spikes: [[450, 500, 90, 1]],
-    exit: [820, 446],
-    traps: [{ type: 'run', range: 130, tx: 120 }] },
-
-  { name: 'Trust Nothing', quip: 'Everything here is fine and normal.',
-    spawn: [60, 440],
-    plats: [[0, 500, 960, 40], [140, 432, 110, 16], [300, 366, 110, 16], [630, 300, 130, 16]],
-    spikes: [],
-    exit: [876, 446],
     traps: [
-      { type: 'fake', realx: 668, realy: 246 },
-      { type: 'crumble', x: 470, y: 320, w: 100, h: 16, delay: 0.45, respawn: 2 },
-      { type: 'pop', x: 520, y: 500, w: 120, mode: 'near', range: 70, up: 0.7, cd: 1 }] },
+      { type: 'grav', x: 380, y: 430, r: 26 },
+      { type: 'shooter', x: 944, y: 64, dir: -1, period: 2.3, offset: 0, speed: 230 }] },
 
   { name: 'The Final Lie', quip: 'The last one. Would we lie to you?',
     spawn: [60, 440],
     plats: [[0, 500, 960, 40], [0, 0, 960, 40], [60, 300, 140, 16], [280, 340, 100, 16], [600, 340, 100, 16], [760, 300, 200, 16]],
     spikes: [[420, 40, 80, -1]],
+    stars: [[110, 258], [490, 262], [896, 200]],
     exit: [780, 246],
     traps: [
       { type: 'pop', x: 260, y: 500, w: 110, mode: 'timer', period: 1.6, up: 0.5, offset: 0 },
@@ -463,6 +574,7 @@ const LEVELS = [
       { type: 'grav', x: 720, y: 430, r: 26 },
       { type: 'grav', x: 120, y: 120, r: 26 },
       { type: 'crumble', x: 440, y: 300, w: 100, h: 16, delay: 0.4, respawn: 1.6 },
+      { type: 'swing', ax: 490, ay: 50, len: 200, amp: 0.7, period: 2.5, phase: 0 },
       { type: 'slide', range: 110, tx: 876, ty: 246 }] },
 ];
 
@@ -481,6 +593,9 @@ let stickerNote = '';
 let trauma = 0;
 let oopsPulse = 0;
 let winT = 0;
+let clearStars = 0;
+let parX = 0;
+let moteT = 0;
 
 const p = {
   x: 0, y: 0, w: 30, h: 32,
@@ -490,12 +605,13 @@ const p = {
   sqX: 1, sqY: 1, walkT: 0, fear: 0, blinkT: 2.4, dustT: 0,
 };
 
-const input = { left: false, right: false, jumpHeld: false };
+const input = { left: false, right: false, jumpHeld: false, down: false };
+let attemptDeaths = 0;
 
 /* ============================================================
    Particles (single pool) and wobble words
    ============================================================ */
-const POOL = 220;
+const POOL = 140;
 const parts = [];
 for (let i = 0; i < POOL; i++) parts.push({ on: false });
 function spawnPart(type, x, y, o) {
@@ -558,6 +674,29 @@ function poof(x, y) {
     });
   }
 }
+function collectStarFx(x, y) {
+  // Layered feedback: halo poof + double shockwave ring + gold shards + glints + label
+  spawnPart('poof', x, y, { r: 12, life: 0.3 });
+  spawnPart('ring', x, y, { r: 8, vr: 190, life: 0.32, col: GOLD });
+  spawnPart('ring', x, y, { r: 4, vr: 110, life: 0.5, col: '#FFFFFF' });
+  for (let i = 0; i < 6; i++) {
+    const a = i / 6 * Math.PI * 2 + 0.4;
+    spawnPart('chunk', x, y, {
+      vx: Math.cos(a) * (120 + Math.random() * 120), vy: Math.sin(a) * 140 - 130,
+      r: 3.5 + Math.random() * 3, life: 0.55 + Math.random() * 0.25,
+      rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14, col: GOLD,
+    });
+  }
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * Math.PI * 2;
+    spawnPart('spark', x, y, {
+      vx: Math.cos(a) * 130, vy: Math.sin(a) * 130,
+      r: 3 + Math.random() * 3, life: 0.35 + Math.random() * 0.2, col: i % 2 ? GOLD : '#fff',
+    });
+  }
+  wobbleWord('+1', x, y - 26, GOLDD);
+  sfx.star();
+}
 function updateParts(dt) {
   for (let i = 0; i < POOL; i++) {
     const q = parts[i];
@@ -579,6 +718,13 @@ function updateParts(dt) {
         break;
       case 'spark':
         q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= (1 - 2 * dt); q.vy *= (1 - 2 * dt);
+        break;
+      case 'ring':
+        q.r += q.vr * dt;
+        break;
+      case 'mote':
+        q.x += (q.vx + Math.sin(q.t * 1.7 + q.r * 5) * 14) * dt;
+        q.y += q.vy * dt;
         break;
     }
   }
@@ -616,6 +762,7 @@ function buildLevel(i) {
     plats: def.plats.map(a => ({ x: a[0], y: a[1], w: a[2], h: a[3] })),
     spikes: def.spikes.map(a => ({ x: a[0], base: a[1], w: a[2], dir: a[3] })),
     exit: { x: def.exit[0], y: def.exit[1], w: 40, h: 54, fake: false, ceil: !!def.ceilExit, eyes: false, sweat: false, bubble: '' },
+    stars: (def.stars || []).map((a, i) => ({ x: a[0], y: a[1], got: false, t: i * 0.9 })),
     traps: [],
   };
   for (const td of def.traps) {
@@ -629,9 +776,28 @@ function buildLevel(i) {
     if (t.type === 'scoot') { t.cx = t.x; t.anim = 1; t.fx = 0; }
     if (t.type === 'run') { t.stage = 0; t.anim = 1; t.fx = 0; t.timer = 0; }
     if (t.type === 'fake') { L.exit.fake = true; t.hit = false; }
+    if (t.type === 'ghost') { t.wasSolid = true; }
+    if (t.type === 'shooter') { t.prevC = 0; t.wind = 0; t.shots = [{on:false},{on:false},{on:false}]; }
     L.traps.push(t);
   }
   return L;
+}
+
+/* Ghost platform phase: 0..cycle. Solid while < on, warn during the last 0.45s of solid. */
+function ghostPhase(t) {
+  const cyc = t.on + t.off;
+  return (time + t.offset) % cyc;
+}
+function ghostSolid(t) {
+  if (ghostPhase(t) >= t.on) return false;
+  // never re-solidify around the player: skip while the player's center is inside
+  const pcx = p.x + p.w / 2, pcy = p.y + p.h / 2;
+  if (pcx > t.x && pcx < t.x + t.w && pcy > t.y - 4 && pcy < t.y + t.h + 4) return false;
+  return true;
+}
+function swingPos(t) {
+  const ang = Math.sin(time * Math.PI * 2 / t.period + t.phase) * t.amp;
+  return { x: t.ax + Math.sin(ang) * t.len, y: t.ay + Math.cos(ang) * t.len, ang };
 }
 
 function softResetTraps() {
@@ -650,6 +816,9 @@ function softResetTraps() {
       case 'run':
         if (t.stage >= 1 && t.stage < 4) { t.stage = 2; t.anim = 1; lvl.exit.x = t.tx; lvl.exit.eyes = true; lvl.exit.sweat = false; lvl.exit.bubble = ''; }
         break;
+      case 'shooter':
+        for (const s of t.shots) s.on = false;
+        break;
     }
   }
 }
@@ -664,6 +833,8 @@ function getSolids() {
       s.push({ x: t.x, y: t.y, w: t.w, h: t.h });
     } else if (t.type === 'scoot') {
       s.push({ x: t.cx, y: t.y, w: t.w, h: t.h });
+    } else if (t.type === 'ghost' && ghostSolid(t)) {
+      s.push({ x: t.x, y: t.y, w: t.w, h: t.h });
     }
   }
   return s;
@@ -697,12 +868,31 @@ function lethalRects() {
   }
   return out;
 }
+function lethalCircles() {
+  const out = [];
+  for (const t of lvl.traps) {
+    if (t.type === 'swing') {
+      const s = swingPos(t);
+      out.push({ x: s.x, y: s.y, r: 13 });
+    } else if (t.type === 'shooter') {
+      for (const s of t.shots) if (s.on) out.push({ x: s.x, y: s.y, r: 6 });
+    }
+  }
+  return out;
+}
 function dangerRects() {
   const out = lethalRects();
   for (const t of lvl.traps) {
     if (t.type === 'pop' && t.state === 'tele') out.push({ x: t.x, y: t.y - 15, w: t.w, h: 15 });
   }
+  for (const c of lethalCircles()) out.push({ x: c.x - c.r - 6, y: c.y - c.r - 6, w: (c.r + 6) * 2, h: (c.r + 6) * 2 });
   return out;
+}
+function circleHitsPlayer(cx, cy, r) {
+  const fx = p.x + 5, fy = p.y + 5, fw = p.w - 10, fh = p.h - 10;
+  const nx = Math.max(fx, Math.min(cx, fx + fw));
+  const ny = Math.max(fy, Math.min(cy, fy + fh));
+  return (cx - nx) * (cx - nx) + (cy - ny) * (cy - ny) < r * r;
 }
 
 /* ============================================================
@@ -740,7 +930,7 @@ function updateTraps(dt) {
             if (nearX && nearY) { t.state = 'tele'; t.timer = 0.15; tone(150, 0.08, 'square', 0.07, 110); }
           } else if (t.state === 'tele') {
             t.timer -= dt; t.prog = 0.12;
-            if (t.timer <= 0) { t.state = 'up'; t.timer = t.up; sfx.nuhuh(); }
+            if (t.timer <= 0) { t.state = 'up'; t.timer = t.up; sfx.nuhuh(); trauma = Math.min(1, trauma + 0.12); puffDust(t.x + t.w / 2, t.y, 3); }
           } else if (t.state === 'up') {
             t.prog = Math.min(1, t.prog + dt * 12);
             t.timer -= dt;
@@ -755,7 +945,7 @@ function updateTraps(dt) {
           const c = t.clock % t.period;
           if (c < 0.15) { t.state = 'tele'; t.prog = 0.12; }
           else if (c < 0.15 + t.up) {
-            if (t.state !== 'up') sfx.nuhuh();
+            if (t.state !== 'up') { sfx.nuhuh(); trauma = Math.min(1, trauma + 0.1); puffDust(t.x + t.w / 2, t.y, 2); }
             t.state = 'up'; t.prog = Math.min(1, t.prog + dt * 12);
           } else {
             t.state = 'cd'; t.prog = Math.max(0, t.prog - dt * 8);
@@ -858,6 +1048,49 @@ function updateTraps(dt) {
         break;
       }
 
+      case 'ghost': {
+        const solidNow = ghostPhase(t) < t.on;
+        if (solidNow && !t.wasSolid) {
+          burstSparkles(t.x + t.w / 2, t.y + 6);
+          if (Math.abs(t.x + t.w / 2 - (p.x + p.w / 2)) < 260) sfx.appear();
+        }
+        t.wasSolid = solidNow;
+        break;
+      }
+
+      case 'shooter': {
+        const c = (time + t.offset) % t.period;
+        t.wind = c > t.period - 0.5 ? (c - (t.period - 0.5)) / 0.5 : 0;
+        if (c < t.prevC) {
+          // fire a seed
+          for (const s of t.shots) {
+            if (!s.on) {
+              s.on = true;
+              s.x = t.x + t.dir * 22;
+              s.y = t.y;
+              sfx.pew();
+              puffDust(s.x, s.y, 2);
+              break;
+            }
+          }
+        }
+        t.prevC = c;
+        const solids = lvl.plats;
+        for (const s of t.shots) {
+          if (!s.on) continue;
+          s.x += t.dir * t.speed * dt;
+          if (s.x < -24 || s.x > W + 24) { s.on = false; continue; }
+          for (const pl of solids) {
+            if (s.x > pl.x && s.x < pl.x + pl.w && s.y > pl.y && s.y < pl.y + pl.h) {
+              s.on = false;
+              puffDust(s.x, s.y, 2);
+              break;
+            }
+          }
+        }
+        break;
+      }
+
       case 'fake':
         // handled on touch in exit logic
         break;
@@ -890,13 +1123,18 @@ function killPlayer() {
   p.deathT = 0;
   data.totalDeaths++;
   data.levelDeaths[cur]++;
+  attemptDeaths++;
   saveData(data);
   oopsPulse = 1;
   trauma = Math.min(1, trauma + 0.45);
   const cx = p.x + p.w / 2;
   const cy = Math.max(20, Math.min(H - 20, p.y + p.h / 2));
   burstChunks(cx, cy);
+  poof(cx, cy);
+  spawnPart('ring', cx, cy, { r: 6, vr: 220, life: 0.3, col: '#FFFFFF' });
   wobbleWord(DEATH_WORDS[data.totalDeaths % DEATH_WORDS.length], cx, cy - 34);
+  // near-miss psychology: rub in how close that was
+  if (lvl && playerDistToExit() < 140) wobbleWord('SO CLOSE!', W / 2, 110, '#7EC8FF');
   sfx.death();
 }
 
@@ -950,10 +1188,12 @@ function updatePlay(dt) {
   // Variable jump height: release cuts the rise
   if (!input.jumpHeld && p.vy * p.grav < -200) p.vy = -200 * p.grav;
 
-  // Gravity
-  p.vy += GRAV * p.grav * dt;
-  if (p.grav > 0) p.vy = Math.min(p.vy, MAXFALL);
-  else p.vy = Math.max(p.vy, -MAXFALL);
+  // Gravity (+ fast fall when holding down in the air)
+  const ff = (!p.grounded && input.down) ? 1.85 : 1;
+  const maxF = input.down ? 1150 : MAXFALL;
+  p.vy += GRAV * ff * p.grav * dt;
+  if (p.grav > 0) p.vy = Math.min(p.vy, maxF);
+  else p.vy = Math.max(p.vy, -maxF);
 
   moveAndCollide(dt);
 
@@ -970,6 +1210,20 @@ function updatePlay(dt) {
   const fx = p.x + 5, fy = p.y + 5, fw = p.w - 10, fh = p.h - 10;
   for (const r of lethalRects()) {
     if (overlap(fx, fy, fw, fh, r)) { killPlayer(); return; }
+  }
+  for (const c of lethalCircles()) {
+    if (circleHitsPlayer(c.x, c.y, c.r)) { killPlayer(); return; }
+  }
+
+  // Star candies: layered Candy-Crush juice on grab
+  for (const s of lvl.stars) {
+    if (s.got) continue;
+    const nx = Math.max(p.x, Math.min(s.x, p.x + p.w));
+    const ny = Math.max(p.y, Math.min(s.y, p.y + p.h));
+    if ((s.x - nx) * (s.x - nx) + (s.y - ny) * (s.y - ny) < 17 * 17) {
+      s.got = true;
+      collectStarFx(s.x, s.y);
+    }
   }
 
   // Fear: eyes widen near danger
@@ -1055,8 +1309,10 @@ function landOn(wasG, impactVy) {
    ============================================================ */
 function startLevel(i) {
   cur = i;
+  setArea(areaOf(i));
   lvl = buildLevel(i);
   resetPlayer();
+  attemptDeaths = 0;
   state = State.PLAYING;
   paused = false;
   quipT = 3.4;
@@ -1073,8 +1329,11 @@ function doClear() {
   p.vy = -340 * p.grav;
   p.grounded = false;
   sfx.clear();
-  burstConfetti(lvl.exit.x + 20, lvl.exit.y + 10, 34);
+  burstConfetti(lvl.exit.x + 20, lvl.exit.y + 10, 30);
+  clearStars = lvl.stars.filter(s => s.got).length;
+  data.levelStars[cur] = Math.max(data.levelStars[cur], clearStars);
   data.levelsCleared = Math.max(data.levelsCleared, cur + 1);
+  if (attemptDeaths === 0) wobbleWord('NO OOPS!', W / 2, H / 2 + 96, GRASSD);
   saveData(data);
   const earned = WoopProfile.reportRun('trap-land', data.levelsCleared, { bronze: 3, silver: 7, gold: 12 });
   if (earned.length) {
@@ -1090,7 +1349,7 @@ function updateClear(dt) {
   moveAndCollide(dt);
   p.sqX = approach(p.sqX, 1, 6 * dt);
   p.sqY = approach(p.sqY, 1, 6 * dt);
-  if (clearT >= 1.25) {
+  if (clearT >= 1.7) {
     if (cur === 11) gotoWin();
     else startLevel(cur + 1);
   }
@@ -1309,6 +1568,102 @@ function drawTrap(t) {
       drawPlat({ x: t.cx, y: t.y, w: t.w, h: t.h });
       break;
     }
+    case 'ghost': {
+      const ph = ghostPhase(t);
+      const solid = ph < t.on;
+      const warn = solid && ph > t.on - 0.45;
+      ctx.save();
+      if (solid) {
+        ctx.globalAlpha = warn ? 0.35 + 0.5 * Math.abs(Math.sin(time * 18)) : 0.95;
+        ctx.fillStyle = '#BDEAFF';
+        ctx.strokeStyle = INK; ctx.lineWidth = 3;
+        rr(t.x, t.y, t.w, t.h, 7); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,0.75)';
+        rr(t.x + 5, t.y + 3, Math.max(6, t.w - 10), 3, 2); ctx.fill();
+        // sleepy little face so kids read it as a creature that naps
+        ctx.fillStyle = INK;
+        ctx.beginPath(); ctx.arc(t.x + t.w / 2 - 9, t.y + t.h / 2, 1.8, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(t.x + t.w / 2 + 9, t.y + t.h / 2, 1.8, 0, Math.PI * 2); ctx.fill();
+      } else {
+        // faint outline telegraphs where it comes back
+        ctx.globalAlpha = 0.28;
+        ctx.strokeStyle = INK; ctx.lineWidth = 2;
+        ctx.setLineDash([6, 6]);
+        rr(t.x, t.y, t.w, t.h, 7); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.restore();
+      break;
+    }
+    case 'swing': {
+      const s = swingPos(t);
+      // chain
+      ctx.strokeStyle = 'rgba(43,35,80,0.55)';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(t.ax | 0, t.ay | 0); ctx.lineTo(s.x | 0, s.y | 0); ctx.stroke();
+      ctx.fillStyle = INK;
+      ctx.beginPath(); ctx.arc(t.ax | 0, t.ay | 0, 5, 0, Math.PI * 2); ctx.fill();
+      // thorn ball with a grumpy face
+      ctx.save();
+      ctx.translate(s.x | 0, s.y | 0);
+      ctx.rotate(s.ang * 0.6);
+      ctx.fillStyle = '#E4527E';
+      ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+      for (let i = 0; i < 8; i++) {
+        const a = i / 8 * Math.PI * 2 + time * 0.6;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a - 0.22) * 13, Math.sin(a - 0.22) * 13);
+        ctx.lineTo(Math.cos(a) * 21, Math.sin(a) * 21);
+        ctx.lineTo(Math.cos(a + 0.22) * 13, Math.sin(a + 0.22) * 13);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+      ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(-5, -3, 3.4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(5, -3, 3.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = INK;
+      ctx.beginPath(); ctx.arc(-5, -2.5, 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(5, -2.5, 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = INK; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 8, 4, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke();
+      ctx.restore();
+      break;
+    }
+    case 'shooter': {
+      const facing = t.dir;
+      ctx.save();
+      ctx.translate(t.x | 0, t.y | 0);
+      ctx.scale(facing, 1);
+      const puff = 1 + t.wind * 0.3;
+      // stem base on the wall
+      ctx.fillStyle = GRASSD;
+      ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+      rr(-22, -9, 14, 18, 5); ctx.fill(); ctx.stroke();
+      // petals: windup makes it puff up and glow warm
+      ctx.fillStyle = t.wind > 0 ? '#FFB25E' : PINKL;
+      for (let i = 0; i < 6; i++) {
+        const a = i / 6 * Math.PI * 2 + time * (t.wind > 0 ? 4 : 1.2);
+        ctx.beginPath();
+        ctx.ellipse(Math.cos(a) * 12 * puff, Math.sin(a) * 12 * puff, 7 * puff, 4.5 * puff, a, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+      }
+      // mouth
+      ctx.fillStyle = '#8A5A30';
+      ctx.beginPath(); ctx.arc(0, 0, 8 * puff, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#5C3A1C';
+      ctx.beginPath(); ctx.arc(2, 0, 4.5 * puff, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      // seeds in flight
+      for (const s of t.shots) {
+        if (!s.on) continue;
+        ctx.fillStyle = '#8A5A30';
+        ctx.strokeStyle = INK; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(s.x | 0, s.y | 0, 8, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.beginPath(); ctx.arc((s.x - 2) | 0, (s.y - 2) | 0, 2, 0, Math.PI * 2); ctx.fill();
+      }
+      break;
+    }
   }
 }
 
@@ -1482,12 +1837,27 @@ function drawParts() {
         ctx.translate(q.x | 0, q.y | 0);
         ctx.rotate(q.rot);
         ctx.globalAlpha = Math.min(1, a * 1.6);
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = q.col || '#fff';
         ctx.strokeStyle = INK; ctx.lineWidth = 2;
         rr(-q.r, -q.r * 0.8, q.r * 2, q.r * 1.6, q.r * 0.6);
         ctx.fill(); ctx.stroke();
         ctx.restore();
         break;
+      case 'ring':
+        ctx.globalAlpha = a * 0.9;
+        ctx.strokeStyle = q.col;
+        ctx.lineWidth = 2 + a * 3;
+        ctx.beginPath(); ctx.arc(q.x | 0, q.y | 0, q.r, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
+      case 'mote': {
+        const tw = 0.35 + 0.3 * Math.sin(q.t * 5 + q.r * 9);
+        ctx.globalAlpha = Math.min(1, a * 2.5) * tw;
+        ctx.fillStyle = q.col;
+        ctx.beginPath(); ctx.arc(q.x | 0, q.y | 0, q.r, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+        break;
+      }
       case 'conf':
         ctx.save();
         ctx.translate(q.x | 0, q.y | 0);
@@ -1563,6 +1933,45 @@ function beginFrame() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.drawImage(bgCanvas, 0, 0);
   ctx.setTransform(viewScale, 0, 0, viewScale, 0, 0);
+  // parallax hills: two pre-rendered layers sliding gently against the player
+  ctx.drawImage(hillFar, (-80 - parX * 0.035) | 0, H - 232, HILLW, HILLH);
+  ctx.drawImage(hillNear, (-80 - parX * 0.075) | 0, H - 152, HILLW, HILLH);
+}
+
+function drawStarShape(x, y, r, rot) {
+  ctx.save();
+  ctx.translate(x | 0, y | 0);
+  ctx.rotate(rot || 0);
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + i * Math.PI * 2 / 5;
+    const a2 = a + Math.PI / 5;
+    ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    ctx.lineTo(Math.cos(a2) * r * 0.46, Math.sin(a2) * r * 0.46);
+  }
+  ctx.closePath();
+  ctx.fill();
+  if (ctx.lineWidth > 0.1) ctx.stroke();
+  ctx.restore();
+}
+
+function drawLevelStars() {
+  for (const s of lvl.stars) {
+    if (s.got) continue;
+    s.t += 0.016;
+    const bob = Math.sin(time * 2.6 + s.t * 7) * 4;
+    const y = s.y + bob;
+    // soft pre-rendered halo, pulsing
+    ctx.globalAlpha = 0.55 + Math.sin(time * 3 + s.t * 7) * 0.2;
+    ctx.drawImage(glowCan, (s.x - 26) | 0, (y - 26) | 0, 52, 52);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = GOLD;
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+    drawStarShape(s.x, y, 12, Math.sin(time * 1.8 + s.t * 7) * 0.25);
+    // glint
+    ctx.fillStyle = '#FFF6D0';
+    ctx.beginPath(); ctx.arc((s.x - 4) | 0, (y - 5) | 0, 2.2, 0, Math.PI * 2); ctx.fill();
+  }
 }
 
 function renderGame() {
@@ -1576,6 +1985,7 @@ function renderGame() {
   for (const pl of lvl.plats) drawPlat(pl);
   for (const s of lvl.spikes) drawSpikeRow(s.x, s.base, s.w, s.dir, 1);
   for (const t of lvl.traps) drawTrap(t);
+  drawLevelStars();
   drawDoor(lvl.exit);
   drawParts();
 
@@ -1593,20 +2003,35 @@ function renderGame() {
   }
   drawWords();
 
-  // HUD
-  ctx.textAlign = 'center';
+  // HUD: compact single-row pill (kept above the ceiling walk lane on upside-down levels)
   ctx.textBaseline = 'alphabetic';
-  ctx.font = '800 20px Nunito, sans-serif';
+  ctx.font = '800 19px Nunito, sans-serif';
+  const hudTxt = 'Level ' + (cur + 1) + ' of 12 · ' + lvl.name;
+  const txtW = ctx.measureText(hudTxt).width;
+  const hudW = txtW + 3 * 24 + 52;
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+  rr(W / 2 - hudW / 2, 5, hudW, 33, 16); ctx.fill(); ctx.stroke();
   ctx.fillStyle = INK;
-  ctx.fillText('Level ' + (cur + 1) + ' of 12 · ' + lvl.name, W / 2, 30);
+  ctx.textAlign = 'left';
+  ctx.fillText(hudTxt, W / 2 - hudW / 2 + 18, 28);
+  // star tally for this level
+  for (let i = 0; i < lvl.stars.length; i++) {
+    const got = lvl.stars[i].got;
+    ctx.fillStyle = got ? GOLD : 'rgba(43,35,80,0.16)';
+    ctx.strokeStyle = got ? INK : 'rgba(43,35,80,0.3)';
+    ctx.lineWidth = 2;
+    drawStarShape(W / 2 - hudW / 2 + 18 + txtW + 22 + i * 24, 21, 9, 0);
+  }
+  ctx.textAlign = 'center';
   const deaths = data.levelDeaths[cur];
   if (deaths > 0) {
     ctx.save();
-    ctx.translate(W / 2, 56);
+    ctx.translate(W / 2 + hudW / 2 + 52, 27);
     const pulse = 1 + oopsPulse * 0.5;
     ctx.scale(pulse, pulse);
-    ctx.rotate(oopsPulse * 0.1);
-    ctx.font = '800 18px Nunito, sans-serif';
+    ctx.rotate(oopsPulse * 0.1 - 0.04);
+    ctx.font = '800 17px Nunito, sans-serif';
     ctx.fillStyle = PINK;
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 4;
     ctx.strokeText('Oops x' + deaths, 0, 0);
@@ -1651,6 +2076,26 @@ function renderGame() {
       ctx.fillText(stickerNote, 0, 42);
     }
     ctx.restore();
+    // big star tally pops in one by one
+    for (let i = 0; i < 3; i++) {
+      const kk = easeOutBack(Math.max(0, Math.min(1, (clearT - 0.35 - i * 0.18) * 4)));
+      if (kk <= 0) continue;
+      const got = i < clearStars;
+      ctx.save();
+      ctx.translate(W / 2 - 52 + i * 52, H / 2 + 34);
+      ctx.scale(kk, kk);
+      ctx.rotate((1 - kk) * 0.6);
+      if (got) {
+        ctx.globalAlpha = 0.8;
+        ctx.drawImage(glowCan, -34, -34, 68, 68);
+        ctx.globalAlpha = 1;
+      }
+      ctx.fillStyle = got ? GOLD : 'rgba(43,35,80,0.15)';
+      ctx.strokeStyle = got ? INK : 'rgba(43,35,80,0.3)';
+      ctx.lineWidth = 3;
+      drawStarShape(0, 0, 20, 0);
+      ctx.restore();
+    }
   }
 }
 
@@ -1666,6 +2111,17 @@ function renderMenu() {
   });
   // a suspiciously friendly door watches from afar
   drawDoor({ x: 800, y: 406, w: 40, h: 54, fake: false, ceil: false, eyes: false, sweat: false, bubble: '' });
+  // teaser thorn ball swinging in from the sky
+  drawTrap({ type: 'swing', ax: 200, ay: -30, len: 210, amp: 0.5, period: 3.2, phase: 0 });
+  // bobbing star candies hint at the collectibles
+  for (let i = 0; i < 3; i++) {
+    const sx = 640 + i * 60, sy = 300 + Math.sin(time * 2.4 + i * 1.4) * 7;
+    ctx.globalAlpha = 0.6 + Math.sin(time * 3 + i) * 0.2;
+    ctx.drawImage(glowCan, (sx - 24) | 0, (sy - 24) | 0, 48, 48);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = GOLD; ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+    drawStarShape(sx, sy, 11, Math.sin(time * 1.6 + i) * 0.3);
+  }
   drawParts();
 }
 
@@ -1703,9 +2159,16 @@ function renderWin() {
   ctx.lineWidth = 7; ctx.strokeStyle = '#fff';
   ctx.strokeText(line, W / 2, 186);
   ctx.fillText(line, W / 2, 186);
+  const starSum = data.levelStars.reduce((a, b) => a + b, 0);
+  ctx.font = '800 22px Nunito, sans-serif';
+  ctx.fillStyle = GOLDD;
+  ctx.lineWidth = 6; ctx.strokeStyle = '#fff';
+  const starLine = 'Stars collected: ' + starSum + ' / 36' + (starSum >= 36 ? ' — ALL OF THEM!' : '');
+  ctx.strokeText(starLine, W / 2, 222);
+  ctx.fillText(starLine, W / 2, 222);
   ctx.font = '700 18px Nunito, sans-serif';
   ctx.fillStyle = 'rgba(43,35,80,0.75)';
-  ctx.fillText('All 12 levels outsmarted. The meadow apologizes for lying.', W / 2, 220);
+  ctx.fillText(starSum >= 36 ? 'All 12 levels outsmarted. The meadow is speechless.' : 'Missing stars? Replay any level from the LEVELS menu.', W / 2, 252);
 }
 
 /* ============================================================
@@ -1720,6 +2183,22 @@ function loop(now) {
     for (const c of clouds) {
       c.x += c.v * dt;
       if (c.x > W + 70) c.x = -70;
+    }
+    // parallax anchor: follow the player, drift slowly on menus
+    if ((state === State.PLAYING || state === State.CLEAR) && lvl) {
+      parX += (p.x - parX) * Math.min(1, 4 * dt);
+    } else {
+      parX += (480 + Math.sin(time * 0.25) * 140 - parX) * Math.min(1, 0.6 * dt);
+    }
+    // ambient floating motes (pollen / embers / starlight by area)
+    moteT -= dt;
+    if (moteT <= 0) {
+      moteT = 0.38;
+      spawnPart('mote', Math.random() * W, H + 6, {
+        vx: (Math.random() - 0.5) * 20, vy: -18 - Math.random() * 24,
+        r: 2.2 + Math.random() * 2.4, life: 3.5 + Math.random() * 1.5,
+        col: AREAS[curArea].mote,
+      });
     }
     updateParts(dt);
     updateWords(dt);
@@ -1755,6 +2234,7 @@ window.addEventListener('keydown', (e) => {
   switch (e.code) {
     case 'ArrowLeft': case 'KeyA': input.left = true; break;
     case 'ArrowRight': case 'KeyD': input.right = true; break;
+    case 'ArrowDown': case 'KeyS': input.down = true; break;
     case 'ArrowUp': case 'KeyW': case 'Space': if (state === State.PLAYING && !paused) pressJump(); else input.jumpHeld = true; break;
     case 'KeyR': if (state === State.PLAYING) { startLevel(cur); } break;
     case 'Escape': if (state === State.PLAYING) togglePause(); break;
@@ -1764,6 +2244,7 @@ window.addEventListener('keyup', (e) => {
   switch (e.code) {
     case 'ArrowLeft': case 'KeyA': input.left = false; break;
     case 'ArrowRight': case 'KeyD': input.right = false; break;
+    case 'ArrowDown': case 'KeyS': input.down = false; break;
     case 'ArrowUp': case 'KeyW': case 'Space': input.jumpHeld = false; break;
   }
 });
@@ -1860,7 +2341,8 @@ function buildGrid() {
     if (done) {
       const s = document.createElement('span');
       s.className = 'star';
-      s.textContent = '⭐';
+      const n = data.levelStars[i] || 0;
+      s.textContent = n > 0 ? '⭐'.repeat(n) : '✓';
       b.appendChild(s);
     }
     if (unlocked) {
