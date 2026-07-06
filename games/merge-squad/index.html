@@ -1772,7 +1772,7 @@ function endBattle(won) {
             if (streakBonus > 0) bonusBits.push('🔥 streak x' + data.winStreak + ' +' + streakBonus);
             if (battleInterest > 0) bonusBits.push('🐷 piggy +' + battleInterest);
             (function (tt, bl, bb, st) {
-                setTimeout(function () { showRewardPanel(tt, bl, bb, st); }, 1250);
+                setTimeout(function () { showRewardPanel(tt, bl, bb, st); }, 1450);
             })(total, lvl, bonusBits.join('   '), stars);
         }
     } else {
@@ -1791,9 +1791,11 @@ function endBattle(won) {
             var tip;
             if (battleStartPower[0] < battleStartPower[1] * 0.72) {
                 tip = 'Your squad was outmatched (' + battleStartPower[0] + ' vs ' + battleStartPower[1] + ' power). Buy more toys or grab the bonus coins before fighting!';
+            } else if (lastWaveBoss) {
+                tip = 'That BOSS is a big bruiser — merge your toys up and let poppers plink it from the back row!';
             } else {
                 var wi = WAVE_INTEL[lastWaveForm] || WAVE_INTEL.spread;
-                tip = (lastWaveBoss ? 'The BOSS is a bruiser — ' : 'That was a ' + wi.name + ' — ') + wi.tip;
+                tip = 'That was a ' + wi.name + ' — ' + wi.tip;
             }
             loseTipEl.textContent = 'TIP: ' + tip;
             /* near-miss psychology: distance to the next sticker milestone */
