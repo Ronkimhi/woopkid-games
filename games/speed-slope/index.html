@@ -108,16 +108,18 @@ html, body {
 
 #score {
     position: fixed;
-    top: 26px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     font-weight: 800;
-    font-size: min(17vw, 70px);
+    font-size: min(15vw, 62px);
     color: #C8FAFF;
     text-shadow: 0 0 22px rgba(60, 240, 255, 0.75), 0 4px 0 rgba(0, 0, 0, 0.45);
     z-index: 20;
     display: none;
     pointer-events: none;
+    text-align: center;
+    line-height: 1;
 }
 #score .unit { font-size: 0.38em; opacity: 0.75; margin-left: 2px; }
 #score.pop { animation: scorePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
@@ -126,10 +128,40 @@ html, body {
     40% { transform: translateX(-50%) scale(1.35); }
     100% { transform: translateX(-50%) scale(1); }
 }
+#hudPills {
+    position: fixed;
+    top: 88px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    gap: 8px;
+    z-index: 20;
+    pointer-events: none;
+}
+.pill {
+    display: inline-block;
+    font-weight: 800;
+    font-size: 15px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: rgba(12, 12, 36, 0.78);
+    border: 1px solid rgba(120, 240, 255, 0.3);
+    color: #9BEBFF;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+}
+#multPill.hot { color: #FFE14D; border-color: rgba(255, 225, 77, 0.55); box-shadow: 0 0 14px rgba(255, 225, 77, 0.3); }
+#multPill.blaze { color: #FF7CE4; border-color: rgba(255, 124, 228, 0.6); box-shadow: 0 0 16px rgba(255, 53, 211, 0.45); }
+#gemPill { color: #7ED9FF; }
+.pill.pop { animation: pillPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes pillPop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
 
 #title {
     position: fixed;
-    top: 12%;
+    top: 11%;
     width: 100%;
     text-align: center;
     z-index: 20;
@@ -144,8 +176,8 @@ html, body {
     animation: titleBob 2.6s ease-in-out infinite;
 }
 @keyframes titleBob {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+    0%, 100% { transform: translateY(0) rotate(-0.6deg); }
+    50% { transform: translateY(-9px) rotate(0.6deg); }
 }
 #title p {
     margin-top: 8px;
@@ -220,11 +252,11 @@ html, body {
     position: fixed;
     left: 50%;
     top: 50%;
-    width: min(88vw, 360px);
-    background: #12122E;
+    width: min(88vw, 370px);
+    background: linear-gradient(170deg, #171744, #10102c 55%);
     border: 1px solid rgba(120, 240, 255, 0.28);
     border-radius: 28px;
-    padding: 24px 22px 22px;
+    padding: 22px 20px 20px;
     box-shadow: 0 0 40px rgba(61, 246, 255, 0.22), 0 24px 60px rgba(0, 0, 0, 0.55);
     text-align: center;
     z-index: 60;
@@ -274,7 +306,7 @@ html, body {
 #overPanel h2 { color: #FFFFFF; font-weight: 800; font-size: 26px; margin-bottom: 4px; }
 #panelScore {
     font-weight: 800;
-    font-size: 60px;
+    font-size: 58px;
     color: #C8FAFF;
     text-shadow: 0 0 22px rgba(60, 240, 255, 0.6);
     line-height: 1.05;
@@ -288,11 +320,21 @@ html, body {
 }
 #panelStats {
     display: none;
+    margin-top: 10px;
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+.stat {
+    background: rgba(10, 10, 30, 0.6);
+    border: 1px solid rgba(120, 240, 255, 0.16);
+    border-radius: 12px;
+    padding: 6px 4px;
     color: #7BE8FF;
     font-weight: 800;
-    font-size: 16px;
-    margin-top: 6px;
+    font-size: 14px;
 }
+.stat b { display: block; color: #FFFFFF; font-size: 17px; }
 #nearMiss {
     display: none;
     color: #FF7CE4;
@@ -301,7 +343,7 @@ html, body {
     margin-top: 8px;
 }
 #playBtn {
-    margin-top: 16px;
+    margin-top: 14px;
     width: 100%;
     min-height: 64px;
     border: none;
@@ -326,10 +368,14 @@ html, body {
 <button id="pauseBtn" class="btn" aria-label="Pause">&#10074;&#10074;</button>
 
 <div id="score"><span id="scoreNum">0</span><span class="unit">m</span></div>
+<div id="hudPills">
+    <span id="multPill" class="pill">&times;1.0</span>
+    <span id="gemPill" class="pill">&#128142; 0</span>
+</div>
 
 <div id="title">
     <h1>SPEED SLOPE</h1>
-    <p>Steer. Dodge. Do not fall off.</p>
+    <p>Steer. Dodge. Grab gems. Hit the ramps.</p>
     <div><span id="menuBest" style="display:none;"></span></div>
 </div>
 <div id="tapHint">TAP TO ROLL</div>
@@ -360,6 +406,9 @@ var canvas = document.getElementById('game');
 var ctx = canvas.getContext('2d', { alpha: false });
 var scoreEl = document.getElementById('score');
 var scoreNumEl = document.getElementById('scoreNum');
+var hudPillsEl = document.getElementById('hudPills');
+var multPillEl = document.getElementById('multPill');
+var gemPillEl = document.getElementById('gemPill');
 var titleEl = document.getElementById('title');
 var menuBestEl = document.getElementById('menuBest');
 var tapHintEl = document.getElementById('tapHint');
@@ -377,7 +426,7 @@ var panelStatsEl = document.getElementById('panelStats');
 var nearMissEl = document.getElementById('nearMiss');
 var playBtn = document.getElementById('playBtn');
 
-/* ================= Storage (per game) ================= */
+/* ================= Storage (per game, same key + shape as always) ================= */
 var STORAGE_KEY = 'woopkid_speed-slope';
 var defaultData = {
     highScore: 0,
@@ -446,6 +495,7 @@ var TAU = Math.PI * 2;
 function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
 function rand(a, b) { return a + Math.random() * (b - a); }
 function lerp(a, b, t) { return a + (b - a) * t; }
+function easeOutBack(t) { var c = 1.70158; var u = t - 1; return 1 + (c + 1) * u * u * u + c * u * u; }
 
 /* ================= Audio (procedural, Web Audio only) ================= */
 var audioCtx = null;
@@ -461,7 +511,7 @@ function ensureAudio() {
 }
 function canPlay() { return !!audioCtx && !data.muted && activeVoices < MAX_VOICES; }
 function voiceDone() { activeVoices = Math.max(0, activeVoices - 1); }
-function pitchVar() { return rand(0.95, 1.05); } /* plus or minus 5 percent */
+function pitchVar() { return rand(0.95, 1.05); }
 function getNoise() {
     if (!noiseBuf) {
         var len = Math.floor(audioCtx.sampleRate * 0.4);
@@ -472,27 +522,59 @@ function getNoise() {
     return noiseBuf;
 }
 
-/* Run start: quick rising zip */
-function sfxStart() {
+function tone(type, f0, f1, dur, vol, slideT) {
     if (!canPlay()) return;
     activeVoices++;
     var t = audioCtx.currentTime;
     var p = pitchVar();
     var o = audioCtx.createOscillator();
-    o.type = 'triangle';
-    o.frequency.setValueAtTime(300 * p, t);
-    o.frequency.exponentialRampToValueAtTime(720 * p, t + 0.18);
+    o.type = type;
+    o.frequency.setValueAtTime(f0 * p, t);
+    if (f1) o.frequency.exponentialRampToValueAtTime(f1 * p, t + (slideT || dur));
     var g = audioCtx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(audioCtx.destination);
     o.onended = voiceDone;
     o.start(t);
-    o.stop(t + 0.26);
+    o.stop(t + dur + 0.02);
 }
 
-/* Milestone ding: bright two note ping every 100 meters */
+function sfxStart() { tone('triangle', 300, 720, 0.24, 0.16, 0.18); }
+function sfxLaunch() {
+    tone('triangle', 240, 980, 0.3, 0.15, 0.26);
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var src = audioCtx.createBufferSource();
+    src.buffer = getNoise();
+    var bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.Q.value = 1.4;
+    bp.frequency.setValueAtTime(500, t);
+    bp.frequency.exponentialRampToValueAtTime(2400, t + 0.24);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.1, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+    src.connect(bp); bp.connect(g); g.connect(audioCtx.destination);
+    src.onended = voiceDone;
+    src.start(t); src.stop(t + 0.3);
+}
+function sfxLand(perfect) {
+    tone('sine', 150, 55, 0.18, 0.2, 0.14);
+    if (perfect) tone('sine', 1047, 1568, 0.2, 0.14, 0.08);
+}
+function sfxGem(combo) {
+    var st = Math.min(combo || 0, 14);
+    var f = 660 * Math.pow(2, st / 12);
+    tone('sine', f, f * 1.5, 0.16, 0.14, 0.05);
+}
+function sfxCombo() { tone('triangle', 523, 1047, 0.24, 0.16, 0.16); }
+function sfxBiome() {
+    tone('sine', 784, 0, 0.22, 0.12);
+    tone('sine', 1175, 0, 0.34, 0.1);
+}
 function sfxTick() {
     if (!canPlay()) return;
     activeVoices++;
@@ -511,8 +593,6 @@ function sfxTick() {
     o.start(t);
     o.stop(t + 0.24);
 }
-
-/* Near miss: airy whoosh, bandpassed noise sweeping down */
 function sfxWhoosh() {
     if (!canPlay()) return;
     activeVoices++;
@@ -534,8 +614,6 @@ function sfxWhoosh() {
     src.start(t);
     src.stop(t + 0.22);
 }
-
-/* Shatter: glassy noise burst plus a soft falling tone, sad not scary */
 function sfxShatter() {
     if (!canPlay()) return;
     activeVoices += 2;
@@ -573,8 +651,6 @@ function sfxShatter() {
     o.start(t);
     o.stop(t + 0.6);
 }
-
-/* Little fanfare for new best or sticker */
 function sfxFanfare() {
     if (!canPlay()) return;
     activeVoices++;
@@ -599,23 +675,28 @@ function sfxFanfare() {
 
 /* ================= Constants ================= */
 var SEG_LEN = 3;          /* meters per road segment */
-var DRAW_SEG = 60;        /* segments drawn ahead of the camera */
+var DRAW_SEG = 62;        /* segments drawn ahead of the camera */
 var NSEG = 160;           /* ring buffer size, > DRAW_SEG + slack */
-var ROAD_HALF = 6;        /* road half width in meters */
+var ROAD_HALF = 6;        /* starting road half width in meters */
 var BALL_Z = 12;          /* ball distance ahead of the camera */
 var BALL_R = 1.0;         /* ball radius in meters */
 var CAM_H = 3.6;          /* camera height above the road */
-var START_SPEED = 14;
-var SPEED_RAMP = 0.35;    /* speed gained per second */
-var MAX_SPEED = 40;
-var STEER_ACC = 60;       /* lateral acceleration, units per second squared */
+var START_SPEED = 15;
+var MAX_SPEED = 52;
+var STEER_ACC = 62;       /* lateral acceleration */
 var STEER_FRICTION = 4.2; /* pull back to straight when not steering */
-var MAX_VX = 16;
+var MAX_VX = 17;
 var CENTRI = 6;           /* how hard curves push the ball outward */
-var GAP_W = 3.6;          /* guaranteed dodge gap width in every block row */
 var BLOCK_H = 1.7;
 var BLOCK_D = 1.6;
-var MENU_DRIFT = 8;
+var MENU_DRIFT = 9;
+var AIR_G = 30;           /* gravity for jumps, meters/s^2 */
+var BIOME_LEN = 550;      /* meters per biome */
+
+/* target cruising speed by run distance; boost rides on top */
+function targetSpeedAt(d) { return START_SPEED + 27 * (d / (d + 750)); }
+function roadHalfAt(d) { return ROAD_HALF - 1.6 * Math.min(1, d / 2200); }
+function gapWAt(d) { return 3.6 - 0.7 * Math.min(1, d / 2800); } /* guaranteed dodge gap */
 
 var State = {
     MENU: 'menu',
@@ -626,11 +707,51 @@ var State = {
 };
 var currentState = State.MENU;
 
+/* ================= Biomes ================= */
+var BIOMES = [
+    { name: 'NEON VALLEY', icon: '⚡',
+      skyTop: '#1a1a3e', skyMid: '#12122e', skyBot: '#0a0a22',
+      nebA: 'rgba(255,53,211,0.13)', nebB: 'rgba(61,246,255,0.10)',
+      horizon: 'rgba(61,246,255,0.22)',
+      roadA: '#17173C', roadB: '#111132', edge: '#3DF6FF', edgeGlow: 'rgba(61,246,255,0.14)',
+      dash: 'rgba(150,245,255,0.28)', py: '#5EF8FF',
+      blockA: '#FF35D3', blockB: '#C21FAB', blockRim: '#FFB1F0', blockGlow: '#FF35D3',
+      gem: '#3DF6FF' },
+    { name: 'SUNSET CANYON', icon: '🌅',
+      skyTop: '#3c1440', skyMid: '#2a0f38', skyBot: '#160a2c',
+      nebA: 'rgba(255,150,60,0.16)', nebB: 'rgba(255,70,140,0.12)',
+      horizon: 'rgba(255,170,80,0.26)',
+      roadA: '#241238', roadB: '#1c0e30', edge: '#FFB347', edgeGlow: 'rgba(255,179,71,0.15)',
+      dash: 'rgba(255,210,150,0.26)', py: '#FFCF6E',
+      blockA: '#FF5A78', blockB: '#C22F55', blockRim: '#FFC3CE', blockGlow: '#FF5A78',
+      gem: '#FFD24A' },
+    { name: 'FROST PEAKS', icon: '❄',
+      skyTop: '#10284a', skyMid: '#0c1d3a', skyBot: '#081228',
+      nebA: 'rgba(120,255,220,0.12)', nebB: 'rgba(140,170,255,0.13)',
+      horizon: 'rgba(150,240,255,0.24)',
+      roadA: '#14224a', roadB: '#0f1a3c', edge: '#8CF5FF', edgeGlow: 'rgba(140,245,255,0.15)',
+      dash: 'rgba(200,245,255,0.3)', py: '#B8FBFF',
+      blockA: '#7C6CFF', blockB: '#5442C8', blockRim: '#C9C2FF', blockGlow: '#7C6CFF',
+      gem: '#9FFBEF' },
+    { name: 'STAR FIELDS', icon: '🌟',
+      skyTop: '#241448', skyMid: '#180f38', skyBot: '#0c0824',
+      nebA: 'rgba(255,225,77,0.11)', nebB: 'rgba(176,108,255,0.14)',
+      horizon: 'rgba(255,225,77,0.2)',
+      roadA: '#1E1440', roadB: '#160f34', edge: '#FFE14D', edgeGlow: 'rgba(255,225,77,0.13)',
+      dash: 'rgba(255,240,180,0.26)', py: '#FFEE8A',
+      blockA: '#B06CFF', blockB: '#7C3FD1', blockRim: '#E0C7FF', blockGlow: '#B06CFF',
+      gem: '#FF7CE4' }
+];
+var biomeIdx = 0, prevBiomeIdx = 0, biomeFade = 1;
+
 /* ================= Canvas sizing + prerendered sprites ================= */
 var W = 0, H = 0, W2 = 0, dpr = 1;
 var HOR = 0, PROJX = 0, PROJY = 0;
-var skySpr = null, ballSpr = null;
-var BALL_SPR_R = 46; /* ball radius inside the 128px sprite */
+var fHOR = 0, fPROJX = 0, fPROJY = 0, fCAMH = 0, fov = 0;
+var skySprs = [], mtnFar = null, mtnNear = null, ballSpr = null, gemSprs = [];
+var BALL_SPR_R = 46;
+var GEM_SPR = 40, GEM_HALF = 20;
+var MTN_H = 0;
 
 function makeCanvas(w, h) {
     var c = document.createElement('canvas');
@@ -639,48 +760,92 @@ function makeCanvas(w, h) {
     return c;
 }
 
-function buildSky() {
-    skySpr = makeCanvas(W, H);
-    var c = skySpr.getContext('2d');
-    /* deep space gradient, prerendered once so no gradients in the game loop */
-    var g = c.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#1a1a3e');
-    g.addColorStop(0.55, '#12122e');
-    g.addColorStop(1, '#0a0a22');
-    c.fillStyle = g;
-    c.fillRect(0, 0, W, H);
-    /* soft nebula blobs */
-    var n1 = c.createRadialGradient(W * 0.22, HOR * 0.4, 10, W * 0.22, HOR * 0.4, W * 0.5);
-    n1.addColorStop(0, 'rgba(255,53,211,0.13)');
-    n1.addColorStop(1, 'rgba(255,53,211,0)');
-    c.fillStyle = n1;
-    c.fillRect(0, 0, W, H);
-    var n2 = c.createRadialGradient(W * 0.82, HOR * 0.62, 10, W * 0.82, HOR * 0.62, W * 0.45);
-    n2.addColorStop(0, 'rgba(61,246,255,0.1)');
-    n2.addColorStop(1, 'rgba(61,246,255,0)');
-    c.fillStyle = n2;
-    c.fillRect(0, 0, W, H);
-    /* horizon glow band */
-    var hb = c.createLinearGradient(0, HOR - 60, 0, HOR + 40);
-    hb.addColorStop(0, 'rgba(61,246,255,0)');
-    hb.addColorStop(0.62, 'rgba(61,246,255,0.2)');
-    hb.addColorStop(1, 'rgba(61,246,255,0)');
-    c.fillStyle = hb;
-    c.fillRect(0, HOR - 60, W, 100);
-    c.fillStyle = 'rgba(150,248,255,0.4)';
-    c.fillRect(0, HOR - 1, W, 2);
+function buildSkies() {
+    skySprs = [];
+    for (var bi = 0; bi < BIOMES.length; bi++) {
+        var B = BIOMES[bi];
+        var spr = makeCanvas(W, H);
+        var c = spr.getContext('2d');
+        var g = c.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, B.skyTop);
+        g.addColorStop(0.55, B.skyMid);
+        g.addColorStop(1, B.skyBot);
+        c.fillStyle = g;
+        c.fillRect(0, 0, W, H);
+        var n1 = c.createRadialGradient(W * 0.22, HOR * 0.4, 10, W * 0.22, HOR * 0.4, W * 0.5);
+        n1.addColorStop(0, B.nebA);
+        n1.addColorStop(1, 'rgba(0,0,0,0)');
+        c.fillStyle = n1;
+        c.fillRect(0, 0, W, H);
+        var n2 = c.createRadialGradient(W * 0.82, HOR * 0.62, 10, W * 0.82, HOR * 0.62, W * 0.45);
+        n2.addColorStop(0, B.nebB);
+        n2.addColorStop(1, 'rgba(0,0,0,0)');
+        c.fillStyle = n2;
+        c.fillRect(0, 0, W, H);
+        /* darker void floor below the horizon so the road pops */
+        var gd = c.createLinearGradient(0, HOR, 0, H);
+        gd.addColorStop(0, B.skyBot);
+        gd.addColorStop(1, '#050514');
+        c.fillStyle = gd;
+        c.fillRect(0, HOR, W, H - HOR);
+        var hb = c.createLinearGradient(0, HOR - 60, 0, HOR + 40);
+        hb.addColorStop(0, 'rgba(0,0,0,0)');
+        hb.addColorStop(0.62, B.horizon);
+        hb.addColorStop(1, 'rgba(0,0,0,0)');
+        c.fillStyle = hb;
+        c.fillRect(0, HOR - 60, W, 100);
+        c.fillStyle = 'rgba(200,240,255,0.35)';
+        c.fillRect(0, HOR - 1, W, 2);
+        skySprs.push(spr);
+    }
+}
+
+/* two wrapping mountain silhouette layers, biome-neutral so tinted sky shows through */
+function ridge(c, w, h, baseY, amp, step, seed, fill, glow) {
+    c.fillStyle = fill;
+    c.beginPath();
+    c.moveTo(0, h);
+    var pts = [];
+    var y0 = 0;
+    for (var x = 0; x <= w + step; x += step) {
+        var t = x * 0.011 + seed;
+        var y = baseY - amp * (0.55 + 0.45 * Math.sin(t * 1.7)) * (0.6 + 0.4 * Math.sin(t * 0.53 + seed));
+        if (x === 0) y0 = y;
+        /* force ends to match so the layer wraps seamlessly */
+        if (x >= w) y = y0;
+        pts.push(x, y);
+        c.lineTo(x, y);
+    }
+    c.lineTo(w + step, h);
+    c.closePath();
+    c.fill();
+    c.strokeStyle = glow;
+    c.lineWidth = 1.5;
+    c.beginPath();
+    for (var i = 0; i < pts.length; i += 2) {
+        if (i === 0) c.moveTo(pts[i], pts[i + 1]);
+        else c.lineTo(pts[i], pts[i + 1]);
+    }
+    c.stroke();
+}
+function buildMountains() {
+    MTN_H = Math.max(60, HOR * 0.62);
+    mtnFar = makeCanvas(W, MTN_H);
+    var c = mtnFar.getContext('2d');
+    ridge(c, W, MTN_H, MTN_H, MTN_H * 0.72, 26, 1.7, '#0e0e2c', 'rgba(160,200,255,0.12)');
+    mtnNear = makeCanvas(W, MTN_H);
+    c = mtnNear.getContext('2d');
+    ridge(c, W, MTN_H, MTN_H, MTN_H * 0.95, 18, 5.2, '#121234', 'rgba(180,230,255,0.16)');
 }
 
 function buildBallSprite() {
     ballSpr = makeCanvas(128, 128);
     var c = ballSpr.getContext('2d');
-    /* outer cool glow */
     var glow = c.createRadialGradient(64, 64, 30, 64, 64, 64);
     glow.addColorStop(0, 'rgba(140,240,255,0.5)');
     glow.addColorStop(1, 'rgba(140,240,255,0)');
     c.fillStyle = glow;
     c.fillRect(0, 0, 128, 128);
-    /* glossy sphere */
     var s = c.createRadialGradient(52, 46, 6, 60, 60, 52);
     s.addColorStop(0, '#FFFFFF');
     s.addColorStop(0.5, '#EDF1FC');
@@ -690,17 +855,65 @@ function buildBallSprite() {
     c.beginPath();
     c.arc(64, 64, BALL_SPR_R, 0, TAU);
     c.fill();
-    /* rim light */
     c.strokeStyle = 'rgba(255,255,255,0.55)';
     c.lineWidth = 2.5;
     c.beginPath();
     c.arc(64, 64, BALL_SPR_R - 1.5, 0, TAU);
     c.stroke();
-    /* hot highlight */
     c.fillStyle = 'rgba(255,255,255,0.92)';
     c.beginPath();
     c.ellipse(48, 42, 13, 8.5, -0.6, 0, TAU);
     c.fill();
+}
+
+function buildGemSprites() {
+    gemSprs = [];
+    for (var bi = 0; bi < BIOMES.length; bi++) {
+        var col = BIOMES[bi].gem;
+        var spr = makeCanvas(GEM_SPR, GEM_SPR);
+        var c = spr.getContext('2d');
+        var g = c.createRadialGradient(GEM_HALF, GEM_HALF, 2, GEM_HALF, GEM_HALF, GEM_HALF);
+        g.addColorStop(0, col);
+        g.addColorStop(0.45, col);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        c.globalAlpha = 0.5;
+        c.fillStyle = g;
+        c.fillRect(0, 0, GEM_SPR, GEM_SPR);
+        c.globalAlpha = 1;
+        /* faceted diamond */
+        c.fillStyle = col;
+        c.beginPath();
+        c.moveTo(GEM_HALF, 4);
+        c.lineTo(GEM_SPR - 6, GEM_HALF);
+        c.lineTo(GEM_HALF, GEM_SPR - 4);
+        c.lineTo(6, GEM_HALF);
+        c.closePath();
+        c.fill();
+        c.fillStyle = 'rgba(255,255,255,0.85)';
+        c.beginPath();
+        c.moveTo(GEM_HALF, 4);
+        c.lineTo(GEM_SPR - 6, GEM_HALF);
+        c.lineTo(GEM_HALF, GEM_HALF - 2);
+        c.closePath();
+        c.fill();
+        c.fillStyle = 'rgba(255,255,255,0.4)';
+        c.beginPath();
+        c.moveTo(GEM_HALF, 4);
+        c.lineTo(6, GEM_HALF);
+        c.lineTo(GEM_HALF, GEM_HALF - 2);
+        c.closePath();
+        c.fill();
+        c.strokeStyle = 'rgba(255,255,255,0.8)';
+        c.lineWidth = 1.5;
+        c.beginPath();
+        c.moveTo(GEM_HALF, 4);
+        c.lineTo(GEM_SPR - 6, GEM_HALF);
+        c.lineTo(GEM_HALF, GEM_SPR - 4);
+        c.lineTo(6, GEM_HALF);
+        c.closePath();
+        c.stroke();
+        gemSprs.push(spr);
+    }
 }
 
 function resize() {
@@ -715,8 +928,10 @@ function resize() {
     HOR = H * 0.36;
     PROJX = 0.8 * Math.min(W, H * 0.9);
     PROJY = 1.47 * H;
-    buildSky();
+    buildSkies();
+    buildMountains();
     buildBallSprite();
+    buildGemSprites();
     initStars();
 }
 window.addEventListener('resize', resize);
@@ -733,7 +948,7 @@ function initStars() {
             starList.push({
                 x: rand(0, W),
                 y: rand(0, HOR + 20),
-                l: ci === 0 ? rand(0.6, 1) : rand(0.25, 0.6), /* near layer drifts faster */
+                l: ci === 0 ? rand(0.6, 1) : rand(0.25, 0.6),
                 r: rand(1, 2.4),
                 ph: rand(0, TAU),
                 tw: rand(1.5, 4),
@@ -742,16 +957,20 @@ function initStars() {
         }
     }
 }
+var starDrift = 0;
 function updateStars(dt) {
     var base = Math.floor(pos / SEG_LEN);
     var curveNow = segs[base % NSEG].curve;
     var drift = -(curveNow * worldSpeed * 46);
+    starDrift = drift;
     for (var i = 0; i < starList.length; i++) {
         var s = starList[i];
         s.x += drift * s.l * dt + 1.5 * s.l * dt;
         if (s.x < -4) s.x += W + 8;
         if (s.x > W + 4) s.x -= W + 8;
     }
+    mtnOffF += drift * 0.16 * dt;
+    mtnOffN += drift * 0.3 * dt;
 }
 function drawStarsBg() {
     var lastC = -1;
@@ -765,6 +984,22 @@ function drawStarsBg() {
     ctx.globalAlpha = 1;
 }
 
+var mtnOffF = 0, mtnOffN = 0;
+function drawMountains() {
+    var y = (HOR - MTN_H + 4) | 0;
+    var xf = ((mtnOffF - camX * 2) % W + W) % W;
+    var xn = ((mtnOffN - camX * 4.5) % W + W) % W;
+    ctx.drawImage(mtnFar, (xf - W) | 0, y);
+    ctx.drawImage(mtnFar, xf | 0, y);
+    ctx.drawImage(mtnNear, (xn - W) | 0, y);
+    ctx.drawImage(mtnNear, xn | 0, y);
+    /* re-draw the horizon glow line over the mountain feet */
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = BIOMES[biomeIdx].edge;
+    ctx.fillRect(0, (HOR + 2) | 0, W, 2);
+    ctx.globalAlpha = 1;
+}
+
 /* ================= Track (ring buffer of road segments) ================= */
 var segs = [];
 for (var sgi = 0; sgi < NSEG; sgi++) segs.push({ n: -1, curve: 0, el: -ROAD_HALF, er: ROAD_HALF });
@@ -772,38 +1007,40 @@ var genNext = 0;
 var gen = {
     curve: 0, curveTarget: 0, curveHold: 0,
     gapRemain: 0, gapTotal: 0, gapSide: 1, gapW: 0, sinceGap: 999,
-    nextRowZ: 1e9, lastRowZ: 0, prevGapC: 0
+    nextRowZ: 1e9, lastRowZ: 0, prevGapC: 0, patCount: 0
 };
 
 function genSegment(n) {
     var s = segs[n % NSEG];
     s.n = n;
-    /* smoothed random curvature: ease toward a target that re-rolls now and then */
+    var rd = Math.max(0, n * SEG_LEN - startPos); /* distance into current run */
+    var cm = 0.022 + 0.02 * Math.min(1, rd / 2500);
     if (gen.curveHold <= 0) {
-        gen.curveTarget = rand(-0.034, 0.034);
-        gen.curveHold = 30 + ((Math.random() * 45) | 0);
+        gen.curveTarget = rand(-cm, cm);
+        gen.curveHold = 26 + ((Math.random() * 42) | 0);
     }
     gen.curveHold--;
     gen.curve += (gen.curveTarget - gen.curve) * 0.05;
     s.curve = (n < 16) ? 0 : gen.curve;
 
-    /* edge gaps: at higher speeds one side of the road falls away for a stretch */
-    var el = -ROAD_HALF, er = ROAD_HALF;
+    var half = currentState === State.MENU ? ROAD_HALF : roadHalfAt(rd);
+    var el = -half, er = half;
     if (gen.gapRemain > 0) {
         var done = gen.gapTotal - gen.gapRemain;
-        var f = Math.min(1, Math.min(done + 1, gen.gapRemain) / 2.5); /* ramp in and out */
+        var f = Math.min(1, Math.min(done + 1, gen.gapRemain) / 2.5);
         var shift = gen.gapW * f;
-        if (gen.gapSide < 0) el = -ROAD_HALF + shift; else er = ROAD_HALF - shift;
+        if (gen.gapSide < 0) el = -half + shift; else er = half - shift;
         gen.gapRemain--;
         gen.sinceGap = 0;
     } else {
         gen.sinceGap++;
-        if (currentState === State.PLAYING && speed >= 20 && gen.sinceGap > 50 && Math.random() < 0.05) {
+        var gapChance = 0.05 + 0.045 * Math.min(1, rd / 2400);
+        var gapGate = Math.max(26, 52 - rd / 90);
+        if (currentState === State.PLAYING && rd > 240 && gen.sinceGap > gapGate && Math.random() < gapChance) {
             gen.gapTotal = 10 + ((Math.random() * 8) | 0);
             gen.gapRemain = gen.gapTotal;
             gen.gapSide = Math.random() < 0.5 ? -1 : 1;
-            gen.gapW = rand(2.6, 4.2);
-            /* fairness: keep block rows away from the gap stretch */
+            gen.gapW = rand(2.6, 4.2 + Math.min(1.4, rd / 1800));
             var gapEnd = (n + gen.gapTotal + 8) * SEG_LEN;
             if (gen.nextRowZ < gapEnd) gen.nextRowZ = gapEnd;
         }
@@ -817,63 +1054,153 @@ function ensureTrack() {
     while (genNext < need) genSegment(genNext++);
 }
 
-/* ================= Obstacle blocks (pooled) ================= */
+/* ================= Obstacles / ramps / gems (pooled) ================= */
 var blocks = [];
-for (var bi = 0; bi < 24; bi++) blocks.push({ active: false, z: 0, x0: 0, x1: 0, passed: false });
-var blockScratch = new Array(24);
+for (var bi = 0; bi < 30; bi++) {
+    blocks.push({ active: false, z: 0, x0: 0, x1: 0, passed: false, mv: false, cx: 0, hw: 0, amp: 0, spd: 0, ph: 0 });
+}
+var blockScratch = new Array(30);
 
 function spawnBlock(z, x0, x1) {
     for (var i = 0; i < blocks.length; i++) {
         var b = blocks[i];
         if (!b.active) {
             b.active = true;
-            b.z = z;
-            b.x0 = x0;
-            b.x1 = x1;
-            b.passed = false;
-            return;
+            b.z = z; b.x0 = x0; b.x1 = x1;
+            b.passed = false; b.mv = false;
+            return b;
         }
+    }
+    return null;
+}
+function spawnSlider(z, hw, amp, spd) {
+    var b = spawnBlock(z, -hw, hw);
+    if (!b) return;
+    b.mv = true; b.cx = 0; b.hw = hw; b.amp = amp; b.spd = spd; b.ph = rand(0, TAU);
+}
+
+var ramps = [];
+for (var ri = 0; ri < 6; ri++) ramps.push({ active: false, z: 0, x: 0, w: 3 });
+function spawnRamp(z, x, w) {
+    for (var i = 0; i < ramps.length; i++) {
+        var r = ramps[i];
+        if (!r.active) { r.active = true; r.z = z; r.x = x; r.w = w; return; }
     }
 }
 
-/* One row of blocks with a guaranteed reachable gap. */
-function spawnRowAt(z) {
+var gems = [];
+for (var gi = 0; gi < 48; gi++) gems.push({ active: false, z: 0, x: 0, h: 0 });
+function spawnGem(z, x, h) {
+    for (var i = 0; i < gems.length; i++) {
+        var g = gems[i];
+        if (!g.active) { g.active = true; g.z = z; g.x = x; g.h = h || 0; return; }
+    }
+}
+/* a line of gems from (z0,x0) to (z0+n*dz, x1) — teaches the racing line */
+function spawnGemLine(z0, x0, x1, n, dz) {
+    for (var i = 0; i < n; i++) spawnGem(z0 + i * dz, lerp(x0, x1, n === 1 ? 0 : i / (n - 1)), 0);
+}
+/* arc of gems over a ramp jump */
+function spawnGemArc(z0, x, n, dz, hMax) {
+    for (var i = 0; i < n; i++) {
+        var t = i / (n - 1);
+        spawnGem(z0 + i * dz, x, hMax * Math.sin(t * Math.PI));
+    }
+}
+
+/* One row of blocks with a guaranteed reachable gap. Returns gap center or null. */
+function spawnRowAt(z, forcedGapC) {
     var s = segs[Math.floor(z / SEG_LEN) % NSEG];
     var el = s.el, er = s.er;
-    if (er - el < GAP_W + 1.2) return; /* road too narrow here, skip */
+    var rd = z - startPos;
+    var GAP_W = gapWAt(rd);
+    if (er - el < GAP_W + 1.2) return null;
     var tBetween = Math.max(0.6, (z - gen.lastRowZ) / Math.max(speed, 1));
-    var reach = clamp(12 * tBetween * 0.5, 2.2, 6.5); /* what the player can laterally cover in time */
+    var reach = clamp(12 * tBetween * 0.5, 2.2, 6.5);
     var lo = el + GAP_W / 2 + 0.4;
     var hi = er - GAP_W / 2 - 0.4;
-    if (hi <= lo) return;
-    var pc = clamp(gen.prevGapC, lo, hi);
-    var gapC = clamp(pc + rand(-reach, reach), lo, hi);
+    if (hi <= lo) return null;
+    var gapC;
+    if (forcedGapC !== undefined) {
+        gapC = clamp(forcedGapC, lo, hi);
+    } else {
+        var pc = clamp(gen.prevGapC, lo, hi);
+        gapC = clamp(pc + rand(-reach, reach), lo, hi);
+    }
     gen.prevGapC = gapC;
     gen.lastRowZ = z;
     var lSpan = (gapC - GAP_W / 2) - el;
     if (lSpan > 0.9) spawnBlock(z, el - 0.6, gapC - GAP_W / 2);
     var rSpan = er - (gapC + GAP_W / 2);
     if (rSpan > 0.9) spawnBlock(z, gapC + GAP_W / 2, er + 0.6);
+    return gapC;
 }
 
-/* Row spacing = minimum reaction distance, scales with speed. */
+/* Pattern spawner: escalating variety with distance. */
+function spawnPattern(z) {
+    var rd = z - startPos;
+    gen.patCount++;
+    var roll = Math.random();
+    /* ramps: every so often from 140m, gems arc over the jump */
+    if (rd > 140 && gen.patCount % 5 === 2) {
+        var s = segs[Math.floor(z / SEG_LEN) % NSEG];
+        var rx = clamp(gen.prevGapC + rand(-3, 3), s.el + 2, s.er - 2);
+        spawnRamp(z, rx, 3.2);
+        spawnGemArc(z + 6, rx, 5, 7, 2.6);
+        gen.prevGapC = rx;
+        gen.lastRowZ = z + 20;
+        return 30; /* extra spacing after a ramp */
+    }
+    /* slider: a moving wall from 650m */
+    if (rd > 650 && roll < 0.16) {
+        var s2 = segs[Math.floor(z / SEG_LEN) % NSEG];
+        var half2 = Math.min(-s2.el, s2.er);
+        var hw = 1.5;
+        var amp = Math.max(0, half2 - hw - 0.4);
+        spawnSlider(z, hw, amp, rand(1.0, 1.5 + Math.min(0.9, rd / 4000)));
+        gen.lastRowZ = z;
+        return 26;
+    }
+    /* double stagger from 380m: two rows, offset gaps, gems thread the path */
+    if (rd > 380 && roll < 0.42) {
+        var g1 = spawnRowAt(z);
+        if (g1 !== null) {
+            var dz2 = Math.max(16, speed * 0.75);
+            var g2 = spawnRowAt(z + dz2, g1 + (Math.random() < 0.5 ? -3.2 : 3.2));
+            if (g2 !== null && Math.random() < 0.75) spawnGemLine(z + 3, g1, g2, 4, (dz2 - 4) / 3);
+        }
+        return 18;
+    }
+    /* basic row, often with a gem line through the gap */
+    var gc = spawnRowAt(z);
+    if (gc !== null && Math.random() < 0.55) spawnGemLine(z - 14, clamp(gc + rand(-2, 2), -4, 4), gc, 4, 5);
+    return 0;
+}
+
+/* Row spacing shrinks with distance; always >= reaction distance for current speed. */
 function manageRows() {
-    var ahead = Math.max(120, speed * 4);
+    var ahead = Math.max(130, speed * 4);
     while (gen.nextRowZ < pos + ahead) {
         var z = gen.nextRowZ;
-        if (z - startPos > 55) spawnRowAt(z);
-        gen.nextRowZ += Math.max(30, speed * 1.35) + rand(0, 12);
+        var rd = z - startPos;
+        var extra = 0;
+        if (rd > 55) extra = spawnPattern(z);
+        var tGap = 1.5 - 0.55 * Math.min(1, rd / 2600);
+        gen.nextRowZ += Math.max(26, speed * tGap) + rand(0, 10) + extra;
     }
 }
 
-/* ================= Particles (pooled: trail, shards, confetti, sparks) ================= */
+/* ================= Particles + floating labels (pooled) ================= */
 var parts = [];
-for (var qi = 0; qi < 150; qi++) {
+for (var qi = 0; qi < 120; qi++) {
     parts.push({ active: false, type: 0, x: 0, y: 0, vx: 0, vy: 0, rot: 0, vr: 0, life: 0, ttl: 1, size: 4, color: '#fff', seed: 0 });
 }
+var partCursor = 0;
 function spawnPart(type, x, y, vx, vy, ttl, size, color) {
-    for (var i = 0; i < parts.length; i++) {
-        var p = parts[i];
+    /* round-robin so bursts can't starve the trail */
+    for (var k = 0; k < parts.length; k++) {
+        partCursor = (partCursor + 1) % parts.length;
+        var p = parts[partCursor];
         if (!p.active) {
             p.active = true;
             p.type = type;
@@ -889,7 +1216,7 @@ function spawnPart(type, x, y, vx, vy, ttl, size, color) {
 
 var SHARD_COLORS = ['#FFFFFF', '#D6FBFF', '#9BEBFF', '#FFD1F6'];
 function spawnShards(x, y, r) {
-    for (var i = 0; i < 26; i++) {
+    for (var i = 0; i < 22; i++) {
         var a = rand(0, TAU);
         var sp = rand(120, 520);
         spawnPart(2, x + Math.cos(a) * r * 0.4, y + Math.sin(a) * r * 0.4,
@@ -899,29 +1226,66 @@ function spawnShards(x, y, r) {
 }
 var CONFETTI_COLORS = ['#FF35D3', '#3DF6FF', '#FFE14D', '#B06CFF', '#7ED957', '#FF7CE4'];
 function burstConfetti() {
-    for (var i = 0; i < 70; i++) {
+    for (var i = 0; i < 50; i++) {
         spawnPart(3, rand(W * 0.15, W * 0.85), rand(-60, -10), rand(-70, 70), rand(50, 190), rand(2, 3.2), rand(5, 9), CONFETTI_COLORS[i % CONFETTI_COLORS.length]);
     }
 }
-function burstSparks(x, y) {
-    for (var i = 0; i < 7; i++) {
+function burstSparks(x, y, n, col) {
+    for (var i = 0; i < n; i++) {
         var a = rand(0, TAU);
-        var sp = rand(60, 260);
-        spawnPart(4, x, y, Math.cos(a) * sp, Math.sin(a) * sp, rand(0.25, 0.5), rand(2, 4.5), i % 2 === 0 ? '#FFFFFF' : '#9BEBFF');
+        var sp = rand(60, 280);
+        spawnPart(4, x, y, Math.cos(a) * sp, Math.sin(a) * sp, rand(0.25, 0.5), rand(2, 4.5), i % 2 === 0 ? '#FFFFFF' : (col || '#9BEBFF'));
     }
+}
+/* glints: 4-point star sparkles */
+function burstGlints(x, y, col) {
+    for (var i = 0; i < 4; i++) {
+        spawnPart(5, x + rand(-16, 16), y + rand(-14, 14), rand(-20, 20), rand(-60, -20), rand(0.3, 0.55), rand(5, 9), i % 2 === 0 ? '#FFFFFF' : col);
+    }
+}
+/* expanding rings (pickup halo) */
+var rings = [];
+for (var rgi = 0; rgi < 8; rgi++) rings.push({ active: false, x: 0, y: 0, life: 0, ttl: 0.4, r0: 6, r1: 40, color: '#fff', lw: 3 });
+function spawnRing(x, y, r1, color, lw, ttl) {
+    for (var i = 0; i < rings.length; i++) {
+        var r = rings[i];
+        if (!r.active) {
+            r.active = true;
+            r.x = x; r.y = y; r.life = 0; r.ttl = ttl || 0.4;
+            r.r0 = 6; r.r1 = r1; r.color = color; r.lw = lw || 3;
+            return;
+        }
+    }
+}
+
+var labels = [];
+for (var li = 0; li < 10; li++) labels.push({ active: false, txt: '', x: 0, y: 0, life: 0, ttl: 1, color: '#fff', size: 20 });
+function spawnLabel(txt, color, size, x, y) {
+    var best = null;
+    for (var i = 0; i < labels.length; i++) {
+        if (!labels[i].active) { best = labels[i]; break; }
+    }
+    if (!best) return;
+    best.active = true;
+    best.txt = txt; best.color = color; best.size = size;
+    best.x = x; best.y = y; best.life = 0;
+    best.ttl = 0.9;
 }
 
 /* ================= World state ================= */
 var time = 0;
-var pos = 0;            /* camera distance down the slope, meters */
-var startPos = 0;       /* pos at run start, meters = pos - startPos */
+var pos = 0;
+var startPos = 0;
 var speed = START_SPEED;
+var boost = 0;
 var topSpeed = START_SPEED;
-var worldSpeed = 0;     /* how fast the world is scrolling right now (drifts after death) */
-var playerX = 0;        /* ball lateral offset from road center, meters */
-var vx = 0;             /* ball lateral velocity */
-var camX = 0;           /* camera lateral position, follows the ball */
+var worldSpeed = 0;
+var playerX = 0;
+var vx = 0;
+var camX = 0;
+var bonusMeters = 0;
 var shownMeters = 0;
+var shownMult = 10;
 var nextMilestone = 100;
 var runTime = 0;
 var prevBest = 0;
@@ -937,26 +1301,59 @@ var shockOn = false;
 var shockT = 0;
 var steerHintOn = false;
 var lastBallX = 0, lastBallY = 0, lastBallR = 24;
+/* jump state */
+var airborne = false, airH = 0, airVy = 0, airT = 0;
+var squash = 0;         /* +stretch / -squash, springs back to 0 */
+/* run stats */
+var runGems = 0, runNearMiss = 0, combo = 0, comboT = 0, bestAir = 0, perfectLands = 0;
+/* crash tumble */
+var crash = { on: false, x: 0, y: 0, vx: 0, vy: 0, rot: 0, vr: 0, s: 1 };
 
-/* projection scratch, preallocated */
 var projArr = [];
 for (var pji = 0; pji <= DRAW_SEG; pji++) projArr.push({ x: 0, y: 0, pw: 0, el: 0, er: 0, alt: 0, dash: false });
 var renderFrac = 0;
+
+function curMult() { return speed / START_SPEED; }
+
+/* ================= HUD ================= */
+function pillPop(el) {
+    el.classList.remove('pop');
+    void el.offsetWidth;
+    el.classList.add('pop');
+}
+function updateHud() {
+    var m10 = Math.round(curMult() * 10);
+    if (m10 !== shownMult) {
+        var up = m10 > shownMult;
+        shownMult = m10;
+        multPillEl.textContent = '×' + (m10 / 10).toFixed(1);
+        multPillEl.classList.toggle('hot', m10 >= 18 && m10 < 26);
+        multPillEl.classList.toggle('blaze', m10 >= 26);
+        if (up && m10 % 5 === 0) pillPop(multPillEl);
+    }
+}
 
 /* ================= Run control ================= */
 function resetRun() {
     var i;
     for (i = 0; i < blocks.length; i++) { blocks[i].active = false; blocks[i].passed = false; }
     for (i = 0; i < parts.length; i++) parts[i].active = false;
+    for (i = 0; i < gems.length; i++) gems[i].active = false;
+    for (i = 0; i < ramps.length; i++) ramps[i].active = false;
+    for (i = 0; i < rings.length; i++) rings[i].active = false;
+    for (i = 0; i < labels.length; i++) labels[i].active = false;
     pos = 0;
     startPos = 0;
     speed = START_SPEED;
+    boost = 0;
     topSpeed = START_SPEED;
     worldSpeed = 0;
     playerX = 0;
     vx = 0;
     camX = 0;
+    bonusMeters = 0;
     shownMeters = 0;
+    shownMult = 10;
     nextMilestone = 100;
     runTime = 0;
     newBest = false;
@@ -969,6 +1366,10 @@ function resetRun() {
     trauma = 0;
     shockOn = false;
     shockT = 0;
+    airborne = false; airH = 0; airVy = 0; airT = 0; squash = 0;
+    runGems = 0; runNearMiss = 0; combo = 0; comboT = 0; bestAir = 0; perfectLands = 0;
+    crash.on = false;
+    biomeIdx = 0; prevBiomeIdx = 0; biomeFade = 1;
     genNext = 0;
     gen.curve = 0;
     gen.curveTarget = 0;
@@ -979,7 +1380,11 @@ function resetRun() {
     gen.nextRowZ = 1e9;
     gen.lastRowZ = 0;
     gen.prevGapC = 0;
+    gen.patCount = 0;
     scoreNumEl.textContent = '0';
+    multPillEl.textContent = '×1.0';
+    multPillEl.classList.remove('hot', 'blaze');
+    gemPillEl.textContent = '💎 0';
     overPanel.classList.remove('show');
     ensureTrack();
 }
@@ -990,9 +1395,10 @@ function showMenuUI() {
     tapHintEl.style.display = 'block';
     steerHintEl.style.display = 'none';
     scoreEl.style.display = 'none';
+    hudPillsEl.style.display = 'none';
     pauseBtn.style.display = 'none';
     if (data.highScore > 0) {
-        menuBestEl.textContent = 'BEST: ' + data.highScore + 'm';
+        menuBestEl.textContent = 'BEST: ' + data.highScore + 'm' + (data.totalCoins > 0 ? '  ·  💎 ' + data.totalCoins : '');
         menuBestEl.style.display = 'inline-block';
     }
 }
@@ -1002,17 +1408,24 @@ function startRun() {
     prevBest = data.highScore;
     startPos = pos;
     speed = START_SPEED;
+    boost = 0;
     topSpeed = speed;
     runTime = 0;
+    bonusMeters = 0;
     shownMeters = 0;
     nextMilestone = 100;
     playerX = 0;
     vx = 0;
+    runGems = 0; runNearMiss = 0; combo = 0; comboT = 0; bestAir = 0; perfectLands = 0;
+    airborne = false; airH = 0; airVy = 0; airT = 0; squash = 0;
+    biomeIdx = 0; prevBiomeIdx = 0; biomeFade = 1;
     gen.nextRowZ = pos + 65;
     gen.lastRowZ = pos;
+    gen.patCount = 0;
     titleEl.style.display = 'none';
     tapHintEl.style.display = 'none';
     scoreEl.style.display = 'block';
+    hudPillsEl.style.display = 'flex';
     scoreNumEl.textContent = '0';
     pauseBtn.style.display = 'flex';
     steerHintEl.style.display = 'block';
@@ -1031,6 +1444,8 @@ function popScore() {
     scoreEl.classList.add('pop');
 }
 
+function scoreNow() { return Math.floor(pos - startPos + bonusMeters); }
+
 function die(cause) {
     if (currentState !== State.PLAYING) return;
     currentState = State.DYING;
@@ -1040,15 +1455,29 @@ function die(cause) {
     ballGone = true;
     shockOn = true;
     shockT = 0;
+    /* kid-safe cartoon tumble: the ball bounces away spinning with dizzy stars */
+    crash.on = true;
+    crash.x = lastBallX; crash.y = lastBallY;
+    crash.rot = 0; crash.s = 1;
+    if (cause === 'edge') {
+        crash.vx = (playerX > 0 ? 1 : -1) * 160;
+        crash.vy = 60;
+        crash.vr = rand(7, 11) * (playerX > 0 ? 1 : -1);
+    } else {
+        crash.vx = -vx * 14 + rand(-60, 60);
+        crash.vy = -420 - speed * 3;
+        crash.vr = rand(8, 13) * (Math.random() < 0.5 ? -1 : 1);
+    }
     spawnShards(lastBallX, lastBallY, lastBallR);
+    spawnRing(lastBallX, lastBallY, 120, '#FFFFFF', 5, 0.5);
     sfxShatter();
     pauseBtn.style.display = 'none';
     if (steerHintOn) hideSteerHint();
 
-    /* record the run immediately */
-    finalMeters = Math.floor(pos - startPos);
+    finalMeters = scoreNow();
     newBest = finalMeters > prevBest;
     data.totalPlays++;
+    data.totalCoins += runGems;
     if (finalMeters > data.highScore) data.highScore = finalMeters;
     data.lastPlayed = new Date().toISOString();
     saveData();
@@ -1061,23 +1490,28 @@ function showPanel() {
     panelShown = true;
     currentState = State.GAME_OVER;
     scoreEl.style.display = 'none';
+    hudPillsEl.style.display = 'none';
     panelScoreNumEl.textContent = finalMeters;
     panelBestEl.textContent = data.highScore;
     newBestEl.style.display = newBest ? 'block' : 'none';
     panelTitleEl.textContent = newBest ? 'UNSTOPPABLE!' : (deathCause === 'edge' ? 'OFF THE EDGE!' : 'WIPEOUT!');
-    panelStatsEl.textContent = '⚡ Top speed ' + Math.round(topSpeed);
-    panelStatsEl.style.display = 'block';
+    panelStatsEl.innerHTML =
+        '<div class="stat"><b>×' + (topSpeed / START_SPEED).toFixed(1) + '</b>top speed</div>' +
+        '<div class="stat"><b>💎 ' + runGems + '</b>gems</div>' +
+        '<div class="stat"><b>' + runNearMiss + '</b>close calls</div>' +
+        '<div class="stat"><b>' + bestAir.toFixed(1) + 's</b>biggest air</div>';
+    panelStatsEl.style.display = 'grid';
     var diff = prevBest - finalMeters;
-    if (!newBest && prevBest >= 100 && finalMeters < prevBest && diff <= prevBest * 0.2) {
+    if (!newBest && prevBest >= 100 && finalMeters < prevBest && diff <= prevBest * 0.25) {
         nearMissEl.textContent = 'SO CLOSE! ' + diff + 'm away from your best';
         nearMissEl.style.display = 'block';
     } else {
         nearMissEl.style.display = 'none';
     }
     if (earnedTiers.length > 0) {
-        var labels = [];
-        for (var i = 0; i < earnedTiers.length; i++) labels.push(TIER_LABELS[earnedTiers[i]]);
-        stickerBanner.textContent = 'STICKER EARNED! ' + labels.join(' + ');
+        var lbl = [];
+        for (var i = 0; i < earnedTiers.length; i++) lbl.push(TIER_LABELS[earnedTiers[i]]);
+        stickerBanner.textContent = 'STICKER EARNED! ' + lbl.join(' + ');
         stickerBanner.style.display = 'block';
     } else {
         stickerBanner.style.display = 'none';
@@ -1096,34 +1530,125 @@ function restart() {
 
 /* ================= Update ================= */
 function nearMissJuice() {
-    trauma = Math.max(trauma, 0.18);
-    burstSparks(lastBallX, lastBallY);
+    runNearMiss++;
+    combo++;
+    comboT = 2.5;
+    var bonus = 2 + Math.round(curMult());
+    bonusMeters += bonus;
+    boost = Math.min(8, boost + 1.1);
+    trauma = Math.max(trauma, 0.2);
+    burstSparks(lastBallX, lastBallY, 7, BIOMES[biomeIdx].py);
+    spawnLabel('CLOSE! +' + bonus, '#FF7CE4', 22, lastBallX, lastBallY - lastBallR * 2);
     sfxWhoosh();
+}
+
+function collectGem(g) {
+    g.active = false;
+    runGems++;
+    combo++;
+    comboT = 2.5;
+    boost = Math.min(8, boost + 0.4);
+    var B = BIOMES[biomeIdx];
+    spawnRing(lastBallX, lastBallY - lastBallR, 46 + Math.min(30, combo * 3), B.gem, 3, 0.35);
+    burstGlints(lastBallX, lastBallY - lastBallR, B.gem);
+    gemPillEl.textContent = '💎 ' + runGems;
+    pillPop(gemPillEl);
+    if (combo > 0 && combo % 5 === 0) {
+        var cb = combo;
+        bonusMeters += cb;
+        spawnLabel('COMBO ×' + cb + '  +' + cb, '#FFE14D', 26, lastBallX, lastBallY - lastBallR * 2.6);
+        spawnRing(lastBallX, lastBallY - lastBallR, 90, '#FFE14D', 4, 0.5);
+        burstSparks(lastBallX, lastBallY - lastBallR, 10, '#FFE14D');
+        sfxCombo();
+    } else {
+        sfxGem(combo);
+    }
+}
+
+function launchRamp() {
+    airborne = true;
+    airT = 0;
+    airH = 0;
+    airVy = 8.5 + speed * 0.14;
+    squash = 0.4; /* stretch on takeoff */
+    boost = Math.min(8, boost + 1.4);
+    trauma = Math.max(trauma, 0.12);
+    spawnLabel('JUMP!', '#FFD24A', 24, lastBallX, lastBallY - lastBallR * 2);
+    burstSparks(lastBallX, lastBallY + lastBallR * 0.4, 8, '#FFD24A');
+    sfxLaunch();
+}
+
+function landJump(sb) {
+    airborne = false;
+    airH = 0;
+    airVy = 0;
+    if (airT > bestAir) bestAir = airT;
+    /* landed off the road? that's a fall */
+    if (playerX < sb.el - BALL_R * 0.35 || playerX > sb.er + BALL_R * 0.35) {
+        die('edge');
+        return;
+    }
+    var bonus = Math.max(2, Math.round(airT * speed * 0.3));
+    var perfect = Math.abs(vx) < 5.5;
+    if (perfect) {
+        bonus += 5;
+        perfectLands++;
+        spawnLabel('PERFECT! +' + bonus, '#FFE14D', 26, lastBallX, lastBallY - lastBallR * 2.4);
+        spawnRing(lastBallX, lastBallY, 80, '#FFE14D', 4, 0.45);
+    } else {
+        spawnLabel('AIR +' + bonus, '#7ED9FF', 22, lastBallX, lastBallY - lastBallR * 2.2);
+    }
+    bonusMeters += bonus;
+    squash = -0.45; /* squash on landing */
+    trauma = Math.max(trauma, 0.28);
+    burstSparks(lastBallX, lastBallY + lastBallR * 0.5, 9, BIOMES[biomeIdx].py);
+    sfxLand(perfect);
 }
 
 function updateMenu(dt) {
     worldSpeed = MENU_DRIFT;
     pos += MENU_DRIFT * dt;
     ensureTrack();
-    playerX += (0 - playerX) * Math.min(1, 2 * dt);
+    /* lazy demo sway so the menu feels alive */
+    playerX += (Math.sin(time * 0.55) * 2.6 - playerX) * Math.min(1, 1.6 * dt);
     camX += (playerX * 0.92 - camX) * Math.min(1, 10 * dt);
     updateParticles(dt);
 }
 
 function updateGame(dt) {
     runTime += dt;
-    speed = Math.min(MAX_SPEED, speed + SPEED_RAMP * dt);
+    var rd = pos - startPos;
+    /* speed: eases toward a distance-based target; boost (gems, near misses, ramps) rides on top and decays */
+    boost *= (1 - Math.min(1, 0.5 * dt));
+    var target = Math.min(MAX_SPEED, targetSpeedAt(rd) + boost);
+    speed += (target - speed) * Math.min(1, 1.6 * dt);
     if (speed > topSpeed) topSpeed = speed;
     worldSpeed = speed;
     pos += speed * dt;
     ensureTrack();
     manageRows();
 
-    /* steering */
+    /* biome shifts with distance */
+    var bi = (Math.floor(rd / BIOME_LEN)) % BIOMES.length;
+    if (bi !== biomeIdx) {
+        prevBiomeIdx = biomeIdx;
+        biomeIdx = bi;
+        biomeFade = 0;
+        var B = BIOMES[bi];
+        spawnLabel(B.icon + ' ' + B.name, '#FFFFFF', 26, W2, H * 0.3);
+        sfxBiome();
+    }
+    if (biomeFade < 1) biomeFade = Math.min(1, biomeFade + dt / 1.1);
+
+    /* combo window */
+    if (comboT > 0) { comboT -= dt; if (comboT <= 0) combo = 0; }
+
+    /* steering (weighty: accelerate toward input, friction back to straight) */
     var steer = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + touchSteer;
     steer = clamp(steer, -1, 1);
+    var airCtl = airborne ? 0.55 : 1;
     if (steer !== 0) {
-        vx += steer * STEER_ACC * dt;
+        vx += steer * STEER_ACC * airCtl * dt;
         if (steerHintOn && runTime > 0.4) hideSteerHint();
     } else {
         vx -= vx * Math.min(1, STEER_FRICTION * dt);
@@ -1133,35 +1658,81 @@ function updateGame(dt) {
 
     var ballZ = pos + BALL_Z;
     var sb = segs[Math.floor(ballZ / SEG_LEN) % NSEG];
-    /* curves push the ball outward, the player fights back */
-    playerX += (vx - speed * sb.curve * CENTRI) * dt;
+    playerX += (vx - speed * sb.curve * CENTRI * (airborne ? 0.4 : 1)) * dt;
     camX += (playerX * 0.92 - camX) * Math.min(1, 10 * dt);
 
-    /* death: rolling off the road edge (or into an edge gap) */
-    if (playerX < sb.el - BALL_R * 0.35 || playerX > sb.er + BALL_R * 0.35) {
-        die('edge');
-        return;
+    /* squash & stretch spring back */
+    squash += (0 - squash) * Math.min(1, 9 * dt);
+
+    /* jump physics */
+    if (airborne) {
+        airT += dt;
+        airH += airVy * dt;
+        airVy -= AIR_G * dt;
+        if (airH <= 0 && airVy < 0) {
+            landJump(sb);
+            if (currentState !== State.PLAYING) return;
+        }
+    } else {
+        /* death: rolling off the road edge (or into an edge gap) */
+        if (playerX < sb.el - BALL_R * 0.35 || playerX > sb.er + BALL_R * 0.35) {
+            die('edge');
+            return;
+        }
+        /* ramps launch the ball */
+        for (var r = 0; r < ramps.length; r++) {
+            var rp = ramps[r];
+            if (!rp.active) continue;
+            if (rp.z < pos - 4) { rp.active = false; continue; }
+            if (Math.abs(rp.z - ballZ) < 1.6 && Math.abs(playerX - rp.x) < rp.w / 2 + BALL_R * 0.4) {
+                launchRamp();
+                break;
+            }
+        }
     }
 
-    /* death: hitting a block. Also near miss detection when squeaking past. */
+    /* carve spray on hard turns */
+    if (!airborne && Math.abs(vx) > 8 && speed > 20 && Math.random() < 0.6) {
+        spawnPart(4, lastBallX - (vx > 0 ? lastBallR : -lastBallR) * 0.7, lastBallY + lastBallR * 0.6,
+            -vx * 14 + rand(-40, 40), rand(-30, 90), rand(0.2, 0.4), rand(2, 4), BIOMES[biomeIdx].py);
+    }
+
+    /* blocks: sliders move, collisions kill (unless airborne), squeaking past = near miss */
     for (var i = 0; i < blocks.length; i++) {
         var b = blocks[i];
         if (!b.active) continue;
         if (b.z < pos - 4) { b.active = false; continue; }
+        if (b.mv) {
+            var osc = Math.sin(time * b.spd + b.ph) * b.amp;
+            b.x0 = b.cx - b.hw + osc;
+            b.x1 = b.cx + b.hw + osc;
+        }
         var dz = b.z - ballZ;
-        if (Math.abs(dz) < 1.4 && playerX > b.x0 - BALL_R * 0.55 && playerX < b.x1 + BALL_R * 0.55) {
+        if (!airborne && Math.abs(dz) < 1.4 && playerX > b.x0 - BALL_R * 0.55 && playerX < b.x1 + BALL_R * 0.55) {
             die('block');
             return;
         }
         if (!b.passed && dz < -1.4) {
             b.passed = true;
-            var clear = playerX < b.x0 ? b.x0 - playerX : (playerX > b.x1 ? playerX - b.x1 : 0);
-            if (clear > 0 && clear < 1.6) nearMissJuice();
+            if (!airborne) {
+                var clear = playerX < b.x0 ? b.x0 - playerX : (playerX > b.x1 ? playerX - b.x1 : 0);
+                if (clear > 0 && clear < 1.6) nearMissJuice();
+            }
         }
     }
 
-    /* score = meters traveled */
-    var m = Math.floor(pos - startPos);
+    /* gems */
+    for (var gI = 0; gI < gems.length; gI++) {
+        var g = gems[gI];
+        if (!g.active) continue;
+        if (g.z < pos - 2) { g.active = false; continue; }
+        if (Math.abs(g.z - ballZ) < 1.6 && Math.abs(g.x - playerX) < 1.25 && Math.abs(g.h - airH) < 1.4) {
+            collectGem(g);
+        }
+    }
+
+    /* score = meters + bonuses */
+    var m = scoreNow();
     if (m !== shownMeters) {
         shownMeters = m;
         scoreNumEl.textContent = m;
@@ -1171,12 +1742,11 @@ function updateGame(dt) {
         popScore();
         sfxTick();
     }
-
+    updateHud();
     updateParticles(dt);
 }
 
 function updateDying(dt) {
-    /* slow motion for the first 300ms, then the world keeps drifting */
     deathT += dt;
     var ts = deathT < 0.3 ? 0.18 : 1;
     speed = Math.max(7, speed - 26 * ts * dt);
@@ -1184,12 +1754,22 @@ function updateDying(dt) {
     pos += worldSpeed * dt;
     ensureTrack();
     camX += (0 - camX) * Math.min(1, 0.8 * dt);
+    /* cartoon tumble */
+    if (crash.on) {
+        var cdt = dt * (deathT < 0.3 ? 0.35 : 1);
+        crash.vy += 1300 * cdt;
+        crash.x += crash.vx * cdt;
+        crash.y += crash.vy * cdt;
+        crash.rot += crash.vr * cdt;
+        if (deathCause === 'edge') crash.s = Math.max(0.1, crash.s - 1.4 * cdt);
+        /* one cartoon bounce off the bottom of the screen */
+        if (crash.y > H + 80 || crash.s <= 0.12) crash.on = false;
+    }
     updateParticles(dt * (deathT < 0.3 ? 0.35 : 1));
-    if (deathT > 1.2) showPanel();
+    if (deathT > 1.25) showPanel();
 }
 
 function updateGameOver(dt) {
-    /* the world keeps drifting behind the panel */
     worldSpeed = speed;
     pos += speed * dt;
     ensureTrack();
@@ -1198,8 +1778,9 @@ function updateGameOver(dt) {
 }
 
 function updateParticles(dt) {
-    for (var i = 0; i < parts.length; i++) {
-        var p = parts[i];
+    var i, p;
+    for (i = 0; i < parts.length; i++) {
+        p = parts[i];
         if (!p.active) continue;
         p.life += dt;
         if (p.life >= p.ttl) { p.active = false; continue; }
@@ -1209,13 +1790,26 @@ function updateParticles(dt) {
         } else if (p.type === 3) {
             p.vy = Math.min(240, p.vy + 220 * dt);
             p.x += Math.sin(p.life * 5 + p.seed) * 26 * dt;
-        } else if (p.type === 4) {
+        } else if (p.type === 4 || p.type === 5) {
             p.vx *= (1 - Math.min(1, 4 * dt));
             p.vy *= (1 - Math.min(1, 4 * dt));
         }
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.rot += p.vr * dt;
+    }
+    for (i = 0; i < rings.length; i++) {
+        var rg = rings[i];
+        if (!rg.active) continue;
+        rg.life += dt;
+        if (rg.life >= rg.ttl) rg.active = false;
+    }
+    for (i = 0; i < labels.length; i++) {
+        var lb = labels[i];
+        if (!lb.active) continue;
+        lb.life += dt;
+        if (lb.life >= lb.ttl) { lb.active = false; continue; }
+        lb.y -= 55 * dt * (1 - lb.life / lb.ttl * 0.5);
     }
 }
 
@@ -1226,6 +1820,13 @@ function update(dt) {
         shockT += dt * (currentState === State.DYING && deathT < 0.3 ? 0.5 : 1);
         if (shockT > 0.6) shockOn = false;
     }
+    /* FOV stretch with speed: wider spread + lower camera = visceral rush */
+    var fTarget = clamp((worldSpeed - START_SPEED) / (MAX_SPEED - START_SPEED), 0, 1);
+    fov += (fTarget - fov) * Math.min(1, 3 * dt);
+    fPROJX = PROJX * (1 + fov * 0.16);
+    fPROJY = PROJY * (1 + fov * 0.05);
+    fCAMH = CAM_H * (1 - fov * 0.14);
+    fHOR = HOR - fov * H * 0.025;
     updateStars(dt);
     switch (currentState) {
         case State.MENU: updateMenu(dt); break;
@@ -1249,6 +1850,7 @@ function strip(p1, a1, b1, p2, a2, b2, color) {
 }
 
 function drawRoad() {
+    var B = BIOMES[biomeIdx];
     var base = Math.floor(pos / SEG_LEN);
     renderFrac = (pos - base * SEG_LEN) / SEG_LEN;
     var frac = renderFrac;
@@ -1260,9 +1862,9 @@ function drawRoad() {
         z = Math.max((i - frac) * SEG_LEN, 1.0);
         sc = 1 / z;
         p = projArr[i];
-        p.x = W2 + (xAcc - camX) * PROJX * sc;
-        p.y = HOR + CAM_H * PROJY * sc;
-        p.pw = PROJX * sc;
+        p.x = W2 + (xAcc - camX) * fPROJX * sc;
+        p.y = fHOR + fCAMH * fPROJY * sc;
+        p.pw = fPROJX * sc;
         p.el = s.el;
         p.er = s.er;
         p.alt = (base + i) & 1;
@@ -1270,32 +1872,152 @@ function drawRoad() {
         xAcc += dxAcc;
         dxAcc += s.curve;
     }
-    /* draw strips far to near */
     for (i = DRAW_SEG - 1; i >= 0; i--) {
         var p1 = projArr[i], p2 = projArr[i + 1];
         if (p2.y >= p1.y) continue;
         if (p2.y > H + 4) continue;
         var fade = i > DRAW_SEG - 10 ? (DRAW_SEG - i) / 10 : 1;
         ctx.globalAlpha = fade;
-        /* edge glow spilling into the void (skip when subpixel far away) */
         if (i < 44) {
-            strip(p1, p1.el - 0.9, p1.el + 0.9, p2, p2.el - 0.9, p2.el + 0.9, 'rgba(61,246,255,0.14)');
-            strip(p1, p1.er - 0.9, p1.er + 0.9, p2, p2.er - 0.9, p2.er + 0.9, 'rgba(61,246,255,0.14)');
+            strip(p1, p1.el - 0.9, p1.el + 0.9, p2, p2.el - 0.9, p2.el + 0.9, B.edgeGlow);
+            strip(p1, p1.er - 0.9, p1.er + 0.9, p2, p2.er - 0.9, p2.er + 0.9, B.edgeGlow);
         }
-        /* road surface */
-        strip(p1, p1.el, p1.er, p2, p2.el, p2.er, p1.alt ? '#17173C' : '#111132');
-        /* bright cyan edge lines */
-        strip(p1, p1.el, p1.el + 0.42, p2, p2.el, p2.el + 0.42, '#3DF6FF');
-        strip(p1, p1.er - 0.42, p1.er, p2, p2.er - 0.42, p2.er, '#3DF6FF');
-        /* center lane dashes */
+        strip(p1, p1.el, p1.er, p2, p2.el, p2.er, p1.alt ? B.roadA : B.roadB);
+        strip(p1, p1.el, p1.el + 0.42, p2, p2.el, p2.el + 0.42, B.edge);
+        strip(p1, p1.er - 0.42, p1.er, p2, p2.er - 0.42, p2.er, B.edge);
         if (p1.dash && p1.el < -0.5 && p1.er > 0.5) {
-            strip(p1, -0.16, 0.16, p2, -0.16, 0.16, 'rgba(150,245,255,0.28)');
+            strip(p1, -0.16, 0.16, p2, -0.16, 0.16, B.dash);
+        }
+    }
+    /* glowing pylons streaming past = strong speed cue */
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = B.py;
+    for (i = 1; i < 46 && i < DRAW_SEG; i++) {
+        var pp = projArr[i];
+        if (((base + i) % 6) !== 0) continue;
+        if (pp.y >= H || pp.y <= fHOR) continue;
+        var ph = pp.pw * 1.5;
+        var pwid = Math.max(2, pp.pw * 0.14);
+        var fd = i > 36 ? (46 - i) / 10 : 1;
+        ctx.globalAlpha = 0.85 * fd;
+        ctx.fillRect((pp.x + (pp.el - 0.8) * pp.pw - pwid / 2) | 0, (pp.y - ph) | 0, pwid | 0 || 1, ph | 0 || 1);
+        ctx.fillRect((pp.x + (pp.er + 0.8) * pp.pw - pwid / 2) | 0, (pp.y - ph) | 0, pwid | 0 || 1, ph | 0 || 1);
+    }
+    ctx.globalAlpha = 1;
+}
+
+/* interpolated projection at a world z ahead of camera; writes into out {x,y,pw} */
+var projTmp = { x: 0, y: 0, pw: 0 };
+function projAt(z) {
+    var fi = (z - pos) / SEG_LEN + renderFrac;
+    var i0 = clamp(Math.floor(fi), 0, DRAW_SEG - 1);
+    var t = clamp(fi - i0, 0, 1);
+    var p1 = projArr[i0], p2 = projArr[i0 + 1];
+    projTmp.x = lerp(p1.x, p2.x, t);
+    projTmp.y = lerp(p1.y, p2.y, t);
+    projTmp.pw = lerp(p1.pw, p2.pw, t);
+    return projTmp;
+}
+
+function drawRamps() {
+    for (var i = 0; i < ramps.length; i++) {
+        var r = ramps[i];
+        if (!r.active) continue;
+        var zRel = r.z - pos;
+        if (zRel < 2 || zRel > (DRAW_SEG - 3) * SEG_LEN) continue;
+        var pf = projAt(r.z);
+        var xf = pf.x, yf = pf.y, pwf = pf.pw;
+        var pb = projAt(r.z + 3);
+        var cw = (xf - W2) / pwf;
+        var xb = pb.x + 0 * pb.pw, pwb = pb.pw;
+        var lift = 1.15 * fPROJY * (pwb / fPROJX); /* raised back edge */
+        var x0f = xf + (r.x - r.w / 2) * pwf, x1f = xf + (r.x + r.w / 2) * pwf;
+        var x0b = pb.x + (r.x - r.w / 2) * 0.86 * pwb, x1b = pb.x + (r.x + r.w / 2) * 0.86 * pwb;
+        var yb = pb.y - lift;
+        if (x1f < -40 || x0f > W + 40) continue;
+        /* glow pad hugs the ramp shape */
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = '#FFD24A';
+        ctx.lineWidth = clamp(pwf * 0.16, 3, 10);
+        ctx.beginPath();
+        ctx.moveTo(x0f, yf);
+        ctx.lineTo(x1f, yf);
+        ctx.lineTo(x1b, yb);
+        ctx.lineTo(x0b, yb);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        /* ramp face */
+        ctx.fillStyle = '#F5B93A';
+        ctx.beginPath();
+        ctx.moveTo(x0f, yf);
+        ctx.lineTo(x1f, yf);
+        ctx.lineTo(x1b, yb);
+        ctx.lineTo(x0b, yb);
+        ctx.closePath();
+        ctx.fill();
+        /* animated chevrons climbing the ramp */
+        var ct = (time * 1.6) % 1;
+        ctx.fillStyle = '#FFF3C8';
+        for (var k = 0; k < 2; k++) {
+            var tt = (ct + k * 0.5) % 1;
+            var cy = lerp(yf - 2, yb + 3, tt);
+            var half = lerp((x1f - x0f) / 2, (x1b - x0b) / 2, tt) * 0.6;
+            var cx = lerp((x0f + x1f) / 2, (x0b + x1b) / 2, tt);
+            var ah = Math.max(2, 6 * (1 - tt * 0.5));
+            ctx.globalAlpha = 0.9 * (1 - tt * 0.6);
+            ctx.beginPath();
+            ctx.moveTo(cx - half, cy + ah);
+            ctx.lineTo(cx, cy - ah);
+            ctx.lineTo(cx + half, cy + ah);
+            ctx.lineTo(cx, cy + ah * 0.3);
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        /* rim */
+        ctx.strokeStyle = '#FFE9A8';
+        ctx.lineWidth = clamp(pwf * 0.04, 1, 3);
+        ctx.beginPath();
+        ctx.moveTo(x0f, yf);
+        ctx.lineTo(x0b, yb);
+        ctx.lineTo(x1b, yb);
+        ctx.lineTo(x1f, yf);
+        ctx.stroke();
+    }
+}
+
+function drawGems() {
+    var spr = gemSprs[biomeIdx];
+    for (var i = 0; i < gems.length; i++) {
+        var g = gems[i];
+        if (!g.active) continue;
+        var zRel = g.z - pos;
+        if (zRel < 2 || zRel > (DRAW_SEG - 3) * SEG_LEN) continue;
+        var p = projAt(g.z);
+        var bob = 0.18 * Math.sin(time * 3 + g.z * 0.7);
+        var sc = p.pw / fPROJX;
+        var gx = p.x + g.x * p.pw;
+        var gy = p.y - (0.9 + g.h + bob) * fPROJY * sc;
+        var s = clamp(p.pw * 1.35, 5, 44);
+        if (gx < -30 || gx > W + 30) continue;
+        var fd = zRel > (DRAW_SEG - 13) * SEG_LEN ? 1 - (zRel - (DRAW_SEG - 13) * SEG_LEN) / (10 * SEG_LEN) : 1;
+        ctx.globalAlpha = fd;
+        ctx.drawImage(spr, (gx - s / 2) | 0, (gy - s / 2) | 0, s | 0 || 1, s | 0 || 1);
+        /* twinkle */
+        var tw = Math.sin(time * 5 + g.z);
+        if (tw > 0.82 && s > 9) {
+            ctx.globalAlpha = fd * (tw - 0.82) / 0.18;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect((gx - 1) | 0, (gy - s * 0.75) | 0, 2, (s * 1.5) | 0);
+            ctx.fillRect((gx - s * 0.75) | 0, (gy - 1) | 0, (s * 1.5) | 0, 2);
         }
     }
     ctx.globalAlpha = 1;
 }
 
 function drawBlocks() {
+    var B = BIOMES[biomeIdx];
     var frac = renderFrac;
     var maxZ = (DRAW_SEG - 2) * SEG_LEN;
     var vn = 0;
@@ -1307,7 +2029,6 @@ function drawBlocks() {
         if (zr < 2 || zr > maxZ) continue;
         blockScratch[vn++] = b;
     }
-    /* insertion sort far to near */
     for (i = 1; i < vn; i++) {
         var bb = blockScratch[i];
         var j = i - 1;
@@ -1328,24 +2049,22 @@ function drawBlocks() {
         var y = lerp(p1.y, p2.y, t);
         var pw = lerp(p1.pw, p2.pw, t);
         var zb = Math.max(zRel, 1.5);
-        var cw = (x - W2) / pw; /* road center offset in world meters at this depth */
+        var cw = (x - W2) / pw;
         var scb = 1 / (zb + BLOCK_D);
-        var pwb = PROJX * scb;
+        var pwb = fPROJX * scb;
         var x0f = x + b.x0 * pw, x1f = x + b.x1 * pw;
         if (x1f < -60 || x0f > W + 60) continue;
-        var hpx = BLOCK_H * PROJY / zb;
+        var hpx = BLOCK_H * fPROJY / zb;
         var yTopF = y - hpx;
-        var yB = HOR + CAM_H * PROJY * scb;
-        var yTopB = yB - BLOCK_H * PROJY * scb;
+        var yB = fHOR + fCAMH * fPROJY * scb;
+        var yTopB = yB - BLOCK_H * fPROJY * scb;
         var x0b = W2 + (cw + b.x0) * pwb, x1b = W2 + (cw + b.x1) * pwb;
         var fade = i0 > DRAW_SEG - 10 ? (DRAW_SEG - i0) / 10 : 1;
-        /* magenta glow */
         ctx.globalAlpha = 0.22 * fade;
-        ctx.fillStyle = '#FF35D3';
+        ctx.fillStyle = B.blockGlow;
         ctx.fillRect((x0f - 6) | 0, (yTopF - 6) | 0, (x1f - x0f + 12) | 0, (hpx + 12) | 0);
         ctx.globalAlpha = fade;
-        /* top face */
-        ctx.fillStyle = '#C21FAB';
+        ctx.fillStyle = B.blockB;
         ctx.beginPath();
         ctx.moveTo(x0f, yTopF);
         ctx.lineTo(x1f, yTopF);
@@ -1353,12 +2072,20 @@ function drawBlocks() {
         ctx.lineTo(x0b, yTopB);
         ctx.closePath();
         ctx.fill();
-        /* front face */
-        ctx.fillStyle = '#FF35D3';
+        ctx.fillStyle = B.blockA;
         ctx.fillRect(x0f | 0, yTopF | 0, (x1f - x0f) | 0 || 1, hpx | 0 || 1);
-        /* neon rim */
+        /* warning stripes on sliders so they read as "moving" */
+        if (b.mv && pw > 14) {
+            ctx.globalAlpha = fade * 0.35;
+            ctx.fillStyle = '#FFFFFF';
+            var sw = (x1f - x0f) / 5;
+            for (var st = 0; st < 5; st += 2) {
+                ctx.fillRect((x0f + st * sw) | 0, yTopF | 0, sw | 0 || 1, hpx | 0 || 1);
+            }
+            ctx.globalAlpha = fade;
+        }
         ctx.lineWidth = clamp(pw * 0.05, 1, 3);
-        ctx.strokeStyle = '#FFB1F0';
+        ctx.strokeStyle = B.blockRim;
         ctx.strokeRect(x0f | 0, yTopF | 0, (x1f - x0f) | 0 || 1, hpx | 0 || 1);
     }
     ctx.globalAlpha = 1;
@@ -1371,51 +2098,81 @@ function drawBall() {
     var roadY = lerp(p1.y, p2.y, frac);
     var x = lerp(p1.x, p2.x, frac) + playerX * pw;
     var r = BALL_R * pw;
-    var bcy = roadY - r;
+    var liftPx = airH * fPROJY * (pw / fPROJX);
+    var bcy = roadY - r - liftPx;
     lastBallX = x;
     lastBallY = bcy;
     lastBallR = r;
 
-    /* colored trail streaming behind the ball */
+    /* trail streaming behind the ball; doubles up at high multiplier */
     if (currentState === State.PLAYING && worldSpeed > 10) {
         var hue = (pos * 3) % 360;
         var col = 'hsl(' + (hue | 0) + ', 100%, 66%)';
         spawnPart(1, x + rand(-r * 0.3, r * 0.3), bcy + rand(0, r * 0.4), -vx * 4, 260 + worldSpeed * 6, 0.3, r * 0.55, col);
         spawnPart(1, x + rand(-r * 0.3, r * 0.3), bcy + rand(0, r * 0.4), -vx * 4, 260 + worldSpeed * 6, 0.3, r * 0.4, col);
+        if (curMult() > 2.2) spawnPart(1, x + rand(-r * 0.5, r * 0.5), bcy + rand(0, r * 0.5), -vx * 4, 300 + worldSpeed * 6, 0.34, r * 0.5, col);
     }
 
-    /* shadow on the road */
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    /* shadow: shrinks and fades while airborne — sells the jump */
+    var shScale = 1 / (1 + airH * 0.4);
+    ctx.globalAlpha = 0.45 * shScale + 0.08;
+    ctx.fillStyle = '#000000';
     ctx.beginPath();
-    ctx.ellipse(x, roadY - 1, r * 0.95, r * 0.26, 0, 0, TAU);
+    ctx.ellipse(x, roadY - 1, r * 0.95 * shScale, r * 0.26 * shScale, 0, 0, TAU);
     ctx.fill();
+    ctx.globalAlpha = 1;
 
-    /* glossy sphere sprite (includes glow margin) */
+    /* squash & stretch + lean into the carve */
+    var sx = 1 - squash * 0.5;
+    var sy = 1 + squash;
+    var tilt = clamp(vx * 0.022, -0.34, 0.34);
     var dw = r * (128 / BALL_SPR_R);
-    ctx.drawImage(ballSpr, (x - dw / 2) | 0, (bcy - dw / 2) | 0, dw | 0 || 1, dw | 0 || 1);
-
-    /* rolling stripes, clipped to the sphere */
     ctx.save();
+    ctx.translate(x | 0, bcy | 0);
+    ctx.rotate(tilt);
+    ctx.scale(sx, sy);
+    ctx.drawImage(ballSpr, (-dw / 2) | 0, (-dw / 2) | 0, dw | 0 || 1, dw | 0 || 1);
+    /* rolling stripes, clipped to the sphere */
     ctx.beginPath();
-    ctx.arc(x, bcy, r * 0.92, 0, TAU);
+    ctx.arc(0, 0, r * 0.92, 0, TAU);
     ctx.clip();
     ctx.globalAlpha = 0.1;
     ctx.fillStyle = '#1B2150';
     var spacing = r * 0.85;
     var off = ((pos % 4) / 4) * spacing;
-    for (var yy = bcy - r + off; yy < bcy + r; yy += spacing) {
-        var dy = (yy - bcy) / r;
+    for (var yy = -r + off; yy < r; yy += spacing) {
+        var dy = yy / r;
         var ww = Math.sqrt(Math.max(0, 1 - dy * dy)) * r;
         if (ww < 1) continue;
         ctx.beginPath();
-        ctx.ellipse(x, yy, ww, Math.max(1.5, r * 0.09), 0, 0, TAU);
+        ctx.ellipse(0, yy, ww, Math.max(1.5, r * 0.09), 0, 0, TAU);
         ctx.fill();
     }
     ctx.restore();
     ctx.globalAlpha = 1;
 }
 
-/* trail dots render under the ball so the sphere stays glossy */
+function drawCrash() {
+    if (!crash.on) return;
+    var dw = lastBallR * (128 / BALL_SPR_R) * crash.s;
+    ctx.save();
+    ctx.translate(crash.x | 0, crash.y | 0);
+    ctx.rotate(crash.rot);
+    ctx.drawImage(ballSpr, (-dw / 2) | 0, (-dw / 2) | 0, dw | 0 || 1, dw | 0 || 1);
+    ctx.restore();
+    /* dizzy stars orbiting the tumbling ball */
+    ctx.fillStyle = '#FFE14D';
+    ctx.font = '800 16px Nunito, sans-serif';
+    ctx.textAlign = 'center';
+    for (var k = 0; k < 3; k++) {
+        var a = time * 6 + k * (TAU / 3);
+        var rr = dw * 0.75 + 8;
+        ctx.globalAlpha = 0.9;
+        ctx.fillText('✦', (crash.x + Math.cos(a) * rr) | 0, (crash.y + Math.sin(a) * rr * 0.5) | 0);
+    }
+    ctx.globalAlpha = 1;
+}
+
 function drawTrail() {
     for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
@@ -1455,11 +2212,66 @@ function drawParticles() {
             ctx.rotate(p.rot);
             ctx.fillRect(-p.size / 2, -p.size * 0.75, p.size, p.size * 1.5);
             ctx.restore();
+        } else if (p.type === 5) {
+            /* 4-point glint */
+            var g = p.size * a;
+            ctx.fillRect((p.x - g) | 0, (p.y - 1) | 0, (g * 2) | 0 || 1, 2);
+            ctx.fillRect((p.x - 1) | 0, (p.y - g) | 0, 2, (g * 2) | 0 || 1);
         } else {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size * a, 0, TAU);
             ctx.fill();
         }
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawRings() {
+    for (var i = 0; i < rings.length; i++) {
+        var rg = rings[i];
+        if (!rg.active) continue;
+        var t = rg.life / rg.ttl;
+        ctx.globalAlpha = (1 - t) * 0.9;
+        ctx.lineWidth = rg.lw * (1 - t) + 1;
+        ctx.strokeStyle = rg.color;
+        ctx.beginPath();
+        ctx.arc(rg.x, rg.y, rg.r0 + (rg.r1 - rg.r0) * easeOutBack(Math.min(1, t * 1.1)), 0, TAU);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawLabels() {
+    ctx.textAlign = 'center';
+    for (var i = 0; i < labels.length; i++) {
+        var lb = labels[i];
+        if (!lb.active) continue;
+        var t = lb.life / lb.ttl;
+        var sIn = t < 0.22 ? easeOutBack(t / 0.22) : 1;
+        var a = t > 0.68 ? 1 - (t - 0.68) / 0.32 : 1;
+        ctx.globalAlpha = a;
+        ctx.font = '800 ' + Math.max(8, lb.size * sIn) + 'px Nunito, sans-serif';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = 'rgba(8,8,26,0.85)';
+        ctx.strokeText(lb.txt, lb.x | 0, lb.y | 0);
+        ctx.fillStyle = lb.color;
+        ctx.fillText(lb.txt, lb.x | 0, lb.y | 0);
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawSpeedLines() {
+    var n = Math.min(14, Math.floor((worldSpeed - 19) / 2));
+    if (n <= 0) return;
+    ctx.fillStyle = '#FFFFFF';
+    for (var k = 0; k < n; k++) {
+        var side = k & 1;
+        var band = side ? W * (0.86 + 0.12 * ((k * 37) % 10) / 10) : W * (0.02 + 0.12 * ((k * 53) % 10) / 10);
+        var spd = 700 + worldSpeed * 16 * (0.7 + ((k * 29) % 10) / 14);
+        var len = 26 + worldSpeed * 1.6;
+        var y = ((time * spd + k * 517) % (H + len + 60)) - len - 30;
+        ctx.globalAlpha = 0.08 + 0.12 * ((k * 41) % 10) / 10;
+        ctx.fillRect(band | 0, y | 0, 2, len | 0);
     }
     ctx.globalAlpha = 1;
 }
@@ -1491,13 +2303,28 @@ function render() {
         oy = (Math.random() * 2 - 1) * amp;
     }
     ctx.setTransform(dpr, 0, 0, dpr, ox * dpr, oy * dpr);
-    ctx.drawImage(skySpr, 0, 0, W, H);
+    /* sky with biome crossfade (all skies prerendered at resize) */
+    if (biomeFade < 1) {
+        ctx.drawImage(skySprs[prevBiomeIdx], 0, 0, W, H);
+        ctx.globalAlpha = biomeFade;
+        ctx.drawImage(skySprs[biomeIdx], 0, 0, W, H);
+        ctx.globalAlpha = 1;
+    } else {
+        ctx.drawImage(skySprs[biomeIdx], 0, 0, W, H);
+    }
     drawStarsBg();
+    drawMountains();
     drawRoad();
+    drawRamps();
+    drawGems();
     drawBlocks();
     drawTrail();
     if (!ballGone) drawBall();
+    drawCrash();
     drawParticles();
+    drawRings();
+    drawSpeedLines();
+    drawLabels();
     drawShock();
 }
 
@@ -1535,7 +2362,6 @@ function releasePointer(e) {
 }
 window.addEventListener('pointerup', releasePointer);
 window.addEventListener('pointercancel', releasePointer);
-/* block scrolling and double tap zoom on mobile */
 document.addEventListener('touchstart', function (e) { if (e.target === canvas) e.preventDefault(); }, { passive: false });
 document.addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
 
@@ -1610,7 +2436,7 @@ playBtn.addEventListener('pointerdown', function (e) {
     e.preventDefault();
     e.stopPropagation();
     ensureAudio();
-    restart(); /* instant: shattered to rolling in well under a second */
+    restart();
 });
 
 /* ================= Test hook (headless harness drives update directly) ================= */
@@ -1622,11 +2448,15 @@ window.__SpeedSlope = {
     setTouchSteer: function (v) { touchSteer = v; },
     getState: function () { return currentState; },
     getMeters: function () { return pos - startPos; },
+    getScore: function () { return scoreNow(); },
     getPlayerX: function () { return playerX; },
     getVX: function () { return vx; },
     getSpeed: function () { return speed; },
     getBallZ: function () { return pos + BALL_Z; },
     getBlocks: function () { return blocks; },
+    getRamps: function () { return ramps; },
+    getGems: function () { return runGems; },
+    isAirborne: function () { return airborne; },
     edgesAt: function (ahead) {
         var z = pos + BALL_Z + (ahead || 0);
         var s = segs[Math.floor(z / SEG_LEN) % NSEG];
@@ -1640,7 +2470,7 @@ window.__SpeedSlope = {
 /* ================= Main loop ================= */
 var last = performance.now();
 function loop(now) {
-    var dt = Math.min(0.05, (now - last) / 1000);
+    var dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
     last = now;
     update(dt);
     render();

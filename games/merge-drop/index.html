@@ -8,7 +8,7 @@
 <link rel="canonical" href="https://woopkid.com/games/merge-drop/">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#FFF6E9">
+<meta name="theme-color" content="#141432">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&display=swap" rel="stylesheet">
@@ -72,7 +72,7 @@
 html, body {
     height: 100%;
     overflow: hidden;
-    background: #FFF6E9;
+    background: #141432;
     touch-action: none;
     -webkit-user-select: none;
     user-select: none;
@@ -86,22 +86,22 @@ html, body {
     width: 48px;
     height: 48px;
     border-radius: 16px;
-    background: #FFFFFF;
-    border: 3px solid #2B2350;
-    box-shadow: 0 4px 0 rgba(43, 35, 80, 0.25);
+    background: #2A2A5E;
+    border: 3px solid #4B478C;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: inherit;
     font-size: 20px;
     font-weight: 800;
-    color: #2B2350;
+    color: #FFFFFF;
     z-index: 40;
     cursor: pointer;
     text-decoration: none;
     line-height: 1;
 }
-.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(43, 35, 80, 0.25); }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
 #backBtn { top: 14px; left: 14px; font-size: 24px; }
 #muteBtn { top: 14px; right: 14px; }
 #pauseBtn { top: 14px; right: 72px; display: none; font-size: 15px; letter-spacing: 2px; }
@@ -113,8 +113,8 @@ html, body {
     transform: translateX(-50%);
     font-weight: 800;
     font-size: min(12vw, 52px);
-    color: #2B2350;
-    text-shadow: 0 3px 0 rgba(255, 255, 255, 0.9);
+    color: #FFFFFF;
+    text-shadow: 0 3px 0 rgba(0, 0, 0, 0.4), 0 6px 20px rgba(179, 136, 255, 0.35);
     z-index: 20;
     display: none;
     pointer-events: none;
@@ -137,9 +137,12 @@ html, body {
 #title h1 {
     font-weight: 800;
     font-size: min(15vw, 84px);
-    color: #2B2350;
     letter-spacing: 2px;
-    text-shadow: 0 5px 0 rgba(255, 255, 255, 0.95), 0 10px 22px rgba(43, 35, 80, 0.15);
+    background: linear-gradient(92deg, #FFD93D 8%, #FF8A3D 30%, #FF5FA2 52%, #B388FF 74%, #4FC3F7 95%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.35)) drop-shadow(0 10px 26px rgba(179, 136, 255, 0.35));
     animation: titleBob 2.6s ease-in-out infinite;
 }
 @keyframes titleBob {
@@ -150,20 +153,19 @@ html, body {
     margin-top: 4px;
     font-weight: 800;
     font-size: min(4.6vw, 20px);
-    color: #2B2350;
-    opacity: 0.65;
+    color: #C9C6F2;
 }
 #menuBest {
     margin-top: 10px;
     display: inline-block;
-    background: #FFFFFF;
-    color: #2B2350;
+    background: rgba(255, 217, 61, 0.12);
+    color: #FFD93D;
     font-weight: 800;
     font-size: 16px;
     padding: 6px 18px;
     border-radius: 999px;
-    border: 3px solid #2B2350;
-    box-shadow: 0 3px 0 rgba(43, 35, 80, 0.2);
+    border: 3px solid #FFD93D;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
 }
 
 #tapHint {
@@ -173,8 +175,8 @@ html, body {
     text-align: center;
     font-weight: 800;
     font-size: min(7vw, 30px);
-    color: #2B2350;
-    text-shadow: 0 3px 0 rgba(255, 255, 255, 0.9);
+    color: #FFD93D;
+    text-shadow: 0 3px 0 rgba(0, 0, 0, 0.4);
     z-index: 20;
     pointer-events: none;
     display: none;
@@ -242,7 +244,7 @@ html, body {
 #pauseOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(43, 35, 80, 0.45);
+    background: rgba(10, 9, 32, 0.66);
     z-index: 50;
     display: none;
     align-items: center;
@@ -392,6 +394,7 @@ html, body {
     <div id="panelScore">0</div>
     <div id="panelBestRow">Your best: <span id="panelBest">0</span></div>
     <div id="panelBiggestRow">Biggest animal: <span id="panelBiggest">ANT</span></div>
+    <div id="panelChainRow" style="color:#6B6394;font-weight:700;font-size:15px;margin-top:6px;">Longest chain: <span id="panelChain" style="font-weight:800;color:#FF5FA2;">x1</span> &nbsp;&middot;&nbsp; Saves: <span id="panelSaves" style="font-weight:800;color:#4FC3F7;">0</span></div>
     <div id="nearMiss"></div>
     <button id="playBtn">PLAY AGAIN</button>
 </div>
@@ -417,6 +420,8 @@ var panelTitleEl = document.getElementById('panelTitle');
 var panelScoreEl = document.getElementById('panelScore');
 var panelBestEl = document.getElementById('panelBest');
 var panelBiggestEl = document.getElementById('panelBiggest');
+var panelChainEl = document.getElementById('panelChain');
+var panelSavesEl = document.getElementById('panelSaves');
 var nearMissEl = document.getElementById('nearMiss');
 var playBtn = document.getElementById('playBtn');
 var unicornBannerEl = document.getElementById('unicornBanner');
@@ -682,6 +687,26 @@ function sfxFanfare() {
     o.stop(t + 0.64);
 }
 
+/* Sparkle chime when the WILD piece is ready */
+function sfxWild() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var o = audioCtx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(1319, t);
+    o.frequency.setValueAtTime(1568, t + 0.08);
+    o.frequency.setValueAtTime(2093, t + 0.16);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.11, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.42);
+}
+
 /* ================= Constants ================= */
 var INK = '#2B2350';
 var JAR_W = 420;                 /* logical jar interior width */
@@ -696,9 +721,15 @@ var SUBSTEPS = 4;
 var POS_ITERS = 2;               /* relaxation passes per substep */
 var MAX_VEL = 950;
 var SLEEP_VEL = 6;
-var OVERFLOW_S = 2.5;            /* seconds a settled ball may sit above the line */
+var OVERFLOW_MAX = 2.5;          /* early-game seconds a settled ball may sit above the line */
+var OVERFLOW_MIN = 1.15;         /* late-game grace, escalates with speed level */
 var DROP_COOLDOWN = 0.26;
 var MERGE_OVERLAP = 0.5;
+var PHASE_TIME = 150;            /* seconds until difficulty is fully escalated */
+var WILD_R = 30;                 /* radius of the rainbow wild ball */
+/* spawn weights for tiers 0..4: gentle start, crowded finish */
+var W_START = [0.36, 0.30, 0.21, 0.09, 0.04];
+var W_END   = [0.10, 0.16, 0.24, 0.26, 0.24];
 
 /* 11 tiers, radius about 18 to 130, juicy saturated colors */
 var TIERS = [
@@ -736,6 +767,12 @@ var LVW = 480, LVH = 800;
 var jarX = 20, jarY = 90;
 var sprites = [];   /* per tier: { cnv, half } in logical units */
 var bgSpr = null;
+var glowSpr = null;      /* soft white radial glow, pre-rendered */
+var glowGoldSpr = null;  /* warm gold glow */
+var wildSpr = null;      /* rainbow wild ball sprite { cnv, half } */
+var dangerSpr = null;    /* red gradient strip under the danger line */
+var vinSpr = null;       /* full-screen red warning vignette */
+var comboGradSpr = null; /* rainbow strip for the combo meter fill */
 
 function makeCanvas(w, h) {
     var c = document.createElement('canvas');
@@ -1008,22 +1045,148 @@ function buildSprites() {
 }
 
 function buildBg() {
+    /* deep navy night sky: gradient, aurora blobs, starfield, all baked once */
     bgSpr = makeCanvas(canvas.width, canvas.height);
     var c = bgSpr.getContext('2d');
-    c.fillStyle = '#FFF6E9';
-    c.fillRect(0, 0, bgSpr.width, bgSpr.height);
-    c.fillStyle = 'rgba(43,35,80,0.045)';
-    var step = 38 * S;
-    var row = 0;
-    for (var y = step * 0.5; y < bgSpr.height; y += step) {
-        var off = (row % 2) * step * 0.5;
-        for (var x = off; x < bgSpr.width + step; x += step) {
-            c.beginPath();
-            c.arc(x, y, 2.4 * S, 0, Math.PI * 2);
-            c.fill();
-        }
-        row++;
+    var w = bgSpr.width, h = bgSpr.height;
+    var grad = c.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#232258');
+    grad.addColorStop(0.45, '#191945');
+    grad.addColorStop(1, '#0F0E2C');
+    c.fillStyle = grad;
+    c.fillRect(0, 0, w, h);
+    /* soft baked aurora glows */
+    var blobs = [
+        [0.15, 0.12, 0.5, 'rgba(179,136,255,0.10)'],
+        [0.88, 0.28, 0.42, 'rgba(79,195,247,0.09)'],
+        [0.5, 0.95, 0.62, 'rgba(255,95,162,0.07)'],
+        [0.1, 0.7, 0.4, 'rgba(126,217,87,0.05)']
+    ];
+    for (var bi = 0; bi < blobs.length; bi++) {
+        var B = blobs[bi];
+        var rg = c.createRadialGradient(B[0] * w, B[1] * h, 0, B[0] * w, B[1] * h, B[2] * h);
+        rg.addColorStop(0, B[3]);
+        rg.addColorStop(1, 'rgba(0,0,0,0)');
+        c.fillStyle = rg;
+        c.fillRect(0, 0, w, h);
     }
+    /* starfield */
+    var i, sx, sy;
+    for (i = 0; i < 90; i++) {
+        sx = Math.random() * w; sy = Math.random() * h;
+        c.globalAlpha = 0.12 + Math.random() * 0.3;
+        c.fillStyle = Math.random() < 0.25 ? '#B9E3FF' : '#FFFFFF';
+        c.beginPath();
+        c.arc(sx, sy, (0.6 + Math.random() * 1.3) * S, 0, Math.PI * 2);
+        c.fill();
+    }
+    /* a few bigger cross sparkles */
+    c.strokeStyle = '#FFFFFF';
+    c.lineCap = 'round';
+    for (i = 0; i < 8; i++) {
+        sx = Math.random() * w; sy = Math.random() * h * 0.55;
+        var sr = (3 + Math.random() * 4) * S;
+        c.globalAlpha = 0.16 + Math.random() * 0.18;
+        c.lineWidth = 1.4 * S;
+        c.beginPath();
+        c.moveTo(sx - sr, sy); c.lineTo(sx + sr, sy);
+        c.moveTo(sx, sy - sr); c.lineTo(sx, sy + sr);
+        c.stroke();
+    }
+    c.globalAlpha = 1;
+    /* corner vignette */
+    var vg = c.createRadialGradient(w / 2, h * 0.45, h * 0.35, w / 2, h * 0.5, h * 0.85);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(5,4,20,0.5)');
+    c.fillStyle = vg;
+    c.fillRect(0, 0, w, h);
+
+    /* red warning vignette, drawn with variable alpha when the jar is crowded */
+    vinSpr = makeCanvas(w, h);
+    var vc = vinSpr.getContext('2d');
+    var vv = vc.createRadialGradient(w / 2, h * 0.5, h * 0.3, w / 2, h * 0.5, h * 0.75);
+    vv.addColorStop(0, 'rgba(255,70,95,0)');
+    vv.addColorStop(1, 'rgba(255,70,95,0.4)');
+    vc.fillStyle = vv;
+    vc.fillRect(0, 0, w, h);
+
+    /* danger zone gradient strip (jar coords, drawn with drawImage, never per-frame gradients) */
+    dangerSpr = makeCanvas((JAR_W + 12) * S, (DANGER_Y + 52) * S);
+    var dc = dangerSpr.getContext('2d');
+    var dg = dc.createLinearGradient(0, 0, 0, dangerSpr.height);
+    dg.addColorStop(0, 'rgba(255,90,110,0.22)');
+    dg.addColorStop(1, 'rgba(255,90,110,0)');
+    dc.fillStyle = dg;
+    dc.fillRect(0, 0, dangerSpr.width, dangerSpr.height);
+
+    /* combo meter rainbow strip */
+    comboGradSpr = makeCanvas(220 * S, 16 * S);
+    var cc = comboGradSpr.getContext('2d');
+    var cg = cc.createLinearGradient(0, 0, comboGradSpr.width, 0);
+    for (i = 0; i < RAINBOW.length; i++) cg.addColorStop(i / (RAINBOW.length - 1), RAINBOW[i]);
+    cc.fillStyle = cg;
+    cc.fillRect(0, 0, comboGradSpr.width, comboGradSpr.height);
+}
+
+function buildGlows() {
+    glowSpr = makeCanvas(160, 160);
+    var c = glowSpr.getContext('2d');
+    var g = c.createRadialGradient(80, 80, 0, 80, 80, 80);
+    g.addColorStop(0, 'rgba(255,255,255,0.85)');
+    g.addColorStop(0.4, 'rgba(255,255,255,0.32)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g;
+    c.fillRect(0, 0, 160, 160);
+    glowGoldSpr = makeCanvas(160, 160);
+    c = glowGoldSpr.getContext('2d');
+    g = c.createRadialGradient(80, 80, 0, 80, 80, 80);
+    g.addColorStop(0, 'rgba(255,225,100,0.9)');
+    g.addColorStop(0.45, 'rgba(255,180,61,0.3)');
+    g.addColorStop(1, 'rgba(255,180,61,0)');
+    c.fillStyle = g;
+    c.fillRect(0, 0, 160, 160);
+}
+
+function buildWildSprite() {
+    var r = WILD_R;
+    var half = r + 16;
+    var cnv = makeCanvas(half * 2 * S, half * 2 * S);
+    var c = cnv.getContext('2d');
+    c.scale(S, S);
+    c.translate(half, half);
+    c.lineJoin = 'round';
+    c.lineCap = 'round';
+    /* rainbow pie */
+    var n = RAINBOW.length;
+    for (var i = 0; i < n; i++) {
+        c.fillStyle = RAINBOW[i];
+        c.beginPath();
+        c.moveTo(0, 0);
+        c.arc(0, 0, r, (i / n) * Math.PI * 2 - Math.PI / 2, ((i + 1) / n) * Math.PI * 2 - Math.PI / 2);
+        c.closePath();
+        c.fill();
+    }
+    c.strokeStyle = INK;
+    c.lineWidth = Math.max(3, r * 0.1);
+    c.beginPath();
+    c.arc(0, 0, r, 0, Math.PI * 2);
+    c.stroke();
+    /* white core + star */
+    c.fillStyle = '#FFFFFF';
+    c.beginPath();
+    c.arc(0, 0, r * 0.58, 0, Math.PI * 2);
+    c.fill();
+    c.stroke();
+    c.fillStyle = '#FFD93D';
+    drawStarPath(c, 0, 0, r * 0.38);
+    c.fill();
+    c.lineWidth = Math.max(2, r * 0.06);
+    c.stroke();
+    /* tiny sparkles */
+    c.fillStyle = '#FFFFFF';
+    drawStarPath(c, -r * 0.75, -r * 0.75, r * 0.16); c.fill();
+    drawStarPath(c, r * 0.8, r * 0.6, r * 0.13); c.fill();
+    wildSpr = { cnv: cnv, half: half };
 }
 
 function resize() {
@@ -1039,6 +1202,8 @@ function resize() {
     jarX = (LVW - JAR_W) / 2;
     jarY = Math.max(88, (LVH - JAR_H) * 0.58);
     buildSprites();
+    buildWildSprite();
+    buildGlows();
     buildBg();
 }
 window.addEventListener('resize', resize);
@@ -1070,6 +1235,14 @@ var panelShown = false;
 var celebT = 0;
 var celebX = 0, celebY = 0;
 var mergeQ = [];
+var runT = 0;           /* seconds of active play, drives escalation */
+var phase = 0;          /* 0..1 difficulty escalation */
+var curLvl = 1;         /* speed level shown to the player */
+var comboMeter = 0;     /* fills with merges, full = WILD piece */
+var heldWild = false;   /* the held piece is the rainbow wild */
+var hitStop = 0;        /* brief freeze-frame on huge merges */
+var bestChain = 1;
+var saves = 0;          /* danger-line rescues this run */
 
 /* held piece cosmetic state, reused between pieces */
 var held = { blinkIn: rand(1, 4), blinkT: 0 };
@@ -1090,7 +1263,7 @@ function spawnBall(tier, x, y, vx, vy) {
         gaze: 0, gx: 0, gy: -1,
         worry: 0, sad: false,
         contact: false, onFloor: false, hasContacted: false,
-        dangerT: 0, merging: false,
+        dangerT: 0, merging: false, wild: false,
         seed: rand(0, 9)
     };
     balls.push(b);
@@ -1098,16 +1271,32 @@ function spawnBall(tier, x, y, vx, vy) {
 }
 
 function pickTier() {
-    /* small bias toward tiers already in the jar so merges stay reachable */
-    if (balls.length > 0 && Math.random() < 0.35) {
-        var cands = [];
+    /* strong bias toward tiers already in the jar so chains stay reachable;
+       prefer tiers with an ODD count (completing a pair = instant merge chance).
+       The helping hand fades as the run escalates - late game you earn your own luck. */
+    if (balls.length > 0 && Math.random() < 0.5 - 0.28 * phase) {
+        var counts = [0, 0, 0, 0, 0];
         for (var i = 0; i < balls.length; i++) {
-            if (balls[i].tier <= 4) cands.push(balls[i].tier);
+            var t = balls[i].tier;
+            if (t <= 4 && !balls[i].wild) counts[t]++;
+        }
+        var cands = [];
+        for (var k = 0; k <= 4; k++) {
+            if (counts[k] > 0) {
+                var w = counts[k] + (counts[k] % 2 === 1 ? 2 : 0);
+                for (var j = 0; j < w; j++) cands.push(k);
+            }
         }
         if (cands.length) return cands[(Math.random() * cands.length) | 0];
     }
+    /* escalating spawn table: bigger animals show up more as the run goes on */
     var roll = Math.random();
-    return roll < 0.30 ? 0 : roll < 0.56 ? 1 : roll < 0.78 ? 2 : roll < 0.92 ? 3 : 4;
+    var acc2 = 0;
+    for (var n = 0; n < 5; n++) {
+        acc2 += W_START[n] + (W_END[n] - W_START[n]) * phase;
+        if (roll < acc2) return n;
+    }
+    return 4;
 }
 
 /* ================= Effect pools ================= */
@@ -1164,32 +1353,52 @@ function spawnText(x, y, text, size, color, wob) {
     }
 }
 
-/* Local merge pop: ring, rays, chunky shards, sparks. No full screen flashes. */
-function spawnMergeFX(x, y, tier, chain, pts) {
+/* Local merge pop, layered Candy-Crush style: soft halo + double shockwave ring
+   + radial rays + chunky shards + star glints + floating score, all together.
+   Bigger tiers and chains get bigger celebrations. No full screen flashes. */
+function spawnMergeFX(x, y, tier, chain, pts, wild) {
     var t = TIERS[tier];
     var newR = t.r;
-    spawnRing(x, y, newR * 0.5, newR * 1.9, 0.4, '#FFFFFF', 7);
-    spawnRing(x, y, newR * 0.35, newR * 1.4, 0.32, t.c, 5);
-    var i, a, sp;
+    var i, a, sp, p;
+    /* 1. soft halo bloom (pre-rendered glow sprite) */
+    p = spawnPart(6, x, y, 0, 0, 0.42, newR * (1.5 + tier * 0.06), tier >= 6 || wild ? 'gold' : 'white');
+    /* 2. expanding shockwave rings */
+    spawnRing(x, y, newR * 0.5, newR * (1.9 + tier * 0.06), 0.4, '#FFFFFF', 7);
+    spawnRing(x, y, newR * 0.35, newR * 1.4, 0.32, wild ? RAINBOW[(Math.random() * 6) | 0] : t.c, 5);
+    if (tier >= 6 || chain >= 3 || wild) {
+        spawnRing(x, y, newR * 0.7, newR * 2.5, 0.5, '#FFE14D', 4);
+    }
+    /* 3. radial rays */
     for (i = 0; i < 10; i++) {
         a = (i / 10) * Math.PI * 2 + rand(-0.15, 0.15);
-        var p = spawnPart(2, x, y, 0, 0, 0.3, newR * 0.42, '#FFFFFF');
+        p = spawnPart(2, x, y, 0, 0, 0.3, newR * 0.42, '#FFFFFF');
         if (p) { p.a = a; p.d = newR * 0.7; p.len = newR * 0.4; }
     }
+    /* 4. chunky shards in the animal's colors */
     var shards = 8 + tier * 2;
     for (i = 0; i < shards; i++) {
         a = rand(0, Math.PI * 2);
         sp = rand(90, 260) * (1 + tier * 0.06);
-        spawnPart(1, x, y, Math.cos(a) * sp, Math.sin(a) * sp - 60, rand(0.4, 0.75), rand(4, 8) + tier * 0.5, i % 3 === 0 ? t.d : t.c);
+        spawnPart(1, x, y, Math.cos(a) * sp, Math.sin(a) * sp - 60, rand(0.4, 0.75), rand(4, 8) + tier * 0.5, wild ? RAINBOW[i % 6] : (i % 3 === 0 ? t.d : t.c));
     }
+    /* 5. spark dots */
     for (i = 0; i < 8; i++) {
         a = rand(0, Math.PI * 2);
         sp = rand(50, 180);
         spawnPart(4, x, y, Math.cos(a) * sp, Math.sin(a) * sp, rand(0.25, 0.5), rand(2.5, 4.5), i % 2 === 0 ? '#FFFFFF' : '#FFE14D');
     }
-    spawnText(x, y - newR * 0.4, '+' + pts, 16 + tier * 2, INK, false);
+    /* 6. star glints, more for bigger merges */
+    var glints = 2 + (tier >> 1) + (chain >= 2 ? 2 : 0);
+    for (i = 0; i < glints; i++) {
+        a = rand(0, Math.PI * 2);
+        sp = rand(40, 150);
+        spawnPart(3, x + Math.cos(a) * newR * 0.5, y + Math.sin(a) * newR * 0.5,
+            Math.cos(a) * sp, Math.sin(a) * sp - 90, rand(0.35, 0.6), rand(4, 7), i % 2 === 0 ? '#FFE14D' : '#FFFFFF');
+    }
+    /* 7. floating score label */
+    spawnText(x, y - newR * 0.4, '+' + pts, 16 + tier * 2, '#FFFFFF', false);
     if (chain >= 2) {
-        var cc = chain >= 4 ? '#B388FF' : (chain === 3 ? '#FF5FA2' : '#FF8A3D');
+        var cc = chain >= 4 ? '#B388FF' : (chain === 3 ? '#FF5FA2' : '#FFB53D');
         spawnText(x, y - newR - 16, 'CHAIN x' + chain + '!', 20 + Math.min(chain, 6) * 3, cc, true);
     }
     /* squash and nudge the neighbors, local shockwave */
@@ -1293,11 +1502,13 @@ function resolvePair(a, b) {
     else { nx = dx / dist; ny = dy / dist; }
     var overlap = minD - dist;
 
-    /* merge check: same tier, below the top tier, real overlap */
-    if (a.tier === b.tier && a.tier < TOP_TIER && !a.merging && !b.merging &&
-        overlap > MERGE_OVERLAP && currentState !== State.GAME_OVER) {
-        a.merging = true; b.merging = true;
-        mergeQ.push([a, b]);
+    /* merge check: same tier below the top tier, or a wild touching anything */
+    if (!a.merging && !b.merging && overlap > MERGE_OVERLAP && currentState !== State.GAME_OVER) {
+        var wildPair = (a.wild || b.wild) && !(a.wild && b.wild);
+        if (wildPair || (!a.wild && !b.wild && a.tier === b.tier && a.tier < TOP_TIER)) {
+            a.merging = true; b.merging = true;
+            mergeQ.push([a, b]);
+        }
     }
 
     /* positional correction with slop, weighted by inverse mass */
@@ -1364,11 +1575,24 @@ function executeMerges() {
         var a = mergeQ[k][0], b = mergeQ[k][1];
         var ia = balls.indexOf(a), ib = balls.indexOf(b);
         if (ia < 0 || ib < 0) continue;
-        var newTier = a.tier + 1;
-        var x = (a.x + b.x) / 2;
-        var y = (a.y + b.y) / 2;
-        var vx = (a.vx + b.vx) / 2;
-        var vy = (a.vy + b.vy) / 2 - 40;
+        var isWild = a.wild || b.wild;
+        var newTier, x, y, vx, vy;
+        if (isWild) {
+            /* the wild upgrades whatever it touched, in place */
+            var host = a.wild ? b : a;
+            newTier = Math.min(host.tier + 1, TOP_TIER);
+            x = host.x; y = host.y;
+            vx = host.vx; vy = host.vy - 40;
+        } else {
+            newTier = a.tier + 1;
+            x = (a.x + b.x) / 2;
+            y = (a.y + b.y) / 2;
+            vx = (a.vx + b.vx) / 2;
+            vy = (a.vy + b.vy) / 2 - 40;
+        }
+        /* danger-line rescue: merging away a ball that was about to overflow */
+        var rescued = (a.hasContacted && a.y - a.r < DANGER_Y + 26) ||
+                      (b.hasContacted && b.y - b.r < DANGER_Y + 26);
         balls.splice(balls.indexOf(a), 1);
         balls.splice(balls.indexOf(b), 1);
         var nb = spawnBall(newTier, x, y, vx, vy);
@@ -1376,34 +1600,60 @@ function executeMerges() {
 
         chainCount = (time - lastMergeT < 1.1) ? chainCount + 1 : 1;
         lastMergeT = time;
+        if (chainCount > bestChain) bestChain = chainCount;
         var pts = TIERS[newTier].value;
+        if (isWild) pts *= 2;
         if (chainCount > 1) pts = Math.round(pts * (1 + 0.5 * (chainCount - 1)));
+        if (rescued && !isWild) {
+            pts = Math.round(pts * 1.5);
+            saves++;
+            spawnText(x, y - TIERS[newTier].r - 40, 'NICE SAVE!', 21, '#4FC3F7', true);
+        }
         if (currentState === State.PLAYING || currentState === State.DYING) {
             score += pts;
             totalMerges++;
             if (newTier > biggestTier) biggestTier = newTier;
+            /* combo meter charges with every merge, chains charge it faster */
+            if (currentState === State.PLAYING && !heldWild) {
+                comboMeter += 0.15 + Math.min(chainCount, 5) * 0.03 + (isWild ? -0.12 : 0);
+                if (comboMeter >= 1) {
+                    comboMeter = 0;
+                    heldWild = true;
+                    spawnText(JAR_W / 2, 40, 'WILD READY!', 30, '#FFD93D', true);
+                    sfxWild();
+                }
+            }
             scoreEl.textContent = score.toLocaleString();
             scoreEl.classList.remove('pop');
             void scoreEl.offsetWidth;
             scoreEl.classList.add('pop');
         }
-        spawnMergeFX(x, y, newTier, chainCount, pts);
+        spawnMergeFX(x, y, newTier, chainCount, pts, isWild);
         sfxMerge(newTier, chainCount);
+        /* hit-stop: a tiny freeze frame sells the biggest moments */
+        if (newTier >= 7 || chainCount >= 4 || isWild) {
+            hitStop = Math.max(hitStop, 0.04 + newTier * 0.007 + (chainCount >= 4 ? 0.03 : 0));
+        }
         if (newTier === TOP_TIER) unicornMoment(x, y);
     }
     mergeQ.length = 0;
 }
 
 /* ================= Danger + game over ================= */
+function overflowGrace() {
+    return OVERFLOW_MAX + (OVERFLOW_MIN - OVERFLOW_MAX) * phase;
+}
+
 function updateDanger(dt) {
     warnLevel = 0;
+    var grace = overflowGrace();
     for (var i = 0; i < balls.length; i++) {
         var b = balls[i];
         var crowd = b.hasContacted ? clamp(1 - (b.y - b.r - DANGER_Y) / 44, 0, 1) : 0;
         if (crowd > warnLevel) warnLevel = crowd;
         if (b.hasContacted && b.y < DANGER_Y) {
             b.dangerT += dt;
-            if (b.dangerT >= OVERFLOW_S) { gameOver(); return; }
+            if (b.dangerT >= grace) { gameOver(); return; }
         } else {
             b.dangerT = Math.max(0, b.dangerT - dt * 2);
         }
@@ -1450,6 +1700,8 @@ function showPanel() {
     panelBestEl.textContent = data.highScore.toLocaleString();
     panelBiggestEl.textContent = TIERS[biggestTier].name;
     panelBiggestEl.style.background = TIERS[biggestTier].c;
+    panelChainEl.textContent = 'x' + bestChain;
+    panelSavesEl.textContent = String(saves);
     newBestEl.style.display = newBest ? 'block' : 'none';
     panelTitleEl.textContent = newBest ? 'AMAZING!' : 'JAR TOO FULL!';
     var diff = prevBest - score;
@@ -1489,6 +1741,14 @@ function resetRun() {
     lastMergeT = -10;
     cooldown = 0;
     trauma = 0;
+    runT = 0;
+    phase = 0;
+    curLvl = 1;
+    comboMeter = 0;
+    heldWild = false;
+    hitStop = 0;
+    bestChain = 1;
+    saves = 0;
     warnLevel = 0;
     celebT = 0;
     dieT = 0;
@@ -1538,13 +1798,23 @@ function startRun() {
 function dropCurrent(force) {
     if (currentState !== State.PLAYING) return;
     if (!force && cooldown > 0) return;
-    var r = TIERS[currentTier].r;
+    var r = heldWild ? WILD_R : TIERS[currentTier].r;
     var x = clamp(aimX, r + 2, JAR_W - r - 2);
-    spawnBall(currentTier, x, DROP_Y, 0, 60);
+    if (heldWild) {
+        var wb = spawnBall(2, x, DROP_Y, 0, 60);
+        wb.wild = true;
+        wb.r = WILD_R;
+        wb.m = (WILD_R * WILD_R) / 324;
+        wb.omega = 3;
+        heldWild = false;
+        /* wild does not advance the queue: your planned piece is still next */
+    } else {
+        spawnBall(currentTier, x, DROP_Y, 0, 60);
+        currentTier = nextTier;
+        nextTier = pickTier();
+    }
     sfxDrop();
     cooldown = DROP_COOLDOWN;
-    currentTier = nextTier;
-    nextTier = pickTier();
     heldScaleT = 0;
     held.blinkIn = rand(1, 4);
     held.blinkT = 0;
@@ -1607,9 +1877,10 @@ function updateFX(dt) {
         } else if (p.type === 4) {   /* spark dot */
             p.vx *= (1 - Math.min(1, 4 * dt));
             p.vy *= (1 - Math.min(1, 4 * dt));
-        } else {                     /* rainbow fountain drop */
+        } else if (p.type === 5) {   /* rainbow fountain drop */
             p.vy += 780 * dt;
         }
+        /* type 6 halo: stays put, just blooms and fades */
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.rot += p.vr * dt;
@@ -1653,6 +1924,12 @@ function stepPhysics(dt) {
 function update(dt) {
     time += dt;
     if (trauma > 0) trauma = Math.max(0, trauma - 2.2 * dt);
+    /* hit-stop: freeze the world for a beat on huge merges, FX run in slow-mo */
+    if (hitStop > 0 && (currentState === State.PLAYING || currentState === State.DYING)) {
+        hitStop -= dt;
+        updateFX(dt * 0.25);
+        return;
+    }
     switch (currentState) {
         case State.MENU:
             stepPhysics(dt);
@@ -1660,6 +1937,15 @@ function update(dt) {
             break;
         case State.PLAYING:
             cooldown = Math.max(0, cooldown - dt);
+            runT += dt;
+            phase = clamp(runT / PHASE_TIME, 0, 1);
+            var lvl = 1 + Math.min(5, Math.floor(runT / 30));
+            if (lvl > curLvl) {
+                curLvl = lvl;
+                spawnText(JAR_W / 2, 150, 'SPEED UP! LV ' + curLvl, 27, '#FFD93D', true);
+                sfxFanfare();
+            }
+            if (!heldWild) comboMeter = Math.max(0, comboMeter - dt * 0.075);
             stepPhysics(dt);
             updateDanger(dt);
             updateCosmetics(dt);
@@ -1701,9 +1987,9 @@ function drawJarBack() {
     ctx.quadraticCurveTo(JAR_W + 8, JAR_H + 7, JAR_W + 8, JAR_H - 20);
     ctx.lineTo(JAR_W + 8, -10);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
     ctx.fill();
-    ctx.fillStyle = 'rgba(150,205,255,0.12)';
+    ctx.fillStyle = 'rgba(150,205,255,0.07)';
     ctx.fill();
 
     /* danger line, pulses gently when the jar is crowded */
@@ -1711,11 +1997,9 @@ function drawJarBack() {
         ? 0.45 + 0.4 * warnLevel * (0.5 + 0.5 * Math.sin(time * (3 + warnLevel * 5)))
         : 0.3;
     if (warnLevel > 0.4) {
-        var grad = ctx.createLinearGradient(0, 0, 0, DANGER_Y + 44);
-        grad.addColorStop(0, 'rgba(255,90,110,' + (0.12 * warnLevel).toFixed(3) + ')');
-        grad.addColorStop(1, 'rgba(255,90,110,0)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(-6, -8, JAR_W + 12, DANGER_Y + 52);
+        ctx.globalAlpha = clamp(warnLevel, 0, 1);
+        ctx.drawImage(dangerSpr, -6, -8, JAR_W + 12, DANGER_Y + 52);
+        ctx.globalAlpha = 1;
     }
     ctx.strokeStyle = 'rgba(255,80,100,' + pulse.toFixed(3) + ')';
     ctx.lineWidth = 2.5 + warnLevel * 1.5;
@@ -1729,7 +2013,7 @@ function drawJarBack() {
 }
 
 function drawJarFront() {
-    ctx.strokeStyle = INK;
+    ctx.strokeStyle = '#7C74C9';
     ctx.lineWidth = 7;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -1749,7 +2033,7 @@ function drawJarFront() {
     ctx.lineTo(JAR_W + 22, -20);
     ctx.stroke();
     /* glass highlight */
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
     ctx.beginPath();
     if (ctx.roundRect) {
         ctx.roundRect(10, 26, 13, 180, 7);
@@ -1867,19 +2151,35 @@ function drawFace(b) {
 }
 
 function drawBall(b) {
-    var spr = sprites[b.tier];
+    var spr = b.wild ? wildSpr : sprites[b.tier];
     var t = clamp(b.scaleT, 0.001, 1);
     var sc = t < 1 ? easeOutBack(t) : 1;
     var breathe = 1 + 0.013 * Math.sin(time * 2 + b.seed);
     var sx = (1 + 0.22 * b.squash) * sc * breathe;
     var sy = (1 - 0.26 * b.squash) * sc * breathe;
+    if (b.wild) {
+        /* glow aura behind the wild ball */
+        var gr = b.r * 2.6 + Math.sin(time * 5) * 4;
+        ctx.globalAlpha = 0.55;
+        ctx.drawImage(glowGoldSpr, b.x - gr, b.y - gr, gr * 2, gr * 2);
+        ctx.globalAlpha = 1;
+    }
     ctx.save();
     ctx.translate(b.x, b.y);
     ctx.rotate(b.rot);
     ctx.scale(sx, sy);
     ctx.drawImage(spr.cnv, -spr.half, -spr.half, spr.half * 2, spr.half * 2);
-    drawFace(b);
+    if (!b.wild) drawFace(b);
     ctx.restore();
+    /* fair-warning countdown ring on a ball that is overflowing */
+    if (b.dangerT > 0.2 && currentState === State.PLAYING) {
+        var frac = clamp(b.dangerT / overflowGrace(), 0, 1);
+        ctx.strokeStyle = 'rgba(255,80,100,' + (0.5 + 0.5 * frac).toFixed(2) + ')';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r + 8, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+        ctx.stroke();
+    }
 }
 
 function landingYFor(x, r) {
@@ -1897,12 +2197,13 @@ function landingYFor(x, r) {
 }
 
 function drawAim() {
-    var r = TIERS[currentTier].r;
+    var r = heldWild ? WILD_R : TIERS[currentTier].r;
     var x = clamp(aimX, r + 2, JAR_W - r - 2);
     var landY = landingYFor(x, r);
-    ctx.strokeStyle = 'rgba(43,35,80,0.28)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.30)';
     ctx.lineWidth = 2.5;
     ctx.setLineDash([6, 9]);
+    ctx.lineDashOffset = -time * 30;
     ctx.beginPath();
     ctx.moveTo(x, DROP_Y + r + 6);
     ctx.lineTo(x, landY - r * 0.2);
@@ -1910,16 +2211,31 @@ function drawAim() {
     /* landing ghost */
     ctx.beginPath();
     ctx.arc(x, landY, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(43,35,80,0.16)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
 }
 
 function drawHeld() {
-    var r = TIERS[currentTier].r;
+    var r = heldWild ? WILD_R : TIERS[currentTier].r;
     var x = clamp(aimX, r + 2, JAR_W - r - 2);
     var bob = Math.sin(time * 2.4) * 3;
     var sc = easeOutBack(clamp(heldScaleT, 0.001, 1));
+    if (heldWild) {
+        /* pulsing golden aura + slow spin for the wild piece */
+        var gr = r * 2.8 + Math.sin(time * 5) * 5;
+        ctx.globalAlpha = 0.7;
+        ctx.drawImage(glowGoldSpr, x - gr, (DROP_Y + bob) - gr, gr * 2, gr * 2);
+        ctx.globalAlpha = 1;
+        ctx.save();
+        ctx.translate(x, DROP_Y + bob);
+        ctx.rotate(time * 0.9);
+        ctx.scale(sc, sc);
+        ctx.drawImage(wildSpr.cnv, -wildSpr.half, -wildSpr.half, wildSpr.half * 2, wildSpr.half * 2);
+        ctx.restore();
+        return;
+    }
     var fake = {
         tier: currentTier, r: r, rot: 0,
         squash: 0, scaleT: 1, seed: 3,
@@ -1938,7 +2254,9 @@ function drawHeld() {
 }
 
 function drawNextBubble() {
-    var bx = JAR_W - 88, by = -104, bw = 92, bh = 56;
+    /* while the wild is held, the queued piece is what comes next */
+    var showTier = heldWild ? currentTier : nextTier;
+    var bx = JAR_W - 96, by = JAR_H + 16, bw = 96, bh = 52;
     ctx.fillStyle = '#FFFFFF';
     ctx.strokeStyle = INK;
     ctx.lineWidth = 3;
@@ -1953,15 +2271,15 @@ function drawNextBubble() {
     ctx.textBaseline = 'middle';
     ctx.fillText('NEXT', bx + 10, by + bh / 2 - 12);
     ctx.font = '800 13px Nunito, sans-serif';
-    ctx.fillText(TIERS[nextTier].name, bx + 10, by + bh / 2 + 10);
-    var spr = sprites[nextTier];
-    var k = 16 / TIERS[nextTier].r;
+    ctx.fillText(TIERS[showTier].name, bx + 10, by + bh / 2 + 10);
+    var spr = sprites[showTier];
+    var k = 16 / TIERS[showTier].r;
     var cx = bx + bw - 24, cy = by + bh / 2;
     ctx.save();
     ctx.translate(cx, cy);
     ctx.scale(k, k);
     ctx.drawImage(spr.cnv, -spr.half, -spr.half, spr.half * 2, spr.half * 2);
-    var rr = TIERS[nextTier].r;
+    var rr = TIERS[showTier].r;
     ctx.fillStyle = INK;
     ctx.beginPath();
     ctx.arc(-rr * 0.3, -rr * 0.1, rr * 0.1, 0, Math.PI * 2);
@@ -2013,6 +2331,10 @@ function drawFX() {
             drawStarPath(ctx, 0, 0, p.size);
             ctx.fill();
             ctx.restore();
+        } else if (p.type === 6) {   /* halo bloom, pre-rendered glow sprite */
+            ctx.globalAlpha = k * 0.85;
+            var hs = p.size * (1 + (1 - k) * 1.2);
+            ctx.drawImage(p.color === 'gold' ? glowGoldSpr : glowSpr, p.x - hs, p.y - hs, hs * 2, hs * 2);
         } else {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size * k + 0.5, 0, Math.PI * 2);
@@ -2035,7 +2357,7 @@ function drawFX() {
         }
         ctx.font = '800 ' + pt.size + 'px Nunito, sans-serif';
         ctx.lineWidth = 5;
-        ctx.strokeStyle = 'rgba(255,246,233,0.92)';
+        ctx.strokeStyle = 'rgba(16,14,42,0.88)';
         ctx.strokeText(pt.text, 0, 0);
         ctx.fillStyle = pt.color;
         ctx.fillText(pt.text, 0, 0);
@@ -2044,9 +2366,90 @@ function drawFX() {
     ctx.globalAlpha = 1;
 }
 
+/* Ambient background life: drifting glow orbs, rising bubbles, twinkles.
+   Everything is a pre-rendered sprite or a couple of cheap arcs. */
+function drawAmbient() {
+    var w = canvas.width, h = canvas.height;
+    var i;
+    for (i = 0; i < 4; i++) {
+        var gx = w * (0.5 + 0.42 * Math.sin(time * (0.05 + i * 0.013) + i * 2.4));
+        var gy = h * (0.5 + 0.4 * Math.sin(time * (0.04 + i * 0.011) + i * 1.7 + 2));
+        var gr = h * (0.1 + 0.03 * i);
+        ctx.globalAlpha = 0.055;
+        ctx.drawImage(i % 2 ? glowGoldSpr : glowSpr, (gx - gr) | 0, (gy - gr) | 0, (gr * 2) | 0, (gr * 2) | 0);
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = Math.max(1, 1.2 * S);
+    ctx.globalAlpha = 0.55;
+    for (i = 0; i < 7; i++) {
+        var spd = (18 + (i * 7) % 20) * S;
+        var by = h - ((time * spd + i * 137 * S) % (h + 80 * S)) + 40 * S;
+        var bx = ((i * 0.137 + 0.05) % 1) * w + Math.sin(time * 0.8 + i) * 14 * S;
+        ctx.beginPath();
+        ctx.arc(bx | 0, by | 0, (3 + (i % 4) * 2) * S, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.fillStyle = '#FFFFFF';
+    for (i = 0; i < 6; i++) {
+        var tw = 0.5 + 0.5 * Math.sin(time * (1.3 + i * 0.37) + i * 2.1);
+        ctx.globalAlpha = tw * 0.32;
+        drawStarPath(ctx, ((i * 0.171 + 0.09) % 1) * w, ((i * 0.293 + 0.12) % 1) * h * 0.7, (3 + i % 3) * S * (0.7 + tw * 0.5));
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+}
+
+/* Combo meter + speed level, drawn under the jar */
+function drawComboMeter() {
+    var mx = 4, my = JAR_H + 22, mw = 150, mh = 16;
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(mx, my, mw, mh, 8);
+    else ctx.rect(mx, my, mw, mh);
+    ctx.fill();
+    ctx.stroke();
+    var f = heldWild ? 1 : comboMeter;
+    if (f > 0.02) {
+        var fw = (mw - 4) * f;
+        ctx.drawImage(comboGradSpr, 0, 0, comboGradSpr.width * f, comboGradSpr.height, mx + 2, my + 2, fw, mh - 4);
+    }
+    /* star cap, lights up when the wild is ready */
+    var pulse = heldWild ? 1 + 0.2 * Math.sin(time * 8) : 1;
+    if (heldWild) {
+        var gr = 26;
+        ctx.globalAlpha = 0.8;
+        ctx.drawImage(glowGoldSpr, mx + mw + 16 - gr, my + mh / 2 - gr, gr * 2, gr * 2);
+        ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = heldWild ? '#FFD93D' : 'rgba(255,255,255,0.4)';
+    drawStarPath(ctx, mx + mw + 16, my + mh / 2, 11 * pulse);
+    ctx.fill();
+    ctx.font = '800 13px Nunito, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = heldWild ? '#FFD93D' : 'rgba(255,255,255,0.6)';
+    ctx.fillText(heldWild ? 'WILD READY! DROP IT!' : 'WILD METER', mx + 2, my + mh + 14);
+    /* speed level, centered between meter and the NEXT bubble */
+    ctx.textAlign = 'center';
+    ctx.fillStyle = curLvl >= 4 ? '#FF8A6B' : 'rgba(255,255,255,0.6)';
+    ctx.fillText('SPEED', (mx + mw + 30 + JAR_W - 96) / 2, my + 1);
+    ctx.font = '800 17px Nunito, sans-serif';
+    ctx.fillText('LV ' + curLvl, (mx + mw + 30 + JAR_W - 96) / 2, my + 20);
+    ctx.textAlign = 'left';
+}
+
 function render() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (bgSpr) ctx.drawImage(bgSpr, 0, 0);
+    drawAmbient();
+    /* pulsing red edges when the jar is dangerously full */
+    if (warnLevel > 0.35 && (currentState === State.PLAYING || currentState === State.DYING)) {
+        ctx.globalAlpha = Math.min(1, (warnLevel - 0.35) / 0.65) * (0.55 + 0.25 * Math.sin(time * 6));
+        ctx.drawImage(vinSpr, 0, 0);
+        ctx.globalAlpha = 1;
+    }
     worldTransform();
     drawJarBack();
     if (currentState === State.PLAYING) drawAim();
@@ -2056,6 +2459,7 @@ function render() {
     if (currentState === State.PLAYING) {
         drawHeld();
         drawNextBubble();
+        drawComboMeter();
     }
 }
 
@@ -2187,11 +2591,15 @@ window.__mergeTest = {
         while (t < seconds) { update(1 / 60); t += 1 / 60; }
     },
     pickTier: pickTier,
+    forceWild: function () { heldWild = true; },
+    fastForward: function (seconds) { runT += seconds; },
     get: function () {
         return {
             state: currentState, score: score, merges: totalMerges,
             biggest: biggestTier, balls: balls, panelShown: panelShown,
-            JAR_W: JAR_W, JAR_H: JAR_H, DANGER_Y: DANGER_Y
+            JAR_W: JAR_W, JAR_H: JAR_H, DANGER_Y: DANGER_Y,
+            combo: comboMeter, heldWild: heldWild, phase: phase,
+            level: curLvl, bestChain: bestChain, saves: saves, hitStop: hitStop
         };
     }
 };

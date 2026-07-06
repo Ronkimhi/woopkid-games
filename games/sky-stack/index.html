@@ -147,6 +147,34 @@ html, body {
     100% { transform: translateX(-50%) scale(1) rotate(0deg); }
 }
 
+#stageBanner {
+    position: fixed;
+    top: 27%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: linear-gradient(135deg, #FFB040, #FF7A5C);
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: min(6vw, 26px);
+    letter-spacing: 1px;
+    padding: 12px 28px;
+    border-radius: 999px;
+    box-shadow: 0 6px 0 rgba(43, 35, 80, 0.2), 0 14px 34px rgba(43, 35, 80, 0.25);
+    z-index: 30;
+    pointer-events: none;
+    opacity: 0;
+    text-align: center;
+    white-space: nowrap;
+}
+#stageBanner.show { animation: stagePop 2.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+@keyframes stagePop {
+    0% { transform: translate(-50%, -50%) scale(0) rotate(-6deg); opacity: 0; }
+    12% { transform: translate(-50%, -50%) scale(1.14) rotate(2deg); opacity: 1; }
+    20% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+    80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -86%) scale(0.86); opacity: 0; }
+}
+
 #title {
     position: fixed;
     top: 12%;
@@ -288,6 +316,13 @@ html, body {
     margin-top: -2px;
     letter-spacing: 2px;
 }
+#panelStage {
+    color: #8A6BD1;
+    font-weight: 800;
+    font-size: 15px;
+    margin-top: 6px;
+    letter-spacing: 1px;
+}
 #panelBestRow {
     color: #6B6394;
     font-weight: 700;
@@ -335,10 +370,11 @@ html, body {
 
 <div id="score">0</div>
 <div id="combo"></div>
+<div id="stageBanner"></div>
 
 <div id="title">
     <h1>SKY STACK</h1>
-    <p>Stack your tower to the stars!</p>
+    <p>Stack your tower to outer space!</p>
     <div><span id="menuBest" style="display:none;"></span></div>
 </div>
 <div id="tapHint">TAP TO DROP</div>
@@ -354,6 +390,7 @@ html, body {
     <h2 id="panelTitle">NICE TOWER!</h2>
     <div id="panelScore">0</div>
     <div id="panelFloors">FLOORS</div>
+    <div id="panelStage"></div>
     <div id="panelBestRow">Your best: <span id="panelBest">0</span></div>
     <div id="panelCombo"></div>
     <div id="nearMiss"></div>
@@ -369,6 +406,7 @@ var canvas = document.getElementById('game');
 var ctx = canvas.getContext('2d', { alpha: false });
 var scoreEl = document.getElementById('score');
 var comboEl = document.getElementById('combo');
+var stageBanner = document.getElementById('stageBanner');
 var titleEl = document.getElementById('title');
 var menuBestEl = document.getElementById('menuBest');
 var tapHintEl = document.getElementById('tapHint');
@@ -376,15 +414,16 @@ var pauseBtn = document.getElementById('pauseBtn');
 var muteBtn = document.getElementById('muteBtn');
 var pauseOverlay = document.getElementById('pauseOverlay');
 var overPanel = document.getElementById('overPanel');
-var stickerBanner = document.getElementById('stickerBanner');
+var stickerBannerEl = document.getElementById('stickerBanner');
 var newBestEl = document.getElementById('newBest');
 var panelScoreEl = document.getElementById('panelScore');
+var panelStageEl = document.getElementById('panelStage');
 var panelBestEl = document.getElementById('panelBest');
 var panelComboEl = document.getElementById('panelCombo');
 var nearMissEl = document.getElementById('nearMiss');
 var playBtn = document.getElementById('playBtn');
 
-/* ================= Storage (per game) ================= */
+/* ================= Storage (per game, same key + shape as before) ================= */
 var STORAGE_KEY = 'woopkid_sky-stack';
 var defaultData = {
     highScore: 0,
@@ -453,6 +492,10 @@ function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
 function rand(a, b) { return a + Math.random() * (b - a); }
 function lerp(a, b, t) { return a + (b - a) * t; }
 function easeInOut(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+function easeOutBack(t) {
+    var c1 = 1.70158, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
 
 /* ================= Audio (procedural, Web Audio only) ================= */
 var audioCtx = null;
@@ -594,7 +637,7 @@ function sfxDeath() {
     o.stop(t + 0.62);
 }
 
-/* Little fanfare for new best or sticker */
+/* Little fanfare for milestones, new best or sticker */
 function sfxFanfare() {
     if (!canPlay()) return;
     activeVoices++;
@@ -617,16 +660,21 @@ function sfxFanfare() {
     o.stop(t + 0.64);
 }
 
-/* ================= Constants ================= */
+/* ================= Constants + difficulty curves ================= */
 var H = 720;                 /* logical world height */
 var BH = 44;                 /* block height */
-var PERFECT_PX = 6;          /* perfect drop tolerance */
-var GROW_PX = 12;            /* width gained back on every 3rd consecutive perfect */
-var BASE_SPEED = 240;        /* slider px/s at floor 0 */
-var SPEED_PER_FLOOR = 6;
-var MAX_SPEED = 520;
 var CHUNK_GRAVITY = 1500;
 var TOP_ANCHOR = 0.62;       /* tower top sits at this fraction of screen height */
+
+/* Generous but honest perfect window: 9px early, tightens to 5px by floor ~36 */
+function perfectWindowFor(f) { return 9 - 4 * clamp((f - 6) / 30, 0, 1); }
+/* Speed ramps fast for the first ~25 floors, then keeps creeping up */
+function speedFor(f) {
+    var s = f <= 24 ? 228 + 7.5 * f : 408 + 3.6 * (f - 24);
+    return Math.min(560, s);
+}
+/* Rhythmic speed pulsing kicks in after floor 12 and deepens */
+function pulseAmtFor(f) { return f < 12 ? 0 : Math.min(0.42, (f - 12) * 0.02); }
 
 var State = {
     MENU: 'menu',
@@ -637,10 +685,68 @@ var State = {
 };
 var currentState = State.MENU;
 
+/* ================= Sky journey: dawn -> day -> sunset -> dusk -> night -> space ================= */
+var STAGES = [
+    { at: 0,  name: 'SUNRISE',       emoji: '🌅' },
+    { at: 8,  name: 'SUNNY SKIES',   emoji: '☀️' },
+    { at: 16, name: 'GOLDEN SUNSET', emoji: '🌇' },
+    { at: 24, name: 'PURPLE DUSK',   emoji: '🌆' },
+    { at: 32, name: 'STARRY NIGHT',  emoji: '🌙' },
+    { at: 40, name: 'DEEP SPACE',    emoji: '🚀' }
+];
+/* Color knots hold each look, then blend quickly — avoids muddy long cross-fades */
+var SKY_KNOTS = [
+    { at: 0,  top: [255, 178, 125], bot: [255, 227, 194] },  /* sunrise peach */
+    { at: 7,  top: [84, 183, 245],  bot: [186, 232, 255] },  /* bright day */
+    { at: 13, top: [84, 183, 245],  bot: [186, 232, 255] },
+    { at: 17, top: [255, 122, 92],  bot: [255, 205, 130] },  /* golden sunset */
+    { at: 22, top: [255, 122, 92],  bot: [255, 205, 130] },
+    { at: 27, top: [104, 70, 158],  bot: [233, 134, 150] },  /* purple dusk */
+    { at: 33, top: [20, 27, 77],    bot: [58, 74, 140] },    /* starry night */
+    { at: 39, top: [20, 27, 77],    bot: [58, 74, 140] },
+    { at: 45, top: [6, 7, 28],      bot: [33, 20, 74] }      /* deep space */
+];
+function stageFor(f) {
+    var s = STAGES[0];
+    for (var i = 0; i < STAGES.length; i++) if (f >= STAGES[i].at) s = STAGES[i];
+    return s;
+}
+var skyTopC = [255, 178, 125], skyBotC = [255, 227, 194];
+var nightA = 0, spaceA = 0, sunA = 1, moonA = 0;
+function lerp3(a, b, t) {
+    return [(a[0] + (b[0] - a[0]) * t) | 0, (a[1] + (b[1] - a[1]) * t) | 0, (a[2] + (b[2] - a[2]) * t) | 0];
+}
+function lerpRGB(a, b, t) {
+    return 'rgb(' + ((a[0] + (b[0] - a[0]) * t) | 0) + ',' + ((a[1] + (b[1] - a[1]) * t) | 0) + ',' + ((a[2] + (b[2] - a[2]) * t) | 0) + ')';
+}
+function computeSky() {
+    var f = skyF;
+    var i = SKY_KNOTS.length - 1;
+    for (var k = 0; k < SKY_KNOTS.length - 1; k++) {
+        if (f < SKY_KNOTS[k + 1].at) { i = k; break; }
+    }
+    var a = SKY_KNOTS[i], b = SKY_KNOTS[Math.min(i + 1, SKY_KNOTS.length - 1)];
+    var t = b.at === a.at ? 0 : clamp((f - a.at) / (b.at - a.at), 0, 1);
+    /* ease the blend so each look lingers, then flips over quickly */
+    t = easeInOut(t);
+    skyTopC = lerp3(a.top, b.top, t);
+    skyBotC = lerp3(a.bot, b.bot, t);
+    if (f > 45) { /* keep sinking deeper into space */
+        var t2 = clamp((f - 45) / 50, 0, 1) * 0.6;
+        skyTopC = lerp3(skyTopC, [2, 2, 12], t2);
+        skyBotC = lerp3(skyBotC, [12, 8, 34], t2);
+    }
+    nightA = clamp((f - 22) / 14, 0, 1);
+    spaceA = clamp((f - 36) / 10, 0, 1);
+    sunA = clamp((26 - f) / 8, 0, 1);
+    moonA = clamp((f - 27) / 6, 0, 1) * (1 - spaceA * 0.5);
+}
+
 /* ================= Canvas sizing + prerendered sprites ================= */
 var S = 1;    /* device pixels per logical unit */
 var VW = 400; /* logical view width */
-var cloudSprs = [], sunSpr = null, moonSpr = null;
+var cloudSprs = [], sunSpr = null, moonSpr = null, planetSpr = null;
+var skyStrip = null, skyStripCtx = null, skyStripKey = '';
 
 function makeCanvas(w, h) {
     var c = document.createElement('canvas');
@@ -665,7 +771,7 @@ function buildSprites() {
         cctx.scale(ts, ts);
         var puffs = variants[v];
         var j;
-        cctx.fillStyle = '#DCEFFB';
+        cctx.fillStyle = '#D3E9FA';
         for (j = 0; j < puffs.length; j++) {
             cctx.beginPath();
             cctx.arc(puffs[j][0], puffs[j][1] + 6, puffs[j][2], 0, Math.PI * 2);
@@ -680,7 +786,7 @@ function buildSprites() {
         cloudSprs.push(cs);
     }
 
-    /* Sun */
+    /* Sun with pre-baked glow */
     sunSpr = makeCanvas(200 * ts, 200 * ts);
     var sc = sunSpr.getContext('2d');
     sc.scale(ts, ts);
@@ -693,6 +799,10 @@ function buildSprites() {
     sc.fillStyle = '#FFF3B0';
     sc.beginPath();
     sc.arc(100, 100, 34, 0, Math.PI * 2);
+    sc.fill();
+    sc.fillStyle = '#FFE98A';
+    sc.beginPath();
+    sc.arc(100, 100, 27, 0, Math.PI * 2);
     sc.fill();
 
     /* Moon with soft glow and craters */
@@ -713,14 +823,47 @@ function buildSprites() {
     mc.beginPath(); mc.arc(70, 72, 6, 0, Math.PI * 2); mc.fill();
     mc.beginPath(); mc.arc(88, 88, 4.5, 0, Math.PI * 2); mc.fill();
     mc.beginPath(); mc.arc(90, 68, 3, 0, Math.PI * 2); mc.fill();
+
+    /* Friendly ringed planet for deep space */
+    planetSpr = makeCanvas(180 * ts, 140 * ts);
+    var pc = planetSpr.getContext('2d');
+    pc.scale(ts, ts);
+    var pg = pc.createRadialGradient(90, 66, 6, 90, 66, 88);
+    pg.addColorStop(0, 'rgba(255,160,200,0.5)');
+    pg.addColorStop(0.5, 'rgba(255,160,200,0.12)');
+    pg.addColorStop(1, 'rgba(255,160,200,0)');
+    pc.fillStyle = pg;
+    pc.fillRect(0, 0, 180, 140);
+    pc.fillStyle = '#FF9DBF';
+    pc.beginPath(); pc.arc(90, 66, 34, 0, Math.PI * 2); pc.fill();
+    pc.fillStyle = '#FFB9D2';
+    pc.beginPath(); pc.arc(80, 56, 22, 0, Math.PI * 2); pc.fill();
+    pc.fillStyle = '#F27DA8';
+    pc.beginPath(); pc.arc(102, 78, 8, 0, Math.PI * 2); pc.fill();
+    pc.beginPath(); pc.arc(74, 82, 5, 0, Math.PI * 2); pc.fill();
+    pc.strokeStyle = '#FFE14D';
+    pc.lineWidth = 7;
+    pc.beginPath();
+    pc.ellipse(90, 70, 62, 16, -0.28, 0, Math.PI * 2);
+    pc.stroke();
+    pc.strokeStyle = 'rgba(255,255,255,0.55)';
+    pc.lineWidth = 2.5;
+    pc.beginPath();
+    pc.ellipse(90, 70, 70, 19, -0.28, 0, Math.PI * 2);
+    pc.stroke();
+
+    /* Cached vertical sky gradient strip (rebuilt only when palette changes) */
+    skyStrip = makeCanvas(2, 180);
+    skyStripCtx = skyStrip.getContext('2d');
+    skyStripKey = '';
 }
 
-/* Static star field, screen space */
+/* Static star field, screen space with slow parallax */
 var skyStars = [];
 function buildStars() {
     skyStars = [];
-    for (var i = 0; i < 64; i++) {
-        skyStars.push({ x: rand(0, VW), y: rand(0, H * 0.85), r: rand(0.8, 2.2), ph: rand(0, Math.PI * 2) });
+    for (var i = 0; i < 88; i++) {
+        skyStars.push({ x: rand(0, VW), y: rand(0, H), r: rand(0.8, 2.4), ph: rand(0, Math.PI * 2) });
     }
 }
 
@@ -746,31 +889,39 @@ var time = 0;
 var score = 0;         /* floors stacked (base excluded) */
 var combo = 0;         /* consecutive perfect drops */
 var maxCombo = 0;
+var perfects = 0;      /* total perfects this run (coins) */
 var startW = 250;      /* run start block width, growth cap */
 var prevBest = 0;
 var newBest = false;
+var bestPassed = false;
 var earnedTiers = [];
 var panelShown = false;
 var trauma = 0;
+var hitStop = 0;       /* brief freeze frames on perfect drops */
+var zoomPunch = 0;     /* tiny camera punch-in on perfects */
 var cam = 0;           /* viewTy target while playing */
 var zoom = 1;
 var viewTx = 0, viewTy = 0;
 var skyF = 0;          /* smoothed floor count driving the sky palette */
-var nightA = 0;        /* how deep into night we are, 0..1 */
 var deathT = 0;
 var dyingFrom = { ty: 0 };
 var dyingTo = { z: 1, tx: 0, ty: 0 };
 var flash = { t: 0, x: 0, y: 0, w: 0 };
 
-var tower = [];        /* placed blocks: {x, w, cols, seed} indexed by floor */
-var slider = { active: false, x: 0, w: 0, dir: 1, speed: BASE_SPEED, minX: 0, maxX: 0, cols: null, seed: 0 };
+var tower = [];        /* placed blocks: {x, w, cols, seed, age} indexed by floor */
+var slider = {
+    active: false, x: 0, w: 0, dir: 1, speed: 228,
+    minX: 0, maxX: 0, alignX: 0, baseAmp: 0,
+    randTurn: false, turnExtra: 0, pulse: 0, phase: 0,
+    cols: null, seed: 0
+};
 
 function colorFor(i) {
-    var h = (18 + i * 9) % 360;
+    var h = (16 + i * 9) % 360;
     return {
-        body: 'hsl(' + h + ', 72%, 63%)',
-        top: 'hsl(' + h + ', 78%, 77%)',
-        dark: 'hsl(' + h + ', 58%, 46%)'
+        body: 'hsl(' + h + ', 76%, 62%)',
+        top: 'hsl(' + h + ', 82%, 77%)',
+        dark: 'hsl(' + h + ', 62%, 45%)'
     };
 }
 
@@ -809,9 +960,9 @@ function updateChunks(dt) {
     }
 }
 
-/* ---- Particle pool: 2 spark, 3 confetti (world coords) ---- */
+/* ---- Particle pool (cap 120): 2 spark, 3 confetti, 4 star glint (world coords) ---- */
 var parts = [];
-for (var qi = 0; qi < 140; qi++) {
+for (var qi = 0; qi < 120; qi++) {
     parts.push({ active: false, type: 0, x: 0, y: 0, vx: 0, vy: 0, rot: 0, vr: 0, life: 0, ttl: 1, size: 4, color: '#fff', seed: 0 });
 }
 function spawnPart(type, x, y, vx, vy, ttl, size, color) {
@@ -838,89 +989,196 @@ function updateParticles(dt) {
         if (p.type === 2) {
             p.vx *= (1 - Math.min(1, 4 * dt));
             p.vy *= (1 - Math.min(1, 4 * dt));
+        } else if (p.type === 4) {
+            p.vx *= (1 - Math.min(1, 2.4 * dt));
+            p.vy *= (1 - Math.min(1, 2.4 * dt));
+            p.rot += 2.2 * dt;
         } else {
             p.vy = Math.min(240, p.vy + 220 * dt);
             p.x += Math.sin(p.life * 5 + p.seed) * 26 * dt;
         }
         p.x += p.vx * dt;
         p.y += p.vy * dt;
-        p.rot += p.vr * dt;
+        if (p.type !== 4) p.rot += p.vr * dt;
     }
 }
 var SPARK_COLORS = ['#FFFFFF', '#FFF3B0', '#FFE14D'];
 function burstSparks(x, y, n) {
     for (var i = 0; i < n; i++) {
         var a = rand(0, Math.PI * 2);
-        var sp = rand(40, 230);
+        var sp = rand(40, 240);
         spawnPart(2, x, y, Math.cos(a) * sp, Math.sin(a) * sp, rand(0.35, 0.7), rand(2.5, 5), SPARK_COLORS[i % SPARK_COLORS.length]);
+    }
+}
+function burstDust(x, y, n, dir) {
+    for (var i = 0; i < n; i++) {
+        spawnPart(2, x, y + rand(-3, 3), dir * rand(20, 110) + rand(-20, 20), rand(-70, -10), rand(0.25, 0.5), rand(2, 4), 'rgba(255,255,255,0.85)');
+    }
+}
+function burstGlints(x, y, n, spread) {
+    for (var i = 0; i < n; i++) {
+        var a = rand(0, Math.PI * 2);
+        var d = rand(spread * 0.3, spread);
+        spawnPart(4, x + Math.cos(a) * d, y + Math.sin(a) * d * 0.6, rand(-16, 16), rand(-40, -8), rand(0.45, 0.8), rand(7, 13), i % 3 === 0 ? '#FFFFFF' : '#FFE14D');
     }
 }
 var GOLD_COLORS = ['#FFE14D', '#FFD93D', '#FFF3B0', '#FFC61A'];
 function burstGrow(x, y, w) {
-    for (var i = 0; i < 18; i++) {
+    for (var i = 0; i < 16; i++) {
         spawnPart(2, x + rand(0, w), y + rand(-4, BH), rand(-60, 60), rand(-160, -40), rand(0.4, 0.8), rand(2.5, 5), GOLD_COLORS[i % GOLD_COLORS.length]);
     }
 }
 var CONFETTI_COLORS = ['#FF8A3D', '#7ED957', '#4FC3F7', '#FFD93D', '#FF5FA2', '#B388FF'];
-function burstConfetti() {
+function burstConfetti(n) {
     /* spawn in world coords across the visible top of the view */
     var leftW = (0 - viewTx) / zoom;
     var rightW = (VW - viewTx) / zoom;
     var topW = (0 - viewTy) / zoom;
-    for (var i = 0; i < 70; i++) {
+    for (var i = 0; i < n; i++) {
         spawnPart(3, rand(leftW + (rightW - leftW) * 0.1, rightW - (rightW - leftW) * 0.1), topW + rand(-60, -10), rand(-70, 70), rand(50, 190), rand(2, 3.2), rand(5, 9) / zoom, CONFETTI_COLORS[i % CONFETTI_COLORS.length]);
     }
 }
+function burstMiniConfetti(x, y) {
+    for (var i = 0; i < 14; i++) {
+        var a = rand(-Math.PI, 0);
+        spawnPart(3, x + rand(-30, 30), y, Math.cos(a) * rand(40, 130), Math.sin(a) * rand(60, 200), rand(0.8, 1.4), rand(4, 7), CONFETTI_COLORS[i % CONFETTI_COLORS.length]);
+    }
+}
 
-/* ---- Clouds drifting behind the tower, world space ---- */
-var clouds = [];
+/* ---- Expanding celebration rings (world coords, pooled) ---- */
+var rings = [];
+for (var ri = 0; ri < 10; ri++) {
+    rings.push({ active: false, x: 0, y: 0, r0: 0, r1: 0, lw: 4, life: 0, ttl: 0.4, color: '#fff' });
+}
+function spawnRing(x, y, r0, r1, color, ttl, lw) {
+    for (var i = 0; i < rings.length; i++) {
+        var r = rings[i];
+        if (!r.active) {
+            r.active = true;
+            r.x = x; r.y = y; r.r0 = r0; r.r1 = r1;
+            r.color = color; r.ttl = ttl; r.lw = lw || 5;
+            r.life = 0;
+            return;
+        }
+    }
+}
+
+/* ---- Radial ray bursts (pooled) ---- */
+var rays = [];
+for (var yi = 0; yi < 6; yi++) {
+    rays.push({ active: false, x: 0, y: 0, life: 0, ttl: 0.4, n: 10, len: 60, rot: 0, color: '#FFE14D' });
+}
+function spawnRays(x, y, n, len, color) {
+    for (var i = 0; i < rays.length; i++) {
+        var r = rays[i];
+        if (!r.active) {
+            r.active = true;
+            r.x = x; r.y = y; r.n = n; r.len = len;
+            r.rot = rand(0, Math.PI * 2);
+            r.color = color;
+            r.ttl = 0.42;
+            r.life = 0;
+            return;
+        }
+    }
+}
+
+/* ---- Floating text labels: PERFECT x4! etc (world coords, pooled) ---- */
+var labels = [];
+for (var li = 0; li < 8; li++) {
+    labels.push({ active: false, x: 0, y: 0, life: 0, ttl: 0.95, text: '', size: 24, color: '#fff' });
+}
+function spawnLabel(x, y, text, size, color, ttl) {
+    for (var i = 0; i < labels.length; i++) {
+        var l = labels[i];
+        if (!l.active) {
+            l.active = true;
+            l.x = x; l.y = y; l.text = text; l.size = size; l.color = color;
+            l.ttl = ttl || 0.95;
+            l.life = 0;
+            return;
+        }
+    }
+}
+
+function updateFx(dt) {
+    var i;
+    for (i = 0; i < rings.length; i++) {
+        if (rings[i].active && (rings[i].life += dt) >= rings[i].ttl) rings[i].active = false;
+    }
+    for (i = 0; i < rays.length; i++) {
+        if (rays[i].active && (rays[i].life += dt) >= rays[i].ttl) rays[i].active = false;
+    }
+    for (i = 0; i < labels.length; i++) {
+        var l = labels[i];
+        if (!l.active) continue;
+        l.life += dt;
+        l.y -= 46 * dt;
+        if (l.life >= l.ttl) l.active = false;
+    }
+}
+
+/* ---- Parallax cloud layers (screen space, wrap vertically as camera rises) ---- */
+var farClouds = [], nearClouds = [];
+function makeCloudLayer(n, pf, sLo, sHi, aLo, aHi) {
+    var arr = [];
+    for (var i = 0; i < n; i++) {
+        arr.push({
+            x: rand(-120, VW), y: rand(0, H + 340), s: rand(sLo, sHi),
+            spr: i % 3, a: rand(aLo, aHi), pf: pf, spd: rand(6, 18), k: 0
+        });
+    }
+    return arr;
+}
 function initClouds() {
-    clouds = [];
-    for (var i = 0; i < 7; i++) {
-        clouds.push({ x: rand(-40, VW), y: rand(-H * 1.2, H * 0.4) - (viewTy - camTargetFor(1)), s: rand(0.5, 1.15), spr: i % 3, a: rand(0.5, 0.85) });
+    farClouds = makeCloudLayer(4, 0.16, 0.42, 0.66, 0.4, 0.55);
+    nearClouds = makeCloudLayer(5, 0.42, 0.8, 1.2, 0.65, 0.9);
+}
+function updateCloudLayer(arr, dt) {
+    for (var i = 0; i < arr.length; i++) {
+        var c = arr[i];
+        c.x -= c.spd * dt;
+        if (c.x < -200 * c.s) c.x = VW + rand(10, 90);
     }
 }
-function updateClouds(dt) {
-    var leftW = (0 - viewTx) / zoom - 200;
-    var rightW = (VW - viewTx) / zoom + 200;
-    var topW = (0 - viewTy) / zoom - 120;
-    var botW = (H - viewTy) / zoom + 120;
-    for (var i = 0; i < clouds.length; i++) {
-        var c = clouds[i];
-        c.x -= (10 + 16 * c.s) * dt;
-        if (c.x < leftW - 200 * c.s) {
-            c.x = rightW + rand(0, 160);
-            c.y = rand(topW, botW - 100);
-        }
-        /* keep clouds roughly within the vertical view band as the camera rises */
-        if (c.y > botW + 120 || c.y < topW - 320) {
-            c.y = rand(topW, botW - 100);
-            c.x = rand(leftW, rightW);
-        }
+function drawCloudLayer(arr) {
+    var band = H + 340;
+    var fade = (1 - spaceA) * (1 - 0.35 * nightA);
+    if (fade <= 0.02) return;
+    for (var i = 0; i < arr.length; i++) {
+        var c = arr[i];
+        var raw = c.y + viewTy * c.pf;
+        var k = Math.floor((raw + 170) / band);
+        var sy = raw - k * band;
+        if (k !== c.k) { c.k = k; c.x = rand(-120, VW); }
+        ctx.globalAlpha = c.a * fade;
+        ctx.drawImage(cloudSprs[c.spr], c.x | 0, sy | 0, 170 * c.s, 80 * c.s);
     }
+    ctx.globalAlpha = 1;
 }
 
-/* ================= Sky palette journey =================
-   Cycles every 20 floors: dawn peach, day blue, sunset orange, night navy, back to dawn. */
-var PAL = [
-    [[255, 178, 125], [255, 227, 194]],  /* dawn peach */
-    [[94, 185, 242], [189, 232, 255]],   /* day blue */
-    [[255, 122, 92], [255, 207, 138]],   /* sunset orange */
-    [[20, 27, 77], [58, 74, 140]]        /* night navy */
-];
-function lerpRGB(a, b, t) {
-    return 'rgb(' + ((a[0] + (b[0] - a[0]) * t) | 0) + ',' + ((a[1] + (b[1] - a[1]) * t) | 0) + ',' + ((a[2] + (b[2] - a[2]) * t) | 0) + ')';
-}
-function skyColors() {
-    var pos = skyF / 20;
-    var k = Math.floor(pos) % 4;
-    var f = pos - Math.floor(pos);
-    var k2 = (k + 1) % 4;
-    nightA = (k === 3 ? 1 - f : 0) + (k2 === 3 ? f : 0);
-    return {
-        top: lerpRGB(PAL[k][0], PAL[k2][0], f),
-        bot: lerpRGB(PAL[k][1], PAL[k2][1], f)
-    };
+/* ---- Shooting star treat at night ---- */
+var shoot = { active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, ttl: 0.9 };
+var shootTimer = 5;
+function updateShoot(dt) {
+    if (nightA < 0.5) { shoot.active = false; return; }
+    if (!shoot.active) {
+        shootTimer -= dt;
+        if (shootTimer <= 0) {
+            shoot.active = true;
+            shoot.x = rand(VW * 0.25, VW * 0.95);
+            shoot.y = rand(24, H * 0.32);
+            shoot.vx = -rand(280, 430);
+            shoot.vy = rand(90, 150);
+            shoot.life = 0;
+            shootTimer = rand(4, 9);
+        }
+    } else {
+        shoot.life += dt;
+        shoot.x += shoot.vx * dt;
+        shoot.y += shoot.vy * dt;
+        if (shoot.life > shoot.ttl) shoot.active = false;
+    }
 }
 
 /* ================= Run control ================= */
@@ -930,13 +1188,20 @@ function resetRun() {
     var i;
     for (i = 0; i < chunks.length; i++) chunks[i].active = false;
     for (i = 0; i < parts.length; i++) parts[i].active = false;
+    for (i = 0; i < rings.length; i++) rings[i].active = false;
+    for (i = 0; i < rays.length; i++) rays[i].active = false;
+    for (i = 0; i < labels.length; i++) labels[i].active = false;
     score = 0;
     combo = 0;
     maxCombo = 0;
+    perfects = 0;
     newBest = false;
+    bestPassed = false;
     earnedTiers = [];
     panelShown = false;
     trauma = 0;
+    hitStop = 0;
+    zoomPunch = 0;
     deathT = 0;
     flash.t = 0;
     skyF = 0;
@@ -944,25 +1209,37 @@ function resetRun() {
     viewTx = 0;
     startW = Math.min(250, VW * 0.62);
     tower.length = 0;
-    tower.push({ x: (VW - startW) / 2, w: startW, cols: colorFor(0), seed: (Math.random() * 997) | 0 });
+    tower.push({ x: (VW - startW) / 2, w: startW, cols: colorFor(0), seed: (Math.random() * 997) | 0, age: 1 });
     cam = camTargetFor(1);
     viewTy = cam;
     spawnSlider();
     scoreEl.textContent = '0';
     comboEl.style.display = 'none';
+    stageBanner.classList.remove('show');
+}
+
+function pickTurn() {
+    var base = slider.baseAmp;
+    if (!slider.randTurn) return base;
+    var lo = Math.max(base * 0.55, slider.w * 0.5 + 34);
+    return rand(lo, base + slider.turnExtra);
 }
 
 function spawnSlider() {
     var prev = tower[tower.length - 1];
-    var w = prev.w;
-    var pcx = prev.x + prev.w / 2;
-    var amp = prev.w / 2 + 84;   /* block center travels this far each side of the tower */
-    slider.w = w;
-    slider.minX = pcx - amp - w / 2;
-    slider.maxX = pcx + amp - w / 2;
-    slider.dir = (tower.length % 2 === 0) ? -1 : 1;
+    var f = score;
+    slider.w = prev.w;
+    slider.alignX = prev.x;
+    slider.baseAmp = prev.w / 2 + 84;
+    slider.randTurn = f >= 14;
+    slider.turnExtra = f >= 14 ? Math.min(90, (f - 14) * 4.5) : 0;
+    slider.minX = slider.alignX - pickTurn();
+    slider.maxX = slider.alignX + pickTurn();
+    slider.dir = f >= 20 ? (Math.random() < 0.5 ? 1 : -1) : (tower.length % 2 === 0 ? -1 : 1);
     slider.x = slider.dir > 0 ? slider.minX : slider.maxX;
-    slider.speed = Math.min(MAX_SPEED, BASE_SPEED + SPEED_PER_FLOOR * score);
+    slider.speed = speedFor(f);
+    slider.pulse = pulseAmtFor(f);
+    slider.phase = rand(0, Math.PI * 2);
     slider.cols = colorFor(tower.length);
     slider.seed = (Math.random() * 997) | 0;
     slider.active = true;
@@ -970,14 +1247,18 @@ function spawnSlider() {
 
 function updateSlider(dt) {
     if (!slider.active) return;
-    slider.x += slider.dir * slider.speed * dt;
-    if (slider.x > slider.maxX) {
+    var mult = 1 + slider.pulse * Math.sin(time * 4.6 + slider.phase);
+    slider.x += slider.dir * slider.speed * mult * dt;
+    if (slider.dir > 0 && slider.x >= slider.maxX) {
         slider.x = slider.maxX - (slider.x - slider.maxX);
         slider.dir = -1;
-    } else if (slider.x < slider.minX) {
+        slider.minX = slider.alignX - pickTurn();   /* next turn point is a surprise */
+    } else if (slider.dir < 0 && slider.x <= slider.minX) {
         slider.x = slider.minX + (slider.minX - slider.x);
         slider.dir = 1;
+        slider.maxX = slider.alignX + pickTurn();
     }
+    slider.x = clamp(slider.x, slider.minX, slider.maxX);
 }
 
 function showMenu() {
@@ -1011,14 +1292,56 @@ function bumpScoreUI() {
     scoreEl.classList.add('pop');
 }
 function bumpComboUI() {
-    if (combo > 0) {
-        comboEl.textContent = 'PERFECT x' + combo;
+    if (combo > 1) {
+        comboEl.textContent = 'STREAK x' + combo + ' 🔥';
         comboEl.style.display = 'block';
         comboEl.classList.remove('pop');
         void comboEl.offsetWidth;
         comboEl.classList.add('pop');
     } else {
         comboEl.style.display = 'none';
+    }
+}
+function showBanner(text) {
+    stageBanner.textContent = text;
+    stageBanner.classList.remove('show');
+    void stageBanner.offsetWidth;
+    stageBanner.classList.add('show');
+}
+
+/* ================= Layered perfect-drop celebration ================= */
+function celebratePerfect(nx, yTop, nw, streak) {
+    var cx = nx + nw / 2, cy = yTop + BH / 2;
+    hitStop = Math.min(0.04 + streak * 0.012, 0.11);
+    zoomPunch = Math.min(0.055, 0.018 + streak * 0.005);
+    flash.t = 1;
+    flash.x = nx; flash.y = yTop; flash.w = nw;
+
+    /* layer 1: expanding rings, more + bigger with streak */
+    spawnRing(cx, cy, nw * 0.28, nw * 0.72 + 30, '#FFFFFF', 0.32, 5);
+    if (streak >= 2) spawnRing(cx, cy, nw * 0.34, nw * 0.9 + 62, '#FFE14D', 0.46, 6);
+    if (streak >= 4) spawnRing(cx, cy, nw * 0.4, nw * 1.15 + 92, '#FF5FA2', 0.58, 7);
+
+    /* layer 2: radial rays from streak 2 */
+    if (streak >= 2) spawnRays(cx, cy, 8 + Math.min(6, streak), 44 + Math.min(40, streak * 6), streak >= 6 ? '#FF5FA2' : '#FFE14D');
+
+    /* layer 3: edge sparks always */
+    burstSparks(nx, cy, 5 + Math.min(7, streak * 2));
+    burstSparks(nx + nw, cy, 5 + Math.min(7, streak * 2));
+
+    /* layer 4: star glints from streak 3 */
+    if (streak >= 3) burstGlints(cx, cy, Math.min(7, streak), nw * 0.6 + 30);
+
+    /* layer 5: floating label, escalating color */
+    var col = streak <= 1 ? '#FFFFFF' : (streak <= 3 ? '#FFE14D' : (streak <= 6 ? '#FFB347' : '#FF5FA2'));
+    var txt = streak > 1 ? 'PERFECT x' + streak + '!' : 'PERFECT!';
+    spawnLabel(cx, yTop - 14, txt, 24 + Math.min(14, streak * 2), col);
+
+    /* layer 6: streak milestone every 5 */
+    if (streak > 0 && streak % 5 === 0) {
+        spawnLabel(cx, yTop - 52, streak >= 10 ? 'LEGENDARY!' : 'ON FIRE!', 30, '#FF5FA2', 1.15);
+        burstMiniConfetti(cx, yTop - 10);
+        sfxFanfare();
     }
 }
 
@@ -1037,29 +1360,29 @@ function drop() {
     }
 
     var offset = slider.x - prev.x;
+    var pw = perfectWindowFor(score);
+    var isPerfect = Math.abs(offset) <= pw;
     var nx, nw;
     var grew = false;
 
-    if (Math.abs(offset) <= PERFECT_PX) {
-        /* PERFECT: snap to aligned, keep full width */
+    if (isPerfect) {
+        /* PERFECT: snap aligned, keep width; streaks grow it back toward full */
         combo++;
         if (combo > maxCombo) maxCombo = combo;
+        perfects++;
         nx = prev.x;
         nw = prev.w;
-        if (combo % 3 === 0) {
-            /* every 3rd consecutive perfect grows the block back, up to start width */
-            var g = Math.min(GROW_PX, startW - nw);
+        if (combo >= 2) {
+            var g = Math.min(8 + 2 * Math.min(combo, 6), startW - nw);
             if (g > 0) {
                 nw += g;
                 nx -= g / 2;
                 grew = true;
             }
         }
-        flash.t = 1;
-        flash.x = nx; flash.y = yTop; flash.w = nw;
-        burstSparks(nx, yTop + BH / 2, 7);
-        burstSparks(nx + nw, yTop + BH / 2, 7);
+        celebratePerfect(nx, yTop, nw, combo);
         sfxPerfect(combo);
+        sfxDrop();
         if (grew) {
             burstGrow(nx, yTop, nw);
             sfxGrow();
@@ -1069,24 +1392,56 @@ function drop() {
         combo = 0;
         nx = left;
         nw = overlap;
+        var cutFrac = 1 - overlap / slider.w;
         if (slider.x < left - 0.01) {
             spawnChunk(slider.x, yTop, left - slider.x, slider.cols, -rand(60, 150));
+            burstDust(left, yTop + BH, 3, -1);
         }
         if (slider.x + slider.w > right + 0.01) {
             spawnChunk(right, yTop, slider.x + slider.w - right, slider.cols, rand(60, 150));
+            burstDust(right, yTop + BH, 3, 1);
+        }
+        if (cutFrac < 0.06) {
+            spawnLabel(nx + nw / 2, yTop - 12, 'SO CLOSE!', 18, '#FFFFFF', 0.7);
         }
         sfxSlice();
         sfxDrop();
-        trauma = Math.max(trauma, 0.18);
+        /* sloppier landings shake harder (trauma system, still subtle) */
+        trauma = Math.max(trauma, 0.12 + 0.3 * cutFrac);
     }
 
-    tower.push({ x: nx, w: nw, cols: slider.cols, seed: slider.seed });
+    tower.push({ x: nx, w: nw, cols: slider.cols, seed: slider.seed, age: 0 });
     score = tower.length - 1;
-    if (!(Math.abs(offset) <= PERFECT_PX)) { /* thud already played on slice path */ } else { sfxDrop(); }
     bumpScoreUI();
     bumpComboUI();
+    checkMilestones();
     cam = camTargetFor(tower.length); /* camera target, eased in update */
     spawnSlider();
+}
+
+/* ---- Height milestones: palette shift is continuous, fanfare marks the moment ---- */
+function checkMilestones() {
+    if (!bestPassed && prevBest >= 3 && score > prevBest) {
+        bestPassed = true;
+        showBanner('🏆 NEW BEST!');
+        sfxFanfare();
+        var tp = -(tower.length) * BH;
+        burstGlints(tower[tower.length - 1].x + tower[tower.length - 1].w / 2, tp - 20, 6, 90);
+        return;
+    }
+    for (var i = 1; i < STAGES.length; i++) {
+        if (STAGES[i].at === score) {
+            showBanner(STAGES[i].emoji + ' ' + STAGES[i].name + ' · ' + score + ' FLOORS');
+            sfxFanfare();
+            var b = tower[tower.length - 1];
+            burstGlints(b.x + b.w / 2, -(tower.length) * BH - 24, 6, 110);
+            return;
+        }
+    }
+    if (score > 40 && score % 10 === 0) {
+        showBanner('🚀 ' + score + ' FLOORS · KEEP CLIMBING!');
+        sfxFanfare();
+    }
 }
 
 /* ================= Death + zoom out flourish ================= */
@@ -1095,7 +1450,10 @@ function missDeath(yTop) {
     deathT = 0;
     trauma = 0.45;
     combo = 0;
+    hitStop = 0;
+    zoomPunch = 0;
     comboEl.style.display = 'none';
+    stageBanner.classList.remove('show');
     slider.active = false;
     /* the missed block tumbles away */
     spawnChunk(slider.x, yTop, slider.w, slider.cols, slider.dir * rand(130, 210));
@@ -1105,6 +1463,7 @@ function missDeath(yTop) {
     /* record the run immediately */
     newBest = score > prevBest;
     data.totalPlays++;
+    data.totalCoins += perfects;
     if (score > data.highScore) data.highScore = score;
     data.lastPlayed = new Date().toISOString();
     saveData();
@@ -1130,6 +1489,7 @@ function updateDying(dt) {
     viewTy = lerp(dyingFrom.ty, dyingTo.ty, e);
     updateChunks(dt);
     updateParticles(dt);
+    updateFx(dt);
     if (deathT > 2.15) showPanel();
 }
 
@@ -1142,7 +1502,10 @@ function showPanel() {
     panelScoreEl.textContent = score;
     panelBestEl.textContent = data.highScore;
     newBestEl.style.display = newBest ? 'block' : 'none';
-    document.getElementById('panelTitle').textContent = newBest ? 'AMAZING!' : 'NICE TOWER!';
+    var st = stageFor(score);
+    panelStageEl.textContent = st.emoji + ' You reached ' + st.name + '!';
+    document.getElementById('panelTitle').textContent =
+        newBest ? 'NEW RECORD!' : (score >= 40 ? 'OUT OF THIS WORLD!' : (score >= 16 ? 'NICE TOWER!' : 'GOOD TRY!'));
     if (maxCombo >= 2) {
         panelComboEl.textContent = '✨ Best streak: ' + maxCombo + ' perfect drops';
         panelComboEl.style.display = 'block';
@@ -1150,22 +1513,22 @@ function showPanel() {
         panelComboEl.style.display = 'none';
     }
     var diff = prevBest - score;
-    if (!newBest && prevBest >= 5 && score < prevBest && diff <= prevBest * 0.2) {
+    if (!newBest && prevBest >= 5 && score < prevBest && diff <= prevBest * 0.25) {
         nearMissEl.textContent = 'SO CLOSE! ' + diff + ' floor' + (diff === 1 ? '' : 's') + ' from your best';
         nearMissEl.style.display = 'block';
     } else {
         nearMissEl.style.display = 'none';
     }
     if (earnedTiers.length > 0) {
-        var labels = [];
-        for (var i = 0; i < earnedTiers.length; i++) labels.push(TIER_LABELS[earnedTiers[i]]);
-        stickerBanner.textContent = 'STICKER EARNED! ' + labels.join(' + ');
-        stickerBanner.style.display = 'block';
+        var lab = [];
+        for (var i = 0; i < earnedTiers.length; i++) lab.push(TIER_LABELS[earnedTiers[i]]);
+        stickerBannerEl.textContent = 'STICKER EARNED! ' + lab.join(' + ');
+        stickerBannerEl.style.display = 'block';
     } else {
-        stickerBanner.style.display = 'none';
+        stickerBannerEl.style.display = 'none';
     }
     if (earnedTiers.length > 0 || newBest) {
-        burstConfetti();
+        burstConfetti(60);
         sfxFanfare();
     }
     overPanel.classList.add('show');
@@ -1175,27 +1538,35 @@ function showPanel() {
 function updateMenu(dt) {
     updateSlider(dt);
     updateParticles(dt);
+    updateFx(dt);
 }
 
 function updateGame(dt) {
     updateSlider(dt);
     viewTy += (cam - viewTy) * Math.min(1, 8 * dt);
+    var tb = tower[tower.length - 1];
+    if (tb.age < 1) tb.age += dt;
     updateChunks(dt);
     updateParticles(dt);
+    updateFx(dt);
 }
 
 function update(dt) {
     time += dt;
     if (trauma > 0) trauma = Math.max(0, trauma - 2.2 * dt);
     if (flash.t > 0) flash.t = Math.max(0, flash.t - 3.2 * dt);
+    if (zoomPunch > 0) zoomPunch = Math.max(0, zoomPunch - zoomPunch * 9 * dt - 0.001 * dt);
     skyF += (score - skyF) * Math.min(1, 1.6 * dt);
-    updateClouds(dt);
+    computeSky();
+    updateCloudLayer(farClouds, dt);
+    updateCloudLayer(nearClouds, dt);
+    updateShoot(dt);
     switch (currentState) {
         case State.MENU: updateMenu(dt); break;
         case State.PLAYING: updateGame(dt); break;
         case State.PAUSED: break;
         case State.DYING: updateDying(dt); break;
-        case State.GAME_OVER: updateChunks(dt); updateParticles(dt); break;
+        case State.GAME_OVER: updateChunks(dt); updateParticles(dt); updateFx(dt); break;
     }
 }
 
@@ -1231,34 +1602,59 @@ function drawBlockShape(x, y, w, cols, seed) {
 
 function drawSkyAndBackdrop() {
     ctx.setTransform(S, 0, 0, S, 0, 0);
-    var cols = skyColors();
-    var g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, cols.top);
-    g.addColorStop(1, cols.bot);
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, VW + 1, H + 1);
+    /* cached gradient strip: rebuilt only when the palette actually changes */
+    var key = skyTopC[0] + ',' + skyTopC[1] + ',' + skyTopC[2] + '|' + skyBotC[0] + ',' + skyBotC[1] + ',' + skyBotC[2];
+    if (key !== skyStripKey) {
+        skyStripKey = key;
+        var g = skyStripCtx.createLinearGradient(0, 0, 0, 180);
+        g.addColorStop(0, 'rgb(' + skyTopC[0] + ',' + skyTopC[1] + ',' + skyTopC[2] + ')');
+        g.addColorStop(1, 'rgb(' + skyBotC[0] + ',' + skyBotC[1] + ',' + skyBotC[2] + ')');
+        skyStripCtx.fillStyle = g;
+        skyStripCtx.fillRect(0, 0, 2, 180);
+    }
+    ctx.drawImage(skyStrip, 0, 0, 2, 180, 0, 0, VW + 1, H + 1);
 
-    /* stars twinkle in as night falls */
+    /* stars twinkle in as night falls, drift slowly with height (parallax) */
     if (nightA > 0.02) {
         ctx.fillStyle = '#FFFFFF';
         for (var i = 0; i < skyStars.length; i++) {
             var st = skyStars[i];
+            var sy = (st.y + viewTy * 0.05) % H;
+            if (sy < 0) sy += H;
             var tw = 0.55 + 0.45 * Math.sin(time * 2 + st.ph);
             ctx.globalAlpha = nightA * tw;
-            ctx.fillRect(st.x | 0, st.y | 0, st.r, st.r);
+            ctx.fillRect(st.x | 0, sy | 0, st.r, st.r);
         }
         ctx.globalAlpha = 1;
     }
 
-    /* sun by day, moon by night, fixed in the sky */
-    var sunA = clamp(1 - nightA * 1.5, 0, 1);
+    /* occasional shooting star at night */
+    if (shoot.active) {
+        var sa = 1 - shoot.life / shoot.ttl;
+        ctx.globalAlpha = sa * nightA;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(shoot.x | 0, shoot.y | 0);
+        ctx.lineTo((shoot.x - shoot.vx * 0.1) | 0, (shoot.y - shoot.vy * 0.1) | 0);
+        ctx.stroke();
+        ctx.fillStyle = '#FFF3B0';
+        ctx.fillRect((shoot.x - 1.5) | 0, (shoot.y - 1.5) | 0, 3, 3);
+        ctx.globalAlpha = 1;
+    }
+
+    /* sun sinks slowly as you climb; moon and planet take over */
     if (sunA > 0.02) {
         ctx.globalAlpha = sunA;
-        ctx.drawImage(sunSpr, (VW - 205) | 0, 26, 180, 180);
+        ctx.drawImage(sunSpr, (VW - 205) | 0, (26 + viewTy * 0.02) | 0, 180, 180);
     }
-    if (nightA > 0.1) {
-        ctx.globalAlpha = clamp(nightA * 1.2 - 0.2, 0, 1);
+    if (moonA > 0.02) {
+        ctx.globalAlpha = moonA;
         ctx.drawImage(moonSpr, (VW - 185) | 0, 34, 150, 150);
+    }
+    if (spaceA > 0.02) {
+        ctx.globalAlpha = spaceA;
+        ctx.drawImage(planetSpr, (VW * 0.06) | 0, (H * 0.12 + Math.sin(time * 0.5) * 6) | 0, 180, 140);
     }
     ctx.globalAlpha = 1;
 }
@@ -1270,16 +1666,12 @@ function applyWorldTransform() {
         ox = (Math.random() * 2 - 1) * amp;
         oy = (Math.random() * 2 - 1) * amp;
     }
-    ctx.setTransform(S * zoom, 0, 0, S * zoom, (viewTx + ox) * S, (viewTy + oy) * S);
-}
-
-function drawClouds() {
-    for (var i = 0; i < clouds.length; i++) {
-        var c = clouds[i];
-        ctx.globalAlpha = c.a;
-        ctx.drawImage(cloudSprs[c.spr], c.x | 0, c.y | 0, 170 * c.s, 80 * c.s);
-    }
-    ctx.globalAlpha = 1;
+    /* zoom punch scales around a point near the tower top so perfects "thump" */
+    var k = 1 + zoomPunch;
+    var cx = VW / 2, cy = H * 0.55;
+    var tx = k * (viewTx + ox) + cx * (1 - k);
+    var ty = k * (viewTy + oy) + cy * (1 - k);
+    ctx.setTransform(S * zoom * k, 0, 0, S * zoom * k, tx * S, ty * S);
 }
 
 function drawGround() {
@@ -1313,6 +1705,25 @@ function drawGround() {
     }
 }
 
+/* Dashed "personal best" line hovering at your record height */
+function drawBestLine() {
+    if (currentState !== State.PLAYING || prevBest < 3) return;
+    var y = -(prevBest + 1) * BH;
+    var sy = zoom * y + viewTy;
+    if (sy < -30 || sy > H + 30) return;
+    var leftW = (0 - viewTx) / zoom;
+    var rightW = (VW - viewTx) / zoom;
+    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = bestPassed ? '#FFE14D' : '#FFFFFF';
+    for (var x = leftW + 6; x < rightW; x += 30) {
+        ctx.fillRect(x | 0, y | 0, 16, 3);
+    }
+    ctx.font = '800 15px Nunito, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText((bestPassed ? '⭐ ' : '') + 'BEST ' + prevBest, leftW + 8, y - 7);
+    ctx.globalAlpha = 1;
+}
+
 function drawTower() {
     for (var i = 0; i < tower.length; i++) {
         var b = tower[i];
@@ -1320,13 +1731,33 @@ function drawTower() {
         /* skip blocks fully outside the view */
         var sy = zoom * yTop + viewTy;
         if (sy > H + BH || sy + BH * zoom < -BH) continue;
-        drawBlockShape(b.x, yTop, b.w, b.cols, b.seed);
+        if (b.age < 0.34) {
+            /* squash & stretch on landing, pivot at block base */
+            var t = b.age / 0.34;
+            var e = easeOutBack(t);
+            var sY = 0.68 + 0.32 * e;
+            var sX = 1 + (1 - sY) * 0.85;
+            ctx.save();
+            ctx.translate(b.x + b.w / 2, yTop + BH);
+            ctx.scale(sX, sY);
+            drawBlockShape(-b.w / 2, -BH, b.w, b.cols, b.seed);
+            ctx.restore();
+        } else {
+            drawBlockShape(b.x, yTop, b.w, b.cols, b.seed);
+        }
     }
 }
 
 function drawSlider() {
     if (!slider.active) return;
     var yTop = -(tower.length + 1) * BH;
+    /* faint motion ghosts trailing the moving block */
+    ctx.globalAlpha = 0.1;
+    ctx.fillStyle = slider.cols.body;
+    ctx.fillRect((slider.x - slider.dir * slider.speed * 0.055) | 0, yTop | 0, Math.max(1, slider.w | 0), BH);
+    ctx.globalAlpha = 0.2;
+    ctx.fillRect((slider.x - slider.dir * slider.speed * 0.026) | 0, yTop | 0, Math.max(1, slider.w | 0), BH);
+    ctx.globalAlpha = 1;
     drawBlockShape(slider.x, yTop, slider.w, slider.cols, slider.seed);
 }
 
@@ -1353,10 +1784,49 @@ function drawFlash() {
     ctx.globalAlpha = flash.t * 0.85;
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(flash.x | 0, flash.y | 0, Math.max(1, flash.w | 0), BH);
-    /* thin expanding halo */
+    /* thin expanding halo bar */
     ctx.globalAlpha = flash.t * 0.5;
     var grow = (1 - flash.t) * 14;
     ctx.fillRect((flash.x - grow) | 0, (flash.y - grow / 2) | 0, Math.max(1, (flash.w + grow * 2) | 0), 3);
+    ctx.globalAlpha = 1;
+}
+
+function drawRings() {
+    for (var i = 0; i < rings.length; i++) {
+        var r = rings[i];
+        if (!r.active) continue;
+        var t = r.life / r.ttl;
+        var e = 1 - (1 - t) * (1 - t);
+        ctx.globalAlpha = (1 - t) * 0.9;
+        ctx.strokeStyle = r.color;
+        ctx.lineWidth = Math.max(1, r.lw * (1 - t));
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, lerp(r.r0, r.r1, e), 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawRays() {
+    for (var i = 0; i < rays.length; i++) {
+        var r = rays[i];
+        if (!r.active) continue;
+        var t = r.life / r.ttl;
+        var e = 1 - (1 - t) * (1 - t);
+        var inner = 14 + e * r.len * 0.85;
+        var outer = 20 + e * r.len;
+        ctx.globalAlpha = 1 - t;
+        ctx.strokeStyle = r.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (var j = 0; j < r.n; j++) {
+            var a = r.rot + j * Math.PI * 2 / r.n;
+            var ca = Math.cos(a), sa = Math.sin(a);
+            ctx.moveTo(r.x + ca * inner, r.y + sa * inner);
+            ctx.lineTo(r.x + ca * outer, r.y + sa * outer);
+        }
+        ctx.stroke();
+    }
     ctx.globalAlpha = 1;
 }
 
@@ -1371,6 +1841,15 @@ function drawParticles() {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2);
             ctx.fill();
+        } else if (p.type === 4) {
+            /* 4-point star glint: thin cross that scales up then down */
+            var s = p.size * Math.sin(Math.PI * Math.min(1, p.life / p.ttl));
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.fillRect(-s, -s * 0.16, 2 * s, s * 0.32);
+            ctx.fillRect(-s * 0.16, -s, s * 0.32, 2 * s);
+            ctx.restore();
         } else {
             ctx.save();
             ctx.translate(p.x, p.y);
@@ -1382,16 +1861,39 @@ function drawParticles() {
     ctx.globalAlpha = 1;
 }
 
+function drawLabels() {
+    for (var i = 0; i < labels.length; i++) {
+        var l = labels[i];
+        if (!l.active) continue;
+        var t = l.life / l.ttl;
+        var pop = 1 + 0.55 * Math.max(0, 1 - l.life * 8); /* punchy entrance */
+        var sz = (l.size * pop) | 0;
+        ctx.globalAlpha = t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3;
+        ctx.font = '800 ' + sz + 'px Nunito, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(43,35,80,0.55)';
+        ctx.fillText(l.text, (l.x | 0) + 2, (l.y | 0) + 3);
+        ctx.fillStyle = l.color;
+        ctx.fillText(l.text, l.x | 0, l.y | 0);
+    }
+    ctx.globalAlpha = 1;
+}
+
 function render() {
     drawSkyAndBackdrop();
+    drawCloudLayer(farClouds);   /* parallax layers in screen space */
+    drawCloudLayer(nearClouds);
     applyWorldTransform();
-    drawClouds();
     drawGround();
+    drawBestLine();
     drawTower();
     drawChunks();
     drawSlider();
     drawFlash();
+    drawRings();
+    drawRays();
     drawParticles();
+    drawLabels();
 }
 
 /* ================= Input ================= */
@@ -1478,11 +1980,18 @@ playBtn.addEventListener('pointerdown', function (e) {
     restart();
 });
 
-/* ================= Main loop ================= */
+/* ================= Main loop (with hit-stop) ================= */
 var last = performance.now();
 function loop(now) {
     var dt = Math.min(0.05, (now - last) / 1000);
     last = now;
+    if (hitStop > 0) {
+        /* brief freeze frame on perfect drops: world holds, then snaps forward */
+        hitStop -= dt;
+        render();
+        requestAnimationFrame(loop);
+        return;
+    }
     update(dt);
     render();
     requestAnimationFrame(loop);
@@ -1508,6 +2017,7 @@ if (window.__WOOP_TEST__) {
         getMaxCombo: function () { return maxCombo; },
         getFloors: function () { return score; },
         getStartW: function () { return startW; },
+        getPerfectWindow: function () { return perfectWindowFor(score); },
         isPanelShown: function () { return panelShown; },
         activeChunks: function () {
             var n = 0;

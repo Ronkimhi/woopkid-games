@@ -299,6 +299,18 @@ html, body {
 }
 .bigBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #D96A22; }
 #pityRow { color: #C79212; font-weight: 800; font-size: 19px; margin-top: 8px; }
+#bonusRow { color: #E07B2A; font-weight: 800; font-size: 14px; margin-top: 2px; min-height: 18px; }
+#loseTip {
+    margin-top: 12px;
+    background: #FFF1DC;
+    border-radius: 14px;
+    padding: 10px 12px;
+    color: #A15C1D;
+    font-weight: 800;
+    font-size: 14px;
+    line-height: 1.35;
+}
+#loseBest { margin-top: 8px; color: #6B6394; font-weight: 800; font-size: 14px; }
 #confirmPanel .bigBtn { background: #E45B5B; box-shadow: 0 5px 0 #B93F3F; }
 #confirmPanel #noBtn { background: #8A81B5; box-shadow: 0 5px 0 #6B6394; }
 </style>
@@ -328,6 +340,7 @@ html, body {
 <div id="rewardPanel" class="panel">
     <h2 id="winTitle">YOU WIN!</h2>
     <div id="winCoins">+0</div>
+    <div id="bonusRow"></div>
     <div class="sub">Pick one toy chest!</div>
     <div id="chestRow">
         <button class="chest" id="chest0">?</button>
@@ -338,7 +351,9 @@ html, body {
 
 <div id="losePanel" class="panel">
     <h2>OUCH!</h2>
-    <div class="sub">The rival toys won this round. Try again!</div>
+    <div class="sub">The rival toys won this round.</div>
+    <div id="loseTip"></div>
+    <div id="loseBest"></div>
     <div id="pityRow"></div>
     <button class="bigBtn" id="tryBtn">TRY AGAIN</button>
 </div>
@@ -406,6 +421,9 @@ var winTitleEl = doc.getElementById('winTitle');
 var chestEls = [doc.getElementById('chest0'), doc.getElementById('chest1'), doc.getElementById('chest2')];
 var losePanel = doc.getElementById('losePanel');
 var pityRowEl = doc.getElementById('pityRow');
+var bonusRowEl = doc.getElementById('bonusRow');
+var loseTipEl = doc.getElementById('loseTip');
+var loseBestEl = doc.getElementById('loseBest');
 var tryBtn = doc.getElementById('tryBtn');
 var confirmPanel = doc.getElementById('confirmPanel');
 var yesBtn = doc.getElementById('yesBtn');
@@ -419,6 +437,7 @@ var defaultData = {
     campaignLevel: 1,
     totalMerges: 0,
     bestLevel: 1,
+    winStreak: 0,
     muted: false,
     lastPlayed: null
 };
@@ -443,6 +462,7 @@ function saveNow() {
             campaignLevel: data.campaignLevel,
             totalMerges: data.totalMerges,
             bestLevel: data.bestLevel,
+            winStreak: data.winStreak || 0,
             muted: data.muted,
             lastPlayed: new Date().toISOString()
         };
@@ -883,9 +903,10 @@ var ERA_NAMES = ['Sock', 'Wooden', 'Wind-Up', 'Blaster', 'Robo', 'Cosmic Plush']
 function winPayout(level) {
     var p = 150 + 25 * level;
     /* from mid campaign the payout tracks the enemy budget so income keeps pace
-       with the 1.19 difficulty curve (factor 0.40 tuned via the headless autopilot:
-       a smart player clears level 25 in <=3 tries, a lazy-merge player stalls in 6-25) */
-    p = Math.max(p, r10(250 * Math.pow(1.19, level - 1) * 0.4));
+       with the 1.19 difficulty curve (factor tuned via the headless autopilot:
+       a smart merger keeps climbing, a lazy no-merge player stalls in the teens).
+       0.40 -> 0.37 to offset the new piggy-bank interest + win-streak bonuses. */
+    p = Math.max(p, r10(250 * Math.pow(1.19, level - 1) * 0.37));
     return (level % 5 === 0) ? p * 2 : p;
 }
 function backdropEra(campLevel) { return Math.min(5, Math.floor((campLevel - 1) / 5)); }
@@ -905,6 +926,42 @@ var bonusCoin = null;
 var nextCoinIn = rand(7, 13);
 var coinFlashT = 0;
 var backdropFlashT = 0; /* white flash overlay on the backdrop after an era jump */
+var lastWaveForm = 'spread';   /* formation of the incoming wave, for the intel banner */
+var lastWaveBoss = false;
+var battleInterest = 0;        /* piggy-bank bonus locked in when FIGHT is pressed */
+var battleStartCount = 0;      /* squad size at battle start, for the star rating */
+var battleStartPower = [1, 1]; /* [player, enemy] power at battle start, for defeat analysis */
+var winBanner = { t: 0, ttl: 0, stars: 0, level: 0 }; /* canvas wave-clear banner */
+var snapAnim = null;           /* invalid drag drop easing back home */
+
+/* Piggy bank: 10% of saved coins (capped at half a toy's cost) paid out when the
+   battle starts, win or lose. Saving up vs. buying now becomes a real choice. */
+function piggyBonus() {
+    return Math.max(0, Math.min(r10(data.coins * 0.1), r10(unitCost(data.campaignLevel) * 0.5)));
+}
+/* Rough readable power score for a set of units: hp plus weighted damage */
+function powerOfStats(hp, dmg) { return hp + dmg * 10; }
+function sidePower() {
+    var pp = 0, ep = 0, i, st;
+    for (i = 0; i < data.army.length; i++) {
+        st = statsFor(data.army[i].cls, data.army[i].level);
+        pp += powerOfStats(st.hp, st.dmg);
+    }
+    for (i = 0; i < pendingEnemies.length; i++) {
+        var e = pendingEnemies[i];
+        if (e.isBoss) { ep += powerOfStats(e.hp, e.dmg); }
+        else { st = statsFor(e.cls, e.level); ep += powerOfStats(st.hp, st.dmg); }
+    }
+    return { pp: r10(pp), ep: r10(ep), pn: data.army.length, en: pendingEnemies.length };
+}
+/* Kid-readable wave intel: name + counterplay tip per formation */
+var WAVE_INTEL = {
+    turtle: { name: 'SHELL WALL', tip: 'Tough toys in front. Poppers pick them off!', col: '#7ED957' },
+    spread: { name: 'MIXED CREW', tip: 'A bit of everything. Balanced squads win!', col: '#4FC3F7' },
+    artillery: { name: 'BALLOON BARRAGE', tip: 'Splashes hurt clumps. Spread out + rush them!', col: '#3E8EF7' },
+    rush: { name: 'TOY STAMPEDE', tip: 'Lots of little toys! More blockers beat big ones.', col: '#FF8A3D' },
+    tanks: { name: 'BIG BRUISERS', tip: 'Few giant toys. Merge up for bigger bonks!', col: '#E45B5B' }
+};
 
 function slotXY(slot) {
     var col = slot % COLS, row = Math.floor(slot / COLS);
@@ -977,6 +1034,11 @@ function dropUnit(fromSlot, toSlot) {
             spawnPart(2, p.x, p.y, Math.cos(ra) * 200, Math.sin(ra) * 200, rand(0.3, 0.55), rand(3, 5.5), '#FFE14D');
         }
         burstConfettiAt(p.x, p.y, 22);
+        /* star glints spraying upward + a big floating LEVEL badge */
+        for (var gl = 0; gl < 5; gl++) {
+            spawnPart(11, p.x + rand(-20, 20), p.y - rand(0, 16), rand(-40, 40), -rand(60, 150), rand(0.5, 0.8), rand(4, 7), '#FFE14D');
+        }
+        spawnWord(p.x, p.y - 58, 'LEVEL ' + b.level + '!', '#FFE14D', 30);
         sfxMerge(b.level);
         /* era celebration when a merge crosses into a new era band (lvl 5,9,13,17,21) */
         var newEra = eraOf(b.level);
@@ -1056,6 +1118,8 @@ function generateEnemies(level) {
     if (isBossLv) budget *= 1.5; /* boss levels spike well above the curve */
     var form = pickForm(level);
     var weights = FORM_WEIGHTS[form];
+    lastWaveForm = form;
+    lastWaveBoss = isBossLv;
 
     if (isBossLv) {
         var bossVal = budget * 0.62;
@@ -1113,7 +1177,8 @@ for (var qi = 0; qi < 340; qi++) {
     parts.push({ active: false, type: 0, x: 0, y: 0, vx: 0, vy: 0, rot: 0, vr: 0, life: 0, ttl: 1, size: 4, color: '#fff', seed: 0 });
 }
 /* types: 1 confetti rect, 2 spark dot, 3 stuffing puff, 4 water droplet, 5 expanding ring,
-   6 coin, 7 shockwave flash ring (thick, quick), 8 dust puff (ground), 9 trail dot */
+   6 coin, 7 shockwave flash ring (thick, quick), 8 dust puff (ground), 9 trail dot,
+   10 bouncing toy spring (KO part), 11 spinning star glint */
 function spawnPart(type, x, y, vx, vy, ttl, size, color) {
     for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
@@ -1195,13 +1260,14 @@ function burstConfettiSkyColors(cols) {
 
 /* ---- Wobble impact words ("BONK!"/"POP!"/"SPLAT!"), pooled and capped ---- */
 var words = [];
-for (var wq = 0; wq < 8; wq++) words.push({ active: false, x: 0, y: 0, t: 0, ttl: 0.7, txt: '', color: '#fff', seed: 0 });
-function spawnWord(x, y, txt, color) {
+for (var wq = 0; wq < 8; wq++) words.push({ active: false, x: 0, y: 0, t: 0, ttl: 0.7, txt: '', color: '#fff', seed: 0, size: 26 });
+function spawnWord(x, y, txt, color, size) {
     for (var i = 0; i < words.length; i++) {
         var w = words[i];
         if (!w.active) {
             w.active = true; w.x = clamp(x, 40, W - 40); w.y = clamp(y, 96, H - 130);
-            w.t = 0; w.ttl = 0.7; w.txt = txt; w.color = color; w.seed = rand(0, 10);
+            w.t = 0; w.ttl = size ? 0.9 : 0.7; w.txt = txt; w.color = color; w.seed = rand(0, 10);
+            w.size = size || 26;
             return;
         }
     }
@@ -1317,6 +1383,9 @@ function updateParticles(dt) {
             /* dust puff: drifts up and slows */
             p.vx *= (1 - Math.min(1, 3 * dt));
             p.vy = p.vy - 20 * dt;
+        } else if (p.type === 10 || p.type === 11) {
+            /* tossed spring / spinning star: arcs under gravity */
+            p.vy += 460 * dt;
         }
         /* types 7 (flash ring) and 9 (trail) are stationary, just fade */
         p.x += p.vx * dt;
@@ -1425,6 +1494,11 @@ function makeFighter(team, cls, level, x, y, slot, isBoss, hpOverride, dmgOverri
 
 function startBattle() {
     if (state !== 'buy' && state !== 'menu') return false;
+    /* lock in the piggy-bank bonus and pre-battle snapshot for stars + analysis */
+    battleInterest = piggyBonus();
+    battleStartCount = data.army.length;
+    var sp0 = sidePower();
+    battleStartPower = [sp0.pp, sp0.ep];
     fighters = [];
     var i;
     for (i = 0; i < data.army.length; i++) {
@@ -1466,6 +1540,13 @@ function damage(t, amt, splashy) {
     if (t.hp <= 0) {
         t.alive = false;
         burstStuffing(t.x, t.y, t.r);
+        /* the toy pops into kid-safe parts: springs boing out plus gold stars */
+        for (var sp10 = 0; sp10 < 2; sp10++) {
+            spawnPart(10, t.x + rand(-8, 8), t.y, rand(-100, 100), -rand(90, 190), rand(0.55, 0.85), rand(6, 9), '#8A81B5');
+        }
+        for (var st11 = 0; st11 < 3; st11++) {
+            spawnPart(11, t.x + rand(-10, 10), t.y - 6, rand(-80, 80), -rand(70, 170), rand(0.45, 0.75), rand(3.5, 6), '#FFE14D');
+        }
         spawnChute(t.x, t.y, t.team);
         sfxPoof();
         if (t.isBoss) { addTrauma(0.6); burstConfettiAt(t.x, t.y, 30); }
@@ -1497,6 +1578,10 @@ function nearestFoe(f) {
 
 function doAttack(f, t, mul) {
     f.atkAnim = 0.28;
+    /* remember the attack direction for the lunge / recoil animation */
+    var adx = t.x - f.x, ady = t.y - f.y;
+    var alen = Math.max(0.001, Math.sqrt(adx * adx + ady * ady));
+    f.atkDx = adx / alen; f.atkDy = ady / alen;
     if (f.cls === 'popper' && !f.isBoss) {
         spawnDart(f, t, f.dmg * mul);
         sfxPop();
@@ -1537,6 +1622,7 @@ function updateBattle(dt) {
         f.cd -= dt;
         var t = nearestFoe(f);
         f.vx = 0; f.vy = 0;
+        f.tgtRef = t;
         if (!t) continue;
         var dx = t.x - f.x, dy = t.y - f.y;
         var dist = Math.sqrt(dx * dx + dy * dy);
@@ -1655,7 +1741,11 @@ function endBattle(won) {
     var lvl = data.campaignLevel;
     if (won) {
         var payout = winPayout(lvl);
-        data.coins += payout;
+        /* win streak bonus: +10% per extra win in a row, capped at +30% */
+        data.winStreak = (data.winStreak || 0) + 1;
+        var streakBonus = data.winStreak >= 2 ? r10(payout * Math.min(0.3, 0.1 * (data.winStreak - 1))) : 0;
+        var total = payout + streakBonus + battleInterest;
+        data.coins += total;
         coinFlashT = 0.6;
         /* surviving army kept, back to slots, full HP */
         var kept = [];
@@ -1663,20 +1753,32 @@ function endBattle(won) {
             var f = fighters[k];
             if (f.team === 0 && f.alive) kept.push({ slot: f.slot, cls: f.cls, level: f.level });
         }
+        /* star rating: how much of the squad survived */
+        var surv = kept.length / Math.max(1, battleStartCount);
+        var stars = surv >= 0.7 ? 3 : (surv >= 0.35 ? 2 : 1);
         data.army = kept;
         data.campaignLevel = lvl + 1;
         if (data.campaignLevel > data.bestLevel) data.bestLevel = data.campaignLevel;
         chests = buildChests(payout);
         state = 'reward';
-        /* confetti storm + a stream of coins flying one-by-one into the counter */
+        /* wave-clear banner with stars first, then confetti storm + coin stream */
+        winBanner.t = 0; winBanner.ttl = 1.5; winBanner.stars = stars; winBanner.level = lvl;
         burstConfettiSky();
         burstConfettiSky();
         launchVictoryCoins(data.coins, 16);
         sfxFanfare();
-        if (!IS_NODE) showRewardPanel(payout, lvl);
+        if (!IS_NODE) {
+            var bonusBits = [];
+            if (streakBonus > 0) bonusBits.push('🔥 streak x' + data.winStreak + ' +' + streakBonus);
+            if (battleInterest > 0) bonusBits.push('🐷 piggy +' + battleInterest);
+            (function (tt, bl, bb, st) {
+                setTimeout(function () { showRewardPanel(tt, bl, bb, st); }, 1450);
+            })(total, lvl, bonusBits.join('   '), stars);
+        }
     } else {
         /* army kept exactly as it stood before the battle, small pity coins so a retry is always possible */
-        var pity = Math.max(20, r10(winPayout(lvl) * 0.4));
+        data.winStreak = 0;
+        var pity = Math.max(20, r10(winPayout(lvl) * 0.4)) + battleInterest;
         data.coins += pity;
         state = 'lose';
         /* bigger, floatier stuffing puffs drifting up as the squad flops */
@@ -1685,6 +1787,29 @@ function endBattle(won) {
         }
         sfxLoss();
         if (!IS_NODE) {
+            /* defeat analysis: why you lost + what to try next */
+            var tip;
+            if (battleStartPower[0] < battleStartPower[1] * 0.72) {
+                tip = 'Your squad was outmatched (' + battleStartPower[0] + ' vs ' + battleStartPower[1] + ' power). Buy more toys or grab the bonus coins before fighting!';
+            } else if (lastWaveBoss) {
+                tip = 'That BOSS is a big bruiser — merge your toys up and let poppers plink it from the back row!';
+            } else {
+                var wi = WAVE_INTEL[lastWaveForm] || WAVE_INTEL.spread;
+                tip = 'That was a ' + wi.name + ' — ' + wi.tip;
+            }
+            loseTipEl.textContent = 'TIP: ' + tip;
+            /* near-miss psychology: distance to the next sticker milestone */
+            var nextTh = null, nextName = '';
+            if (lvl < STICKER_TH.bronze) { nextTh = STICKER_TH.bronze; nextName = 'BRONZE'; }
+            else if (lvl < STICKER_TH.silver) { nextTh = STICKER_TH.silver; nextName = 'SILVER'; }
+            else if (lvl < STICKER_TH.gold) { nextTh = STICKER_TH.gold; nextName = 'GOLD'; }
+            if (nextTh !== null && nextTh - lvl <= 3) {
+                loseBestEl.textContent = 'So close! Only ' + (nextTh - lvl) + ' more level' + (nextTh - lvl > 1 ? 's' : '') + ' to the ' + nextName + ' sticker!';
+            } else if (nextTh !== null) {
+                loseBestEl.textContent = 'Level ' + lvl + ' is your record — the ' + nextName + ' sticker waits at level ' + nextTh + '!';
+            } else {
+                loseBestEl.textContent = 'Level ' + lvl + ' — a true toy legend. How far can you go?';
+            }
             pityRowEl.textContent = '+' + pity + ' coins for trying!';
             losePanel.classList.add('show');
         }
@@ -1749,6 +1874,7 @@ function enterBuy() {
     bonusCoin = null;
     nextCoinIn = rand(7, 13);
     dragging = null;
+    snapAnim = null;
     /* clear any lingering victory coin-fly state and snap the counter to truth */
     coinsLandRemaining = 0;
     coinCountShown = data.coins;
@@ -1794,6 +1920,20 @@ function update(dt) {
     if (eraBanner.ttl > 0) { eraBanner.t += dt; if (eraBanner.t >= eraBanner.ttl) eraBanner.ttl = 0; }
     if (zoomPunchT > 0) zoomPunchT = Math.max(0, zoomPunchT - dt);
     if (backdropFlashT > 0) backdropFlashT = Math.max(0, backdropFlashT - dt);
+    if (winBanner.ttl > 0) { winBanner.t += dt; if (winBanner.t >= winBanner.ttl) winBanner.ttl = 0; }
+    /* silky drag: the toy chases the finger with a lag and tilts into the motion */
+    if (dragging) {
+        var dk = Math.min(1, 16 * dt);
+        dragging.drawX += (dragging.x - dragging.drawX) * dk;
+        dragging.drawY += (dragging.y - dragging.drawY) * dk;
+        var tiltTarget = clamp((dragging.x - dragging.drawX) * 0.03, -0.38, 0.38);
+        dragging.tilt += (tiltTarget - dragging.tilt) * Math.min(1, 12 * dt);
+    }
+    /* invalid drop: the toy springs back home with an ease */
+    if (snapAnim) {
+        snapAnim.t += dt;
+        if (snapAnim.t >= snapAnim.dur) snapAnim = null;
+    }
     for (var cb = 0; cb < cardBounce.length; cb++) {
         if (cardBounce[cb]) { cardBounce[cb] += dt; if (cardBounce[cb] > 0.28) cardBounce[cb] = 0; }
     }
@@ -1870,6 +2010,7 @@ function resize() {
     OY = (canvas.height - H * S) / 2;
     spriteCache = {};
     backdropCache = {};
+    bgCache = {};
     floorTile = null;
 }
 
@@ -2041,6 +2182,102 @@ function getBackdrop(era) {
     g.fillStyle = 'rgba(43,35,80,0.16)';
     g.fillRect(0, BH - 5, W, 5);
     backdropCache[era] = c;
+    return c;
+}
+
+/* Whole-scene background, pre-rendered once per era (gradients + details all
+   baked here, never in the frame loop): floor, wall, pennants, play rug with
+   the squad cells, scattered toy-room props and a soft vignette. */
+var bgCache = {};
+function getBg(era) {
+    if (bgCache[era]) return bgCache[era];
+    var c = makeCanvas(W * S, H * S);
+    var g = c.getContext('2d');
+    g.scale(S, S);
+    var i;
+    /* wooden floor */
+    if (!floorTile) buildFloorTile();
+    for (var fy = WALL_BOT; fy < H; fy += 96) {
+        for (var fx = 0; fx < W; fx += 140) g.drawImage(floorTile, fx, fy, 140, 96);
+    }
+    /* era wall */
+    g.drawImage(getBackdrop(era), 0, WALL_TOP, W, WALL_BOT - WALL_TOP);
+    /* HUD band */
+    g.fillStyle = CREAM;
+    g.fillRect(0, 0, W, WALL_TOP);
+    g.fillStyle = 'rgba(43,35,80,0.08)';
+    g.fillRect(0, WALL_TOP - 3, W, 3);
+    /* pennant string across the top of the wall */
+    g.strokeStyle = 'rgba(43,35,80,0.35)';
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(-4, WALL_TOP + 4);
+    g.quadraticCurveTo(W / 2, WALL_TOP + 26, W + 4, WALL_TOP + 4);
+    g.stroke();
+    for (i = 0; i < 9; i++) {
+        var pk = (i + 0.5) / 9;
+        var px = pk * W;
+        var py = WALL_TOP + 4 + Math.sin(pk * Math.PI) * 20;
+        g.fillStyle = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+        g.beginPath();
+        g.moveTo(px - 9, py); g.lineTo(px + 9, py); g.lineTo(px, py + 17);
+        g.closePath(); g.fill();
+    }
+    /* scattered toy props along the arena edges */
+    /* stacked blocks, left */
+    g.save();
+    g.translate(6, 268); g.rotate(-0.06);
+    g.fillStyle = '#E45B5B'; rr(g, 0, 0, 24, 24, 4); g.fill();
+    g.fillStyle = '#FFFFFF'; g.font = '800 13px Nunito, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('A', 12, 13);
+    g.fillStyle = '#4FC3F7'; rr(g, 4, -23, 24, 24, 4); g.fill();
+    g.fillStyle = '#FFFFFF'; g.fillText('B', 16, -10);
+    g.restore();
+    /* beach ball, right */
+    g.save();
+    g.translate(404, 372);
+    g.fillStyle = '#FFFFFF'; g.beginPath(); g.arc(0, 0, 17, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#FF8A3D'; g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, 17, -0.4, 0.9); g.closePath(); g.fill();
+    g.fillStyle = '#4FC3F7'; g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, 17, 1.7, 3.0); g.closePath(); g.fill();
+    g.fillStyle = '#7ED957'; g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, 17, 3.9, 5.2); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(43,35,80,0.3)'; g.lineWidth = 2; g.beginPath(); g.arc(0, 0, 17, 0, Math.PI * 2); g.stroke();
+    g.restore();
+    /* crayons, bottom left near the shop */
+    g.save();
+    g.translate(2, 736); g.rotate(-0.5);
+    var crayCols = ['#E45B5B', '#7ED957'];
+    for (i = 0; i < 2; i++) {
+        g.fillStyle = crayCols[i];
+        rr(g, i * 11, 0, 8, 34, 3); g.fill();
+        g.beginPath(); g.moveTo(i * 11, 2); g.lineTo(i * 11 + 4, -7); g.lineTo(i * 11 + 8, 2); g.closePath(); g.fill();
+    }
+    g.restore();
+    /* play rug under the squad grid, with the cells baked in */
+    var rx = GRID_X - 14, ry = GRID_Y - 14, rw = COLS * CELL + 28, rh = ROWS * CELL + 28;
+    g.fillStyle = 'rgba(43,35,80,0.10)';
+    rr(g, rx + 3, ry + 7, rw, rh, 26); g.fill();
+    g.fillStyle = '#8FD0BC';
+    rr(g, rx, ry, rw, rh, 26); g.fill();
+    g.fillStyle = '#9FDCC9';
+    rr(g, rx + 6, ry + 6, rw - 12, rh - 12, 20); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.75)';
+    g.lineWidth = 2.5;
+    g.setLineDash([7, 7]);
+    rr(g, rx + 10, ry + 10, rw - 20, rh - 20, 16); g.stroke();
+    g.setLineDash([]);
+    for (var s = 0; s < COLS * ROWS; s++) {
+        var col = s % COLS, row = Math.floor(s / COLS);
+        var cx2 = GRID_X + col * CELL, cy2 = GRID_Y + row * CELL;
+        g.fillStyle = ((col + row) % 2 === 0) ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.32)';
+        rr(g, cx2 + 4, cy2 + 4, CELL - 8, CELL - 8, 12); g.fill();
+    }
+    /* soft vignette so the arena pops (pre-rendered, allowed here) */
+    var vg = g.createRadialGradient(W / 2, H * 0.48, H * 0.34, W / 2, H * 0.48, H * 0.78);
+    vg.addColorStop(0, 'rgba(43,35,80,0)');
+    vg.addColorStop(1, 'rgba(43,35,80,0.12)');
+    g.fillStyle = vg;
+    g.fillRect(0, 0, W, H);
+    bgCache[era] = c;
     return c;
 }
 
@@ -2279,11 +2516,19 @@ function getSprite(cls, era, team, box) {
     return spr;
 }
 
-function drawToy(x, y, cls, level, team, scale, isBoss, withBars, hpFrac, idKey) {
+function drawToy(x, y, cls, level, team, scale, isBoss, withBars, hpFrac, idKey, sqx, sqy) {
     var era = eraOf(level);
     var base = isBoss ? 220 : 116;
     var box = base * scale;
-    ctx.drawImage(getSprite(cls, era, team, base), (x - box / 2) | 0, (y - box / 2) | 0, box, box);
+    sqx = sqx || 1; sqy = sqy || 1;
+    /* soft team-colored puck under the toy: instant side + footprint readability */
+    ctx.fillStyle = team === 0 ? 'rgba(62,142,247,0.22)' : 'rgba(243,91,174,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(x | 0, (y + box * 0.33) | 0, box * 0.34 * sqx, box * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    /* squash & stretch: feet stay planted, the body deforms */
+    var bw2 = box * sqx, bh2 = box * sqy;
+    ctx.drawImage(getSprite(cls, era, team, base), (x - bw2 / 2) | 0, (y + box / 2 - bh2) | 0, bw2, bh2);
     /* level 13+ toys get little spark accents twinkling around them */
     if (level >= 13 && !isBoss) {
         var sk = (idKey || 0) * 2.1;
@@ -2390,25 +2635,210 @@ function drawHud() {
     ctx.fillStyle = '#C79212';
     ctx.fillText(cs, W - 34, 76);
     drawCoinIcon(W - 34 - tw - 12, 75, 11);
+    /* piggy-bank hint: what your savings pay out when you press FIGHT */
+    if (state === 'buy' || state === 'menu') {
+        var pig = piggyBonus();
+        if (pig > 0) {
+            ctx.font = '800 12px Nunito, sans-serif';
+            var ps = '🐷 +' + pig + ' at FIGHT';
+            var pw2 = ctx.measureText(ps).width;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.globalAlpha = 0.9;
+            rr(ctx, W - 24 - pw2 - 16, 98, pw2 + 16, 22, 11);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = '#D96A8B';
+            ctx.fillText(ps, W - 32, 109);
+        }
+    }
+    /* win streak flame, left side */
+    if ((data.winStreak || 0) >= 2 && state !== 'lose') {
+        ctx.textAlign = 'left';
+        ctx.font = '800 13px Nunito, sans-serif';
+        var ss2 = '🔥 x' + data.winStreak + ' streak';
+        var sw2 = ctx.measureText(ss2).width;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.globalAlpha = 0.9;
+        rr(ctx, 14, 98, sw2 + 18, 24, 12);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#E07B2A';
+        ctx.fillText(ss2, 23, 110);
+    }
     ctx.textAlign = 'center';
 }
 
 function drawGrid() {
+    /* base cells are baked into the background; only live highlights here */
+    if (!dragging) return;
+    var mergeHover = false, hoverX = 0, hoverY = 0;
     for (var s = 0; s < COLS * ROWS; s++) {
         var col = s % COLS, row = Math.floor(s / COLS);
         var x = GRID_X + col * CELL, y = GRID_Y + row * CELL;
-        ctx.fillStyle = ((col + row) % 2 === 0) ? 'rgba(255,255,255,0.34)' : 'rgba(255,255,255,0.14)';
-        rr(ctx, x + 3, y + 3, CELL - 6, CELL - 6, 12);
-        ctx.fill();
-        if (dragging && dragging.overSlot === s && !dragging.overSell) {
-            var tgt = unitAt(s);
-            var ok = !tgt || (tgt !== dragging.u && tgt.cls === dragging.u.cls && tgt.level === dragging.u.level);
-            ctx.strokeStyle = ok ? '#58C24A' : '#FFB040';
-            ctx.lineWidth = 4;
+        var tgt = unitAt(s);
+        var mergeable = tgt && tgt !== dragging.u && tgt.cls === dragging.u.cls && tgt.level === dragging.u.level;
+        /* every merge partner pulses gold while you drag, teaching where merges live */
+        if (mergeable) {
+            var pu = 0.55 + 0.45 * Math.sin(time * 6);
+            ctx.globalAlpha = 0.35 + 0.35 * pu;
+            ctx.strokeStyle = '#FFD93D';
+            ctx.lineWidth = 4 + pu * 2;
+            rr(ctx, x + 4, y + 4, CELL - 8, CELL - 8, 12);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+        }
+        if (dragging.overSlot === s && !dragging.overSell) {
+            var ok = !tgt || mergeable;
+            ctx.strokeStyle = mergeable ? '#FFD93D' : (ok ? '#58C24A' : '#FFB040');
+            ctx.lineWidth = 5;
             rr(ctx, x + 3, y + 3, CELL - 6, CELL - 6, 12);
             ctx.stroke();
+            if (mergeable) { mergeHover = true; hoverX = x + CELL / 2; hoverY = y; }
         }
     }
+    /* merge coaching pill: what you get and what it costs (a body!) */
+    if (mergeHover) {
+        var txt = 'MERGE → LV ' + (dragging.u.level + 1);
+        ctx.font = '800 15px Nunito, sans-serif';
+        var tw2 = ctx.measureText(txt).width;
+        var pw = tw2 + 24, ph = 40;
+        var pxx = clamp(hoverX, pw / 2 + 8, W - pw / 2 - 8);
+        var pyy = hoverY - 34;
+        ctx.fillStyle = '#2B2350';
+        ctx.globalAlpha = 0.92;
+        rr(ctx, pxx - pw / 2, pyy - ph / 2, pw, ph, 12);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#FFD93D';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(txt, pxx, pyy - 7);
+        ctx.font = '800 10px Nunito, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.fillText('bigger bonks · one less toy', pxx, pyy + 10);
+    }
+}
+
+/* Incoming-wave intel: what kind of wave and how to beat it. Makes placement
+   and merge choices real decisions instead of guesses. */
+function drawIntelBar() {
+    var wi = WAVE_INTEL[lastWaveForm] || WAVE_INTEL.spread;
+    var name = lastWaveBoss ? 'BOSS WAVE!' : wi.name;
+    var col = lastWaveBoss ? '#E45B5B' : wi.col;
+    var tip = lastWaveBoss ? 'A giant bruiser leads them. Bring your best squad!' : wi.tip;
+    var bx = 16, by = 348, bw = W - 32, bh = 42;
+    ctx.globalAlpha = 0.94;
+    ctx.fillStyle = '#FFFFFF';
+    rr(ctx, bx, by, bw, bh, 14);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    /* colored tab with a pulsing alert dot */
+    ctx.fillStyle = col;
+    rr(ctx, bx, by, 34, bh, 14);
+    ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 20px Nunito, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('!', bx + 17, by + bh / 2 + 1 + Math.sin(time * 5) * 1.5);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = col;
+    ctx.font = '800 14px Nunito, sans-serif';
+    ctx.fillText('INCOMING: ' + name, bx + 44, by + 13);
+    ctx.fillStyle = INK;
+    ctx.globalAlpha = 0.75;
+    ctx.font = '700 11.5px Nunito, sans-serif';
+    ctx.fillText(tip, bx + 44, by + 30);
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'center';
+}
+
+/* Squad-size + power chips flanking the FIGHT button: kids see that merging
+   trades toy count for toy power, and how they stack up against the wave. */
+function drawPowerChips() {
+    var sp = sidePower();
+    var chips = [
+        { x: 8, label: 'YOU', power: sp.pp, n: sp.pn, main: TEAM_COL[0].main, lite: '#E4F0FF', ahead: sp.pp >= sp.ep },
+        { x: W - 94, label: 'RIVALS', power: sp.ep, n: sp.en, main: TEAM_COL[1].main, lite: '#FFE6F2', ahead: sp.ep > sp.pp }
+    ];
+    for (var i = 0; i < 2; i++) {
+        var ch = chips[i];
+        var y = FIGHT_RECT.y;
+        ctx.fillStyle = ch.lite;
+        rr(ctx, ch.x, y, 86, FIGHT_RECT.h, 14);
+        ctx.fill();
+        ctx.strokeStyle = ch.main;
+        ctx.lineWidth = ch.ahead ? 3.5 : 2;
+        ctx.globalAlpha = ch.ahead ? 1 : 0.55;
+        rr(ctx, ch.x, y, 86, FIGHT_RECT.h, 14);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = ch.main;
+        ctx.font = '800 10px Nunito, sans-serif';
+        ctx.fillText(ch.label + (ch.ahead ? ' ★' : ''), ch.x + 43, y + 11);
+        ctx.fillStyle = INK;
+        ctx.font = '800 16px Nunito, sans-serif';
+        ctx.fillText('⚡' + ch.power, ch.x + 43, y + 28);
+        ctx.fillStyle = '#6B6394';
+        ctx.font = '800 10.5px Nunito, sans-serif';
+        ctx.fillText('×' + ch.n + ' toys', ch.x + 43, y + 45);
+    }
+}
+
+/* Wave-clear banner: LEVEL CLEARED + stars popping in one by one */
+function drawWinBanner() {
+    var inK = clamp(winBanner.t / 0.3, 0, 1);
+    var k = winBanner.t / winBanner.ttl;
+    var scale = easeOutBack(inK);
+    var alpha = k > 0.85 ? 1 - (k - 0.85) / 0.15 : 1;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(W / 2, 292);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = 'rgba(43,35,80,0.16)';
+    rr(ctx, -156, -56 + 7, 312, 118, 24);
+    ctx.fill();
+    ctx.fillStyle = '#FFFDF7';
+    rr(ctx, -156, -56, 312, 118, 24);
+    ctx.fill();
+    ctx.strokeStyle = '#FF8A3D';
+    ctx.lineWidth = 5;
+    rr(ctx, -156, -56, 312, 118, 24);
+    ctx.stroke();
+    ctx.fillStyle = INK;
+    ctx.font = '800 28px Nunito, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('LEVEL ' + winBanner.level + ' CLEARED!', 0, -22);
+    for (var s = 0; s < 3; s++) {
+        var popAt = 0.35 + s * 0.18;
+        var sk = clamp((winBanner.t - popAt) / 0.22, 0, 1);
+        if (sk <= 0) continue;
+        var ss = easeOutBack(sk);
+        var sx = (s - 1) * 62;
+        ctx.save();
+        ctx.translate(sx, 22);
+        ctx.scale(ss, ss);
+        ctx.rotate((1 - sk) * 0.6);
+        if (s < winBanner.stars) {
+            ctx.fillStyle = '#FFD93D';
+            drawStarShape(ctx, 0, 0, 24, 0);
+            ctx.fill();
+            ctx.strokeStyle = '#E0A90F';
+            ctx.lineWidth = 3;
+            drawStarShape(ctx, 0, 0, 24, 0);
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = 'rgba(43,35,80,0.12)';
+            drawStarShape(ctx, 0, 0, 22, 0);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
 }
 
 function drawFightButton() {
@@ -2588,6 +3018,30 @@ function drawParticles() {
             ctx.fill();
             continue;
         }
+        if (p.type === 10) {
+            /* little toy spring: a coiled squiggle tumbling away (kid-safe KO part) */
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.strokeStyle = '#8A81B5';
+            ctx.lineWidth = 2.2;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            for (var sc10 = -1; sc10 <= 1; sc10++) {
+                ctx.moveTo(-p.size * 0.6, sc10 * p.size * 0.4 + p.size * 0.2);
+                ctx.quadraticCurveTo(0, sc10 * p.size * 0.4 - p.size * 0.35, p.size * 0.6, sc10 * p.size * 0.4 + p.size * 0.2);
+            }
+            ctx.stroke();
+            ctx.restore();
+            continue;
+        }
+        if (p.type === 11) {
+            /* spinning gold star glint */
+            ctx.fillStyle = p.color;
+            drawStarShape(ctx, p.x, p.y, p.size * (0.5 + 0.5 * a), p.rot);
+            ctx.fill();
+            continue;
+        }
         ctx.fillStyle = p.color;
         if (p.type === 1) {
             ctx.save();
@@ -2647,7 +3101,7 @@ function drawWords() {
         ctx.rotate(wob);
         ctx.scale(pop * 1.1, pop * 1.1);
         ctx.globalAlpha = k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1;
-        ctx.font = '800 26px Nunito, sans-serif';
+        ctx.font = '800 ' + w.size + 'px Nunito, sans-serif';
         ctx.lineJoin = 'round';
         ctx.strokeStyle = INK;
         ctx.lineWidth = 5;
@@ -2777,15 +3231,8 @@ function render() {
     var pivotX = OX + zoomCX * S, pivotY = OY + zoomCY * S;
     ctx.setTransform(effS, 0, 0, effS, pivotX - zoomCX * effS + shx * S, pivotY - zoomCY * effS + shy * S);
 
-    /* playroom floor */
-    if (!floorTile) buildFloorTile();
-    for (var fy = WALL_BOT; fy < H; fy += 96) {
-        for (var fx = 0; fx < W; fx += 140) {
-            ctx.drawImage(floorTile, fx, fy, 140, 96);
-        }
-    }
-    /* era backdrop wall behind the enemy half */
-    ctx.drawImage(getBackdrop(backdropEra(data.campaignLevel)), 0, WALL_TOP, W, WALL_BOT - WALL_TOP);
+    /* pre-rendered playroom scene: floor, wall, rug, cells, props, vignette */
+    ctx.drawImage(getBg(backdropEra(data.campaignLevel)), 0, 0, W, H);
     /* backdrop flash on an era jump */
     if (backdropFlashT > 0) {
         ctx.globalAlpha = (backdropFlashT / 0.9) * 0.7;
@@ -2793,11 +3240,6 @@ function render() {
         ctx.fillRect(0, WALL_TOP, W, WALL_BOT - WALL_TOP);
         ctx.globalAlpha = 1;
     }
-    /* top frame band */
-    ctx.fillStyle = CREAM;
-    ctx.fillRect(0, 0, W, WALL_TOP);
-    ctx.fillStyle = 'rgba(43,35,80,0.08)';
-    ctx.fillRect(0, WALL_TOP - 3, W, 3);
 
     drawGrid();
 
@@ -2807,44 +3249,106 @@ function render() {
         var sorted = [];
         for (i = 0; i < fighters.length; i++) if (fighters[i].alive) sorted.push(fighters[i]);
         sorted.sort(function (a, b) { return a.y - b.y; });
+        /* subtle target lines: who your toys are marching after */
+        ctx.strokeStyle = 'rgba(62,142,247,0.13)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (i = 0; i < sorted.length; i++) {
+            var tl = sorted[i];
+            if (tl.team !== 0 || !tl.tgtRef || !tl.tgtRef.alive) continue;
+            ctx.moveTo(tl.x | 0, tl.y | 0);
+            ctx.lineTo(tl.tgtRef.x | 0, tl.tgtRef.y | 0);
+        }
+        ctx.stroke();
         for (i = 0; i < sorted.length; i++) {
             var f = sorted[i];
-            var squish = f.atkAnim > 0 ? 1 + Math.sin(f.atkAnim / 0.28 * Math.PI) * 0.12 : 1;
-            drawToy(f.x, f.y, f.cls, f.level, f.team, squish, f.isBoss, true, clamp(f.hp / f.maxHp, 0, 1), f.slot + f.team * 13);
+            var lx = 0, ly = 0, sqx2 = 1, sqy2 = 1;
+            if (f.atkAnim > 0) {
+                /* melee lunges into the hit, ranged toys recoil back; squash & stretch */
+                var ak = 1 - f.atkAnim / 0.28;
+                var pk = Math.sin(ak * Math.PI);
+                var amp = (f.cls === 'bonker') ? 13 : -6;
+                if (f.isBoss) amp = 18;
+                lx = (f.atkDx || 0) * pk * amp;
+                ly = (f.atkDy || 0) * pk * amp;
+                sqx2 = 1 + pk * 0.16;
+                sqy2 = 1 - pk * 0.12;
+            } else if (f.vx !== 0 || f.vy !== 0) {
+                /* marching waddle */
+                var wob = Math.sin(time * 11 + i * 1.7) * 0.045;
+                sqx2 = 1 - wob;
+                sqy2 = 1 + wob;
+            }
+            drawToy(f.x + lx, f.y + ly, f.cls, f.level, f.team, 1, f.isBoss, true, clamp(f.hp / f.maxHp, 0, 1), f.slot + f.team * 13, sqx2, sqy2);
         }
         drawProjs();
         drawBattleBars();
     } else {
-        /* enemy formation preview, idle bobbing */
+        /* enemy formation preview, idle bobbing; the boss telegraphs with a danger ring */
         for (i = 0; i < pendingEnemies.length; i++) {
             var e = pendingEnemies[i];
             var eb = Math.sin(time * 2.2 + i * 1.3) * 3;
+            if (e.isBoss) {
+                var dp = 0.5 + 0.5 * Math.sin(time * 3.4);
+                ctx.strokeStyle = 'rgba(228,91,91,' + (0.3 + dp * 0.35).toFixed(2) + ')';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.arc(e.x | 0, (e.y + eb) | 0, 64 + dp * 8, 0, Math.PI * 2);
+                ctx.stroke();
+                /* bobbing "!" warning bubble */
+                ctx.fillStyle = '#E45B5B';
+                ctx.beginPath(); ctx.arc(e.x + 52, e.y + eb - 58, 13, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = '800 18px Nunito, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('!', e.x + 52, e.y + eb - 57);
+            }
             drawToy(e.x, e.y + eb, e.cls, e.level, 1, 1, e.isBoss, true, 1, 100 + i);
         }
         /* player army in slots, idle bob + merge flex pose */
         for (i = 0; i < data.army.length; i++) {
             u = data.army[i];
             if (dragging && dragging.u === u) continue;
+            if (snapAnim && snapAnim.u === u) continue;
             p2 = slotXY(u.slot);
             var bob = Math.sin(time * 2.2 + u.slot) * 2.5;
             var pop = u.popT ? (u.popT < 0.4 ? 0.5 + 0.5 * easeOutBack(u.popT / 0.4) : 1) : 1;
             /* fresh-merge flex: a quick springy overshoot pose for ~300ms */
             var flex = 1;
             if (u.flexT && u.flexT < 0.3) flex = 1 + Math.sin(u.flexT / 0.3 * Math.PI) * 0.16;
-            drawToy(p2.x, p2.y + bob, u.cls, u.level, 0, pop * flex, false, true, 1, u.slot);
+            /* idle breathing squash keeps the toy box alive */
+            var br = Math.sin(time * 2.2 + u.slot) * 0.02;
+            drawToy(p2.x, p2.y + bob, u.cls, u.level, 0, pop * flex, false, true, 1, u.slot, 1 - br, 1 + br);
         }
         if (state === 'buy' || state === 'menu') {
+            drawIntelBar();
             drawFightButton();
+            drawPowerChips();
             drawShopBar();
             drawBonusCoin();
         }
-        /* dragged toy lifts and enlarges under the finger */
+        /* invalid drop: toy springs back to its slot */
+        if (snapAnim && data.army.indexOf(snapAnim.u) !== -1) {
+            var su = snapAnim.u;
+            var sp2 = slotXY(su.slot);
+            var sk = clamp(snapAnim.t / snapAnim.dur, 0, 1);
+            var se = 1 - Math.pow(1 - sk, 3);
+            var sxp = snapAnim.sx + (sp2.x - snapAnim.sx) * se;
+            var syp = snapAnim.sy + (sp2.y - snapAnim.sy) * se;
+            drawToy(sxp, syp, su.cls, su.level, 0, 1.28 - 0.28 * se, false, true, 1, su.slot);
+        }
+        /* dragged toy chases the finger with lag + tilt, floating on a shadow */
         if (dragging) {
             ctx.fillStyle = 'rgba(43,35,80,0.18)';
             ctx.beginPath();
-            ctx.ellipse(dragging.x, dragging.y - 6, 30, 9, 0, 0, Math.PI * 2);
+            ctx.ellipse(dragging.drawX | 0, (dragging.drawY - 4) | 0, 28, 8, 0, 0, Math.PI * 2);
             ctx.fill();
-            drawToy(dragging.x, dragging.y - 36, dragging.u.cls, dragging.u.level, 0, 1.28, false, true, 1, dragging.fromSlot);
+            ctx.save();
+            ctx.translate(dragging.drawX | 0, (dragging.drawY - 40) | 0);
+            ctx.rotate(dragging.tilt);
+            drawToy(0, 0, dragging.u.cls, dragging.u.level, 0, 1.3, false, true, 1, dragging.fromSlot);
+            ctx.restore();
         }
     }
 
@@ -2856,7 +3360,8 @@ function render() {
 
     /* defeat: gentle gray wash + a single sad deflating balloon (stay friendly) */
     if (state === 'lose') drawDefeatWash();
-    /* era celebration banner over everything */
+    /* wave-clear stars banner, then the era celebration banner over everything */
+    if (winBanner.ttl > 0) drawWinBanner();
     if (eraBanner.ttl > 0) drawEraBanner();
 
     drawHud();
@@ -2974,7 +3479,8 @@ function onDown(e) {
     if (s !== -1) {
         var u = unitAt(s);
         if (u) {
-            dragging = { u: u, x: p.x, y: p.y, fromSlot: s, overSlot: s, overSell: false };
+            snapAnim = null;
+            dragging = { u: u, x: p.x, y: p.y, drawX: p.x, drawY: p.y, tilt: 0, fromSlot: s, overSlot: s, overSell: false };
         }
     }
 }
@@ -2997,7 +3503,10 @@ function onUp() {
     }
     if (d.overSlot !== -1 && d.overSlot !== d.fromSlot) {
         dropUnit(d.fromSlot, d.overSlot);
+        return;
     }
+    /* invalid drop target: ease the toy back to its home slot */
+    snapAnim = { u: d.u, sx: d.drawX, sy: d.drawY - 36, t: 0, dur: 0.24 };
 }
 
 function pauseGame() {
@@ -3012,9 +3521,12 @@ function resumeGame() {
 }
 
 /* ================= DOM wiring + boot (browser only) ================= */
-function showRewardPanel(payout, beatenLevel) {
-    winTitleEl.textContent = (beatenLevel % 5 === 0) ? 'BOSS BEATEN!' : 'YOU WIN!';
+function showRewardPanel(payout, beatenLevel, bonusText, stars) {
+    if (state !== 'reward') return; /* player may already be past the banner delay */
+    var starStr = stars ? ' ' + '★'.repeat(stars) : '';
+    winTitleEl.textContent = ((beatenLevel % 5 === 0) ? 'BOSS BEATEN!' : 'YOU WIN!') + starStr;
     winCoinsEl.textContent = '+' + payout + ' coins';
+    bonusRowEl.textContent = bonusText || '';
     for (var i = 0; i < 3; i++) {
         chestEls[i].className = 'chest';
         chestEls[i].textContent = '?';

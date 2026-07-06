@@ -700,6 +700,95 @@ function sfxMagnet() {
     o.stop(t + 0.44);
 }
 
+/* Airy whoosh for skimming past a hazard */
+function sfxWhoosh() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var src = audioCtx.createBufferSource();
+    src.buffer = getNoise();
+    var bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 1.6;
+    bp.frequency.setValueAtTime(700 * p, t);
+    bp.frequency.exponentialRampToValueAtTime(2600 * p, t + 0.16);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.11, t + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    src.connect(bp); bp.connect(g); g.connect(audioCtx.destination);
+    src.onended = voiceDone;
+    src.start(t);
+    src.stop(t + 0.22);
+}
+
+/* Bright two-step sparkle for danger gems */
+function sfxGem() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(1175 * p, t);
+    o.frequency.setValueAtTime(1568 * p, t + 0.07);
+    o.frequency.setValueAtTime(2093 * p, t + 0.14);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.15, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.34);
+}
+
+/* Rising arpeggio when the combo multiplier levels up */
+function sfxMilestone() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(784 * p, t);
+    o.frequency.setValueAtTime(988 * p, t + 0.07);
+    o.frequency.setValueAtTime(1319 * p, t + 0.14);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.16, t + 0.015);
+    g.gain.setValueAtTime(0.16, t + 0.18);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.42);
+}
+
+/* Engine rev sweep when the track shifts up a gear */
+function sfxSpeedUp() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(160 * p, t);
+    o.frequency.exponentialRampToValueAtTime(420 * p, t + 0.3);
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(900, t);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.09, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.36);
+    o.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.38);
+}
+
 /* Soft womp when a combo breaks */
 function sfxMiss() {
     if (!canPlay()) return;
@@ -781,13 +870,14 @@ function engineUpdate(speedPx, kick) {
 
 /* ================= Constants ================= */
 var BASE_SPEED = 145;      /* logical px per second at reference size 640 */
-var MAX_SPEED = 260;
-var SPEED_RAMP = 1.15;     /* px per second gained each second */
+var MAX_SPEED = 345;       /* by minute three the track really flies */
 var MISS_ANG = 0.5;        /* radians behind the car before a coin counts as missed */
 var MAGNET_TIME = 5;       /* seconds of coin magnet per star */
 var OBSTACLE_GRACE = 6;    /* no obstacles in the first seconds of a run */
 var COMBO_STEP = 5;        /* coins per multiplier level */
 var MAX_MULT = 5;
+var NEAR_MISS_R = 26;      /* extra px band around a hazard that counts as a near miss */
+var GEM_VALUE = 5;         /* danger gems pay five coins worth, times the multiplier */
 
 function comboMult(c) { return Math.min(MAX_MULT, 1 + Math.floor(c / COMBO_STEP)); }
 
@@ -812,6 +902,7 @@ var SPRING = 56, DAMP = 11;
 
 var bgSpr = null, trackSpr = null, trackSide = 0;
 var glowGold = null, glowPink = null, coinSpr = null, coneSpr = null, puddleSpr = null;
+var gemSpr = null, ferrisSpr = null;
 var blobSprs = [];
 var BLOB_COLORS = ['#FF8FA3', '#8AF3C2', '#9AD1FF', '#FFC94D', '#C6A9FF'];
 var LIGHT_COLORS = ['#FFD166', '#FF8FA3', '#8AF3C2', '#9AD1FF', '#FFC94D'];
@@ -870,6 +961,70 @@ function buildSprites() {
     }
     cc.closePath();
     cc.fill();
+
+    /* Pink danger gem: faceted diamond with a shine */
+    var GD = 26 * cs;
+    gemSpr = makeCanvas(GD * ts, GD * ts);
+    var gc = gemSpr.getContext('2d');
+    gc.scale(ts, ts);
+    gc.fillStyle = '#FF6FD8';
+    gc.beginPath();
+    gc.moveTo(GD / 2, GD * 0.04);
+    gc.lineTo(GD * 0.94, GD * 0.38);
+    gc.lineTo(GD / 2, GD * 0.96);
+    gc.lineTo(GD * 0.06, GD * 0.38);
+    gc.closePath();
+    gc.fill();
+    gc.lineWidth = 2.4;
+    gc.strokeStyle = '#241F4B';
+    gc.stroke();
+    gc.fillStyle = '#FFB3EC';
+    gc.beginPath();
+    gc.moveTo(GD / 2, GD * 0.04);
+    gc.lineTo(GD * 0.72, GD * 0.38);
+    gc.lineTo(GD * 0.28, GD * 0.38);
+    gc.closePath();
+    gc.fill();
+    gc.fillStyle = '#FFFFFF';
+    gc.globalAlpha = 0.9;
+    gc.beginPath();
+    gc.arc(GD * 0.38, GD * 0.28, GD * 0.06, 0, Math.PI * 2);
+    gc.fill();
+    gc.globalAlpha = 1;
+
+    /* Distant ferris wheel: spokes, rims and candy cabin lights, spun in screen space */
+    var FW = Math.max(90, size * 0.46);
+    ferrisSpr = makeCanvas(FW * ts, FW * ts);
+    var fw = ferrisSpr.getContext('2d');
+    fw.scale(ts, ts);
+    var FC = FW / 2, FR = FW * 0.44;
+    fw.strokeStyle = 'rgba(150,158,226,0.5)';
+    fw.lineWidth = Math.max(2, FW * 0.012);
+    fw.beginPath();
+    fw.arc(FC, FC, FR, 0, Math.PI * 2);
+    fw.stroke();
+    fw.beginPath();
+    fw.arc(FC, FC, FR * 0.55, 0, Math.PI * 2);
+    fw.stroke();
+    var fs, fa;
+    for (fs = 0; fs < 8; fs++) {
+        fa = fs * Math.PI / 4;
+        fw.beginPath();
+        fw.moveTo(FC, FC);
+        fw.lineTo(FC + Math.cos(fa) * FR, FC + Math.sin(fa) * FR);
+        fw.stroke();
+    }
+    for (fs = 0; fs < 8; fs++) {
+        fa = fs * Math.PI / 4;
+        fw.fillStyle = LIGHT_COLORS[fs % LIGHT_COLORS.length];
+        fw.beginPath();
+        fw.arc(FC + Math.cos(fa) * FR, FC + Math.sin(fa) * FR, FW * 0.034, 0, Math.PI * 2);
+        fw.fill();
+    }
+    fw.fillStyle = '#FFD166';
+    fw.beginPath();
+    fw.arc(FC, FC, FW * 0.05, 0, Math.PI * 2);
+    fw.fill();
 
     /* Traffic cone seen from above: square base plus stripe rings */
     var CN = 34 * cs;
@@ -967,6 +1122,29 @@ function buildSprites() {
     vg.addColorStop(1, 'rgba(4,5,18,0.8)');
     bg.fillStyle = vg;
     bg.fillRect(0, 0, W, H);
+    /* soft night-sky nebulas, baked once (never in the game loop) */
+    var nb = bg.createRadialGradient(W * 0.16, H * 0.14, 0, W * 0.16, H * 0.14, size * 0.52);
+    nb.addColorStop(0, 'rgba(126,84,214,0.16)');
+    nb.addColorStop(1, 'rgba(126,84,214,0)');
+    bg.fillStyle = nb;
+    bg.fillRect(0, 0, W, H);
+    nb = bg.createRadialGradient(W * 0.86, H * 0.82, 0, W * 0.86, H * 0.82, size * 0.55);
+    nb.addColorStop(0, 'rgba(40,168,196,0.14)');
+    nb.addColorStop(1, 'rgba(40,168,196,0)');
+    bg.fillStyle = nb;
+    bg.fillRect(0, 0, W, H);
+    /* baked starfield outside the arena */
+    var safeR2 = (trackOut + 34 * cs) * (trackOut + 34 * cs);
+    for (var st = 0; st < 90; st++) {
+        var stx = rand(0, W), sty = rand(0, H);
+        var ddx = stx - cx, ddy = sty - cy;
+        if (ddx * ddx + ddy * ddy < safeR2) continue;
+        bg.globalAlpha = rand(0.08, 0.5);
+        bg.fillStyle = st % 5 ? '#FFFDF7' : '#9AD1FF';
+        var sw = st % 7 === 0 ? 2.5 : 1.5;
+        bg.fillRect(stx | 0, sty | 0, sw, sw);
+    }
+    bg.globalAlpha = 1;
 
     /* The whole track prerendered once: infield carnival, asphalt, curbs, dashes */
     var pad = 26 * cs;
@@ -1109,6 +1287,8 @@ function resize() {
     buildSprites();
     initCrowd();
     initDots();
+    initTwinkles();
+    for (i = 0; i < labels.length; i++) labels[i].active = false; /* screen coords stale */
 }
 window.addEventListener('resize', resize);
 
@@ -1134,8 +1314,13 @@ var spawnCooldown = 0;
 var obstacleCooldown = 0;
 var starTimer = 14;
 var lastSpawnEnd = 0;
+var lastObsEnd = 0;
 var cheerT = 0;
 var magnetShown = -1;
+var runGems = 0;
+var runNearMisses = 0;
+var hitStop = 0;           /* frozen frames on big moments */
+var speedTier = 0;
 
 var car = {
     angle: 0,
@@ -1144,28 +1329,62 @@ var car = {
     kick: 0,       /* visual drift angle of the body vs travel direction */
     spin: 0,       /* extra rotation during a crash */
     wobble: 0,
+    pulse: 0,      /* squash and stretch pop on pickups */
     exhaustT: 0,
     blinkIn: rand(1.5, 4),
     blinkT: 0
 };
 
+/* 0 at 25s, 1 at 175s: the master difficulty dial */
+function diff01() { return clamp((elapsed - 25) / 150, 0, 1); }
 function currentSpeed() {
-    return Math.min(MAX_SPEED, BASE_SPEED + elapsed * SPEED_RAMP + runCoins * 0.4) * carScale;
+    var s = BASE_SPEED + 62 * Math.min(1, elapsed / 40) + 138 * diff01() + Math.min(26, runCoins * 0.22);
+    return Math.min(MAX_SPEED, s) * carScale;
 }
 function angularSpeed() { return currentSpeed() / midR; }
 
 /* ================= Pools: never allocate during gameplay ================= */
 var coins = [];
-for (var ci = 0; ci < 44; ci++) coins.push({ active: false, angle: 0, radius: 0, phase: 0, kind: 'coin', pid: -1 });
+for (var ci = 0; ci < 44; ci++) coins.push({ active: false, angle: 0, radius: 0, phase: 0, kind: 'coin', pid: -1, born: 0 });
 var obstacles = [];
-for (var oi = 0; oi < 12; oi++) obstacles.push({ active: false, kind: 'cone', angle: 0, radius: 0, r0: 0, r1: 0, halfAng: 0, hit: false });
+for (var oi = 0; oi < 16; oi++) obstacles.push({ active: false, kind: 'cone', angle: 0, radius: 0, r0: 0, r1: 0, halfAng: 0, hit: false, minD2: 1e18, passed: false, baseR: 0, oscA: 0, oscW: 0, oscP: 0 });
 var parts = [];
 for (var qi = 0; qi < 220; qi++) {
     parts.push({ active: false, type: 0, screen: false, x: 0, y: 0, vx: 0, vy: 0, rot: 0, vr: 0, life: 0, ttl: 1, size: 4, color: '#fff', seed: 0 });
 }
 var skid = [];
-for (var ki = 0; ki < 260; ki++) skid.push({ life: 1, ttl: 1, x: 0, y: 0, w: 3 });
+for (var ki = 0; ki < 260; ki++) skid.push({ life: 1, ttl: 1, x: 0, y: 0, w: 3, c: 0 });
 var skidHead = 0;
+
+/* Floating score / event labels (screen space, pooled) */
+var labels = [];
+for (var lbi = 0; lbi < 14; lbi++) labels.push({ active: false, x: 0, y: 0, txt: '', color: '#fff', size: 16, life: 0, ttl: 1 });
+function spawnLabel(txt, x, y, color, sizePx, ttl) {
+    for (var i = 0; i < labels.length; i++) {
+        var l = labels[i];
+        if (l.active) continue;
+        l.active = true; l.txt = txt; l.x = x; l.y = y;
+        l.color = color; l.size = sizePx; l.life = 0; l.ttl = ttl || 0.85;
+        return;
+    }
+}
+function updateLabels(dt) {
+    for (var i = 0; i < labels.length; i++) {
+        var l = labels[i];
+        if (!l.active) continue;
+        l.life += dt;
+        if (l.life >= l.ttl) l.active = false;
+    }
+}
+function easeOutBack(t) {
+    var c1 = 1.70158, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+/* where a world polar point lands on screen (the world is rotated by -car.angle) */
+function worldToScreen(a, r) {
+    var rel = a - car.angle;
+    return { x: cx + Math.cos(rel) * r, y: cy + Math.sin(rel) * r };
+}
 
 /* coin pattern registry: tracks full line pickups for crowd cheers */
 var patterns = [];
@@ -1252,6 +1471,18 @@ function crowdCheer() {
     sfxCheer();
 }
 
+/* twinkling screen-space stars outside the arena */
+var twinkles = [];
+function initTwinkles() {
+    twinkles = [];
+    var maxR = Math.hypot(W, H) / 2;
+    for (var i = 0; i < 16; i++) {
+        var a = rand(0, Math.PI * 2);
+        var r = rand(trackOut + 56 * carScale, Math.max(trackOut + 60 * carScale, maxR));
+        twinkles.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r, w: rand(1.5, 3.2), ph: rand(0, 6), sp: rand(1.2, 2.4) });
+    }
+}
+
 /* faint world-locked ground flecks so rotation is always readable */
 var dots = [];
 function initDots() {
@@ -1267,16 +1498,38 @@ function coinSlot() {
     for (var i = 0; i < coins.length; i++) if (!coins[i].active) return coins[i];
     return null;
 }
+/* never bait the player: no coins or stars directly on a hazard */
+function hazardBlocked(angle, radius) {
+    for (var i = 0; i < obstacles.length; i++) {
+        var o = obstacles[i];
+        if (!o.active) continue;
+        var ad = Math.abs(normAngle(angle - o.angle));
+        if (o.kind === 'barrier') {
+            if (ad < o.halfAng + 0.09 && radius > o.r0 - 34 * carScale && radius < o.r1 + 34 * carScale) return true;
+        } else if (o.kind === 'cone') {
+            var cR = o.oscA > 0 ? o.baseR : o.radius;
+            var margin = (o.oscA > 0 ? o.oscA : 0) + 46 * carScale;
+            if (ad < 0.13 && Math.abs(radius - cR) < margin) return true;
+        }
+    }
+    return false;
+}
 function spawnCoin(angle, radius, kind, pid) {
     var c = coinSlot();
     if (!c) return null;
+    if (kind !== 'gem' && hazardBlocked(angle, clamp(radius, laneIn, laneOut))) return null;
     c.active = true;
     c.angle = angle;
     c.radius = clamp(radius, laneIn, laneOut);
     c.phase = rand(0, Math.PI * 2);
     c.kind = kind || 'coin';
     c.pid = (pid === undefined) ? -1 : pid;
+    c.born = time;
     return c;
+}
+/* Danger gem: high value, always parked right beside a hazard */
+function spawnGemNear(angle, radius) {
+    return spawnCoin(angle, clamp(radius, laneIn, laneOut), 'gem', -1);
 }
 function allocPattern() {
     nextPid = (nextPid + 1) % patterns.length;
@@ -1347,8 +1600,8 @@ function maintainStar(dt) {
     if (magnetT > 0) return;
     starTimer -= dt;
     if (starTimer > 0) return;
-    spawnCoin(car.angle + rand(2, 2.6), midLane, 'star', -1);
-    starTimer = rand(13, 20);
+    if (spawnCoin(car.angle + rand(2, 2.6), midLane, 'star', -1)) starTimer = rand(13, 20);
+    else starTimer = 1; /* blocked by a hazard: retry shortly */
 }
 
 function obstacleSlot() {
@@ -1365,6 +1618,12 @@ function placeObstacle(kind, angle, radius) {
     o.halfAng = 0;
     o.r0 = 0;
     o.r1 = 0;
+    o.minD2 = 1e18;
+    o.passed = false;
+    o.oscA = 0;
+    o.oscW = 0;
+    o.oscP = rand(0, 6);
+    o.baseR = radius;
     if (kind === 'barrier') {
         /* blocks one half of the track: drive the other lane */
         var innerSide = radius < midR;
@@ -1394,21 +1653,60 @@ function maintainObstacles(dt) {
     if (elapsed < OBSTACLE_GRACE) return;
     obstacleCooldown -= dt;
     if (obstacleCooldown > 0) return;
+    var d = diff01();
     var roll = Math.random();
-    var kind = roll < 0.45 ? 'cone' : (roll < 0.75 ? 'puddle' : 'barrier');
-    var angle = car.angle + rand(2.4, 3.1);
-    var radius;
-    if (kind === 'cone') {
-        var lanes = [laneIn, midLane, laneOut];
-        radius = lanes[Math.floor(rand(0, 3))] + rand(-0.02, 0.02) * size;
-        radius = clamp(radius, laneIn, laneOut);
-    } else if (kind === 'puddle') {
-        radius = rand(laneIn, laneOut);
+    /* keep a guaranteed clear gap between hazard clusters; it tightens as skill grows */
+    var angle = Math.max(car.angle + rand(2.5, 3.1), lastObsEnd + (1.25 - 0.55 * d));
+    var endA = angle;
+    var lanes = [laneIn, midLane, laneOut];
+    var o, radius;
+    if (d > 0.5 && roll < 0.2) {
+        /* slalom: three cones weaving lanes; demands rhythm pulses */
+        var flip = Math.random() < 0.5;
+        var gapA = 0.62 - 0.12 * d;
+        for (var s3 = 0; s3 < 3; s3++) {
+            placeObstacle('cone', angle + s3 * gapA, (s3 % 2 === 0) === flip ? laneIn : laneOut);
+        }
+        endA = angle + gapA * 2;
+        /* gem opposite the middle cone: grab it mid-weave */
+        if (Math.random() < 0.6) spawnGemNear(angle + gapA, flip ? laneIn : laneOut);
+    } else if (d > 0.25 && roll < 0.45) {
+        /* gate: two lanes coned off, one lane open, gem parked in the gap */
+        var openLane = (d > 0.55 && Math.random() < 0.4) ? 1 : (Math.random() < 0.5 ? 0 : 2);
+        for (var g3 = 0; g3 < 3; g3++) {
+            if (g3 !== openLane) placeObstacle('cone', angle, lanes[g3]);
+        }
+        if (Math.random() < 0.55) spawnGemNear(angle, lanes[openLane]);
+        endA = angle + 0.12;
     } else {
-        radius = Math.random() < 0.5 ? trackIn + 1 : trackOut - 1;
+        var kind = roll < 0.6 ? 'cone' : (roll < 0.8 ? 'puddle' : 'barrier');
+        if (kind === 'cone') {
+            radius = lanes[Math.floor(rand(0, 3))] + rand(-0.02, 0.02) * size;
+            radius = clamp(radius, laneIn, laneOut);
+        } else if (kind === 'puddle') {
+            radius = rand(laneIn, laneOut);
+        } else {
+            radius = Math.random() < 0.5 ? trackIn + 1 : trackOut - 1;
+        }
+        o = placeObstacle(kind, angle, radius);
+        if (o && kind === 'cone') {
+            if (d > 0.4 && Math.random() < 0.25 + d * 0.35) {
+                /* wandering cone: slides between lanes, clearly telegraphed by motion */
+                o.oscA = (laneOut - laneIn) * rand(0.25, 0.42);
+                o.oscW = rand(1.2, 1.8) + d * 0.8;
+                o.baseR = clamp(o.radius, laneIn + o.oscA, laneOut - o.oscA);
+            } else if (Math.random() < 0.42) {
+                spawnGemNear(angle, o.radius < midLane ? laneOut : laneIn);
+            }
+        }
+        if (o && kind === 'barrier' && Math.random() < 0.5) {
+            /* gem hugs the open side of the barrier */
+            spawnGemNear(angle, o.r0 >= midR ? laneIn : laneOut);
+        }
+        endA = angle + 0.14;
     }
-    placeObstacle(kind, angle, radius);
-    obstacleCooldown = Math.max(1.7, 3.4 - elapsed * 0.012) + rand(0, 0.8);
+    lastObsEnd = endA;
+    obstacleCooldown = (3.2 - 2.1 * d) + rand(0, Math.max(0.25, 0.8 - 0.5 * d));
 }
 
 /* ================= Run control ================= */
@@ -1419,8 +1717,13 @@ function resetRun() {
     for (i = 0; i < parts.length; i++) parts[i].active = false;
     for (i = 0; i < skid.length; i++) skid[i].life = skid[i].ttl;
     for (i = 0; i < patterns.length; i++) { patterns[i].total = 0; patterns[i].got = 0; patterns[i].broken = false; }
+    for (i = 0; i < labels.length; i++) labels[i].active = false;
     score = 0;
     runCoins = 0;
+    runGems = 0;
+    runNearMisses = 0;
+    hitStop = 0;
+    speedTier = 0;
     combo = 0;
     topCombo = 0;
     magnetT = 0;
@@ -1444,7 +1747,9 @@ function resetRun() {
     car.kick = 0;
     car.spin = 0;
     car.wobble = 0;
+    car.pulse = 0;
     lastSpawnEnd = car.angle + 0.8;
+    lastObsEnd = 0;
     scoreEl.textContent = '0';
     comboPill.style.display = 'none';
     magnetChip.style.display = 'none';
@@ -1497,24 +1802,68 @@ function updateComboHud() {
     }
 }
 function breakCombo() {
-    if (combo >= COMBO_STEP) sfxMiss();
+    if (combo >= COMBO_STEP) {
+        sfxMiss();
+        var s = worldToScreen(car.angle, car.radius);
+        spawnLabel('COMBO LOST', s.x, s.y - 44 * carScale, '#B9B3D6', 15 * carScale, 0.9);
+    }
     combo = 0;
     comboPill.style.display = 'none';
 }
 
+var GEM_COLORS = ['#FF6FD8', '#FFB3EC', '#C6A9FF'];
+/* Candy-crush style layered local feedback, scaling with the combo multiplier */
+function pickupJuice(wx, wy, a, r, pts, mult, gem) {
+    var col = gem ? '#FF6FD8' : (mult >= 4 ? '#FFB040' : '#FFD23F');
+    /* shockwave ring (plus a white outer ring on hot combos) */
+    spawnPart(6, wx, wy, 0, 0, 0.38 + mult * 0.03, (34 + mult * 9) * carScale, col);
+    if (mult >= 3 || gem) spawnPart(6, wx, wy, 0, 0, 0.55, (58 + mult * 10) * carScale, '#FFFDF7');
+    /* halo flash */
+    spawnPart(2, wx, wy, 0, 0, 0.24, (16 + mult * 3) * carScale, gem ? 'rgba(255,111,216,0.5)' : 'rgba(255,210,63,0.5)');
+    /* chunky spinning shards */
+    var n = 6 + mult * 2 + (gem ? 4 : 0);
+    for (var i = 0; i < n; i++) {
+        var pa = rand(0, Math.PI * 2);
+        var sp = rand(60, 200 + mult * 26) * carScale;
+        spawnPart(4, wx, wy, Math.cos(pa) * sp, Math.sin(pa) * sp, rand(0.3, 0.55), rand(3, 5.5 + mult * 0.6) * carScale, gem ? GEM_COLORS[i % 3] : GOLD_COLORS[i % 3]);
+    }
+    /* star glints */
+    var gn = 2 + (mult >= 3 ? 2 : 0);
+    for (i = 0; i < gn; i++) {
+        spawnPart(7, wx + rand(-16, 16) * carScale, wy + rand(-16, 16) * carScale, 0, 0, rand(0.3, 0.5), rand(9, 15 + mult * 2) * carScale, '#FFFDF7');
+    }
+    /* floating score label */
+    var sp3 = worldToScreen(a, r);
+    spawnLabel('+' + pts, sp3.x, sp3.y, gem ? '#FF9BE4' : (mult >= 3 ? '#FFE14D' : '#FFFDF7'), (15 + mult * 2.5 + (gem ? 5 : 0)) * carScale, 0.8);
+}
+
 function collectCoin(c) {
     c.active = false;
-    var mult = comboMult(combo);
-    score += mult;
+    var gem = c.kind === 'gem';
+    var m0 = comboMult(combo);
+    var pts = (gem ? GEM_VALUE : 1) * m0;
+    score += pts;
     runCoins++;
+    if (gem) runGems++;
     combo++;
     if (combo > topCombo) topCombo = combo;
+    var m1 = comboMult(combo);
     var wx = cx + Math.cos(c.angle) * c.radius;
     var wy = cy + Math.sin(c.angle) * c.radius;
-    burstGold(wx, wy);
-    sfxChime(combo);
+    pickupJuice(wx, wy, c.angle, c.radius, pts, m1, gem);
+    if (gem) sfxGem(); else sfxChime(combo);
+    car.pulse = 1;
     updateScoreHud();
     updateComboHud();
+    /* combo milestone: hit-stop, shake, big callout */
+    if (m1 > m0 && m1 >= 2) {
+        hitStop = 0.055;
+        trauma = Math.max(trauma, 0.24);
+        var sc2 = worldToScreen(c.angle, c.radius);
+        spawnLabel('COMBO x' + m1 + '!', sc2.x, sc2.y - 34 * carScale, '#FF8A3D', 24 * carScale, 1.05);
+        spawnPart(6, wx, wy, 0, 0, 0.6, 96 * carScale, '#FF8A3D');
+        sfxMilestone();
+    }
     if (c.pid >= 0) {
         var p = patterns[c.pid];
         p.got++;
@@ -1530,17 +1879,44 @@ function collectStar(c) {
     magnetChip.style.display = 'block';
 }
 
+/* Skimming a hazard without touching it pays a bonus: risk is rewarded */
+function nearMissCheck(o) {
+    if (o.kind === 'puddle' || o.hit) return;
+    var ok = false;
+    if (o.kind === 'cone') {
+        var rc = 13 * carScale + 15 * carScale;
+        var nm = rc + NEAR_MISS_R * carScale;
+        ok = o.minD2 < nm * nm;
+    } else if (o.kind === 'barrier') {
+        ok = o.minD2 < (15 + NEAR_MISS_R) * carScale;
+    }
+    if (!ok) return;
+    var bonus = 2 * comboMult(combo);
+    runNearMisses++;
+    score += bonus;
+    updateScoreHud();
+    trauma = Math.max(trauma, 0.15);
+    var s = worldToScreen(car.angle, car.radius);
+    spawnLabel('CLOSE! +' + bonus, s.x, s.y - 42 * carScale, '#8AF3C2', 17 * carScale, 0.85);
+    burstSparks(carWorldX(), carWorldY(), 5);
+    spawnPart(6, carWorldX(), carWorldY(), 0, 0, 0.35, 40 * carScale, '#8AF3C2');
+    sfxWhoosh();
+}
+
 function crash() {
     if (currentState !== State.PLAYING) return;
     currentState = State.CRASHING;
     crashT = 0;
-    trauma = 0.7;
+    trauma = 0.85;
     flash = 0.3;
+    hitStop = 0.09;
     holding = false;
     car.spin = 0;
     engineStop();
     sfxCrash();
-    burstSparks(carWorldX(), carWorldY(), 16);
+    burstSparks(carWorldX(), carWorldY(), 18);
+    spawnPart(6, carWorldX(), carWorldY(), 0, 0, 0.65, 120 * carScale, '#FF5470');
+    spawnPart(6, carWorldX(), carWorldY(), 0, 0, 0.45, 70 * carScale, '#FFFDF7');
     pauseBtn.style.display = 'none';
     comboPill.style.display = 'none';
     magnetChip.style.display = 'none';
@@ -1564,7 +1940,10 @@ function showPanel() {
     scoreEl.style.display = 'none';
     panelScoreEl.textContent = score;
     panelBestEl.textContent = data.highScore;
-    panelCoinsEl.textContent = '🪙 ' + runCoins + ' coin' + (runCoins === 1 ? '' : 's') + ' grabbed';
+    var statBits = ['🪙 ' + runCoins + ' coin' + (runCoins === 1 ? '' : 's')];
+    if (runGems > 0) statBits.push('💎 ' + runGems);
+    if (runNearMisses > 0) statBits.push('⚡ ' + runNearMisses + ' close call' + (runNearMisses === 1 ? '' : 's'));
+    panelCoinsEl.textContent = statBits.join('  •  ');
     newBestEl.style.display = newBest ? 'block' : 'none';
     document.getElementById('panelTitle').textContent = newBest ? 'CHAMPION DRIFT!' : 'WIPEOUT!';
     if (topCombo > 0) {
@@ -1597,6 +1976,7 @@ function showPanel() {
 
 /* ================= Update ================= */
 function updateCarCosmetics(dt) {
+    if (car.pulse > 0) car.pulse = Math.max(0, car.pulse - 4.2 * dt);
     if (car.blinkT > 0) {
         car.blinkT -= dt;
     } else {
@@ -1623,11 +2003,15 @@ function pushSkid() {
     var bx = carWorldX() - Math.cos(heading) * 15 * carScale;
     var by = carWorldY() - Math.sin(heading) * 15 * carScale;
     var side = heading + Math.PI / 2;
+    /* hot combos leave glowing candy trails instead of plain rubber */
+    var mNow = currentState === State.PLAYING ? comboMult(combo) : 1;
+    var ck = mNow >= 4 ? 2 : (mNow >= 2 ? 1 : 0);
     for (var s = -1; s <= 1; s += 2) {
         var m = skid[skidHead];
         skidHead = (skidHead + 1) % skid.length;
         m.life = 0;
         m.ttl = 1.1;
+        m.c = ck;
         m.x = bx + Math.cos(side) * 10 * carScale * s;
         m.y = by + Math.sin(side) * 10 * carScale * s;
         m.w = (2.6 + Math.abs(car.kick) * 3) * carScale;
@@ -1638,6 +2022,15 @@ function updateGame(dt) {
     elapsed += dt;
     var speed = currentSpeed();
     car.angle += (speed / midR) * dt;
+
+    /* escalation the player can feel: every 45s the track shifts up a gear */
+    var tier = Math.floor(elapsed / 45);
+    if (tier > speedTier && tier <= 4) {
+        speedTier = tier;
+        spawnLabel('SPEED UP!', cx, cy - size * 0.08, '#9AD1FF', 27 * carScale, 1.3);
+        trauma = Math.max(trauma, 0.2);
+        sfxSpeedUp();
+    }
 
     /* one touch drift: hold pulls to the inside lane, release floats back out */
     var target = holding ? laneIn : laneOut;
@@ -1695,7 +2088,7 @@ function updateGame(dt) {
             }
             continue;
         }
-        if (magnetT > 0 && c.kind === 'coin') {
+        if (magnetT > 0 && c.kind !== 'star') {
             var d2m = polarDist2(c.radius, c.angle, car.radius, car.angle);
             if (d2m < magnetRange * magnetRange) {
                 var pull = Math.min(1, 6 * dt);
@@ -1714,13 +2107,26 @@ function updateGame(dt) {
     for (i = 0; i < obstacles.length; i++) {
         var o = obstacles[i];
         if (!o.active) continue;
+        if (o.oscA > 0) {
+            /* wandering cone slides between lanes */
+            o.radius = clamp(o.baseR + Math.sin(time * o.oscW + o.oscP) * o.oscA, laneIn, laneOut);
+        }
         var orel = normAngle(o.angle - car.angle);
         if (orel < -0.8) { o.active = false; continue; }
+        if (!o.passed && orel < -0.22) {
+            o.passed = true;
+            nearMissCheck(o);
+        }
         if (o.kind === 'barrier') {
             if (Math.abs(orel) < o.halfAng + carHitR / Math.max(60, car.radius) &&
                 car.radius > o.r0 - carHitR * 0.6 && car.radius < o.r1 + carHitR * 0.6) {
                 crash();
                 return;
+            }
+            if (Math.abs(orel) < o.halfAng + 0.06) {
+                /* record radial clearance while squeezing past the barrier */
+                var clr = car.radius < o.r0 ? o.r0 - car.radius : (car.radius > o.r1 ? car.radius - o.r1 : 0);
+                if (clr < o.minD2) o.minD2 = clr;
             }
         } else if (o.kind === 'cone') {
             var d2c = polarDist2(o.radius, o.angle, car.radius, car.angle);
@@ -1729,6 +2135,7 @@ function updateGame(dt) {
                 crash();
                 return;
             }
+            if (d2c < o.minD2) o.minD2 = d2c;
         } else { /* puddle: comedy slide, never death */
             if (!o.hit) {
                 var d2p = polarDist2(o.radius, o.angle, car.radius, car.angle);
@@ -1754,11 +2161,16 @@ function updateGame(dt) {
 }
 
 function updateMenu(dt) {
-    /* attract mode: the car cruises the outer lane past the carnival */
-    car.angle += (120 * carScale / midR) * dt;
-    car.radius += (laneOut - car.radius) * Math.min(1, 3 * dt);
-    car.rvel = 0;
-    car.kick *= (1 - Math.min(1, 6 * dt));
+    /* attract mode: the car weaves and drifts around the carnival on its own */
+    var demoSpeed = 135 * carScale;
+    car.angle += (demoSpeed / midR) * dt;
+    var target = clamp(midLane + Math.sin(time * 0.9) * (laneOut - laneIn) * 0.55, laneIn, laneOut);
+    var acc = (target - car.radius) * 30 - car.rvel * 8;
+    car.rvel += acc * dt;
+    car.radius = clamp(car.radius + car.rvel * dt, hardIn, hardOut);
+    var kickTarget = clamp(Math.atan2(car.rvel, demoSpeed) * 2.4, -0.8, 0.8);
+    car.kick += (kickTarget - car.kick) * Math.min(1, 8 * dt);
+    if (Math.abs(car.kick) > 0.16) pushSkid();
     updateCarCosmetics(dt);
     updateParticles(dt);
     updateSkid(dt);
@@ -1798,10 +2210,11 @@ function updateParticles(dt) {
             p.vy *= (1 - Math.min(1, 2 * dt));
         } else if (p.type === 3) {
             p.vy += 260 * carScale * dt;
-        } else {
+        } else if (p.type === 5) {
             p.vy = Math.min(240, p.vy + 220 * dt);
             p.x += Math.sin(p.life * 5 + p.seed) * 26 * dt;
         }
+        /* types 6 and 7 (rings, glints) stay put */
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.rot += p.vr * dt;
@@ -1818,6 +2231,7 @@ function update(dt) {
     if (trauma > 0) trauma = Math.max(0, trauma - 2.2 * dt);
     if (flash > 0) flash = Math.max(0, flash - 2.4 * dt);
     if (cheerT > 0) cheerT = Math.max(0, cheerT - dt);
+    updateLabels(dt);
     switch (currentState) {
         case State.MENU: updateMenu(dt); break;
         case State.PLAYING: updateGame(dt); break;
@@ -1875,15 +2289,20 @@ function drawCrowd() {
     }
 }
 
+var SKID_COLORS = ['#151A3D', '#C98A1B', '#FF6FD8'];
+var SKID_ALPHA = [0.4, 0.5, 0.55];
 function drawSkid() {
-    ctx.fillStyle = '#151A3D';
-    for (var i = 0; i < skid.length; i++) {
-        var m = skid[i];
-        if (m.life >= m.ttl) continue;
-        ctx.globalAlpha = 0.4 * (1 - m.life / m.ttl);
-        ctx.beginPath();
-        ctx.arc(m.x, m.y, m.w, 0, Math.PI * 2);
-        ctx.fill();
+    /* grouped by color to keep fillStyle switches to three */
+    for (var g = 0; g < 3; g++) {
+        ctx.fillStyle = SKID_COLORS[g];
+        for (var i = 0; i < skid.length; i++) {
+            var m = skid[i];
+            if (m.life >= m.ttl || m.c !== g) continue;
+            ctx.globalAlpha = SKID_ALPHA[g] * (1 - m.life / m.ttl);
+            ctx.beginPath();
+            ctx.arc(m.x, m.y, m.w, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
     ctx.globalAlpha = 1;
 }
@@ -1959,8 +2378,12 @@ function drawCoins() {
         var bob = Math.sin(time * 3 + c.phase) * 2 * carScale;
         var x = cx + Math.cos(c.angle) * (c.radius + bob);
         var y = cy + Math.sin(c.angle) * (c.radius + bob);
+        /* pop-in: everything eases into existence, nothing appears instantly */
+        var inT = Math.min(1, (time - c.born) * 2.8);
+        var pop = inT < 1 ? easeOutBack(inT) : 1;
+        if (pop < 0.02) continue;
         if (c.kind === 'star') {
-            var pulse = 1 + 0.12 * Math.sin(time * 5 + c.phase);
+            var pulse = (1 + 0.12 * Math.sin(time * 5 + c.phase)) * pop;
             ctx.drawImage(glowPink, (x - g * 1.5) | 0, (y - g * 1.5) | 0, g * 3, g * 3);
             drawStarShape(x, y, 15 * carScale * pulse, time * 1.6 + c.phase);
             ctx.fillStyle = '#FFE14D';
@@ -1968,10 +2391,18 @@ function drawCoins() {
             ctx.lineWidth = 3 * carScale;
             ctx.strokeStyle = '#241F4B';
             ctx.stroke();
+        } else if (c.kind === 'gem') {
+            var GS = 26 * carScale * pop * (1 + 0.1 * Math.sin(time * 4.4 + c.phase));
+            ctx.drawImage(glowPink, (x - g * 1.2) | 0, (y - g * 1.2) | 0, g * 2.4, g * 2.4);
+            ctx.save();
+            ctx.translate(x | 0, y | 0);
+            ctx.rotate(Math.sin(time * 2.2 + c.phase) * 0.25);
+            ctx.drawImage(gemSpr, -GS / 2, -GS / 2, GS, GS);
+            ctx.restore();
         } else {
             var sq = 0.35 + 0.65 * Math.abs(Math.cos(time * 3.2 + c.phase));
             ctx.drawImage(glowGold, (x - g) | 0, (y - g) | 0, g * 2, g * 2);
-            ctx.drawImage(coinSpr, (x - (D * sq) / 2) | 0, (y - D / 2) | 0, D * sq, D);
+            ctx.drawImage(coinSpr, (x - (D * sq * pop) / 2) | 0, (y - (D * pop) / 2) | 0, D * sq * pop, D * pop);
         }
     }
 }
@@ -1980,13 +2411,56 @@ function drawParticlesWorld() {
     for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
         if (!p.active || p.screen) continue;
-        var a = 1 - p.life / p.ttl;
-        ctx.globalAlpha = p.type === 2 ? a * 0.7 : a;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        var rad = p.type === 2 ? p.size * (0.6 + (p.life / p.ttl) * 1.2) : p.size * a;
-        ctx.arc(p.x, p.y, Math.max(0.5, rad), 0, Math.PI * 2);
-        ctx.fill();
+        var t = p.life / p.ttl;
+        var a = 1 - t;
+        if (p.type === 6) {
+            /* expanding shockwave ring, easeOutCubic */
+            var er = p.size * (0.22 + 0.78 * (1 - Math.pow(1 - t, 3)));
+            ctx.globalAlpha = a * 0.85;
+            ctx.strokeStyle = p.color;
+            ctx.lineWidth = Math.max(1, p.size * 0.16 * a);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, er, 0, Math.PI * 2);
+            ctx.stroke();
+        } else if (p.type === 7) {
+            /* four point star glint: grows then shrinks */
+            var gs = p.size * Math.sin(t * Math.PI);
+            if (gs > 0.5) {
+                ctx.globalAlpha = 0.95 - t * 0.4;
+                ctx.fillStyle = p.color;
+                ctx.save();
+                ctx.translate(p.x | 0, p.y | 0);
+                ctx.rotate(p.rot);
+                for (var g7 = 0; g7 < 2; g7++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, -gs);
+                    ctx.lineTo(gs * 0.22, 0);
+                    ctx.lineTo(0, gs);
+                    ctx.lineTo(-gs * 0.22, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.rotate(Math.PI / 2);
+                }
+                ctx.restore();
+            }
+        } else if (p.type === 4) {
+            /* chunky candy shard: rotating square */
+            var ss = p.size * (0.5 + 0.5 * a);
+            ctx.globalAlpha = a;
+            ctx.fillStyle = p.color;
+            ctx.save();
+            ctx.translate(p.x | 0, p.y | 0);
+            ctx.rotate(p.rot);
+            ctx.fillRect(-ss / 2, -ss / 2, ss, ss);
+            ctx.restore();
+        } else {
+            ctx.globalAlpha = p.type === 2 ? a * 0.7 : a;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            var rad = p.type === 2 ? p.size * (0.6 + t * 1.2) : p.size * a;
+            ctx.arc(p.x, p.y, Math.max(0.5, rad), 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
     ctx.globalAlpha = 1;
 }
@@ -2035,6 +2509,11 @@ function drawCar() {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(rot);
+    /* squash and stretch pop when scooping a pickup */
+    if (car.pulse > 0) {
+        var pe = Math.sin(car.pulse * Math.PI);
+        ctx.scale(1 + 0.16 * pe, 1 - 0.11 * pe);
+    }
 
     /* soft shadow */
     ctx.fillStyle = 'rgba(8,6,24,0.35)';
@@ -2138,6 +2617,80 @@ function drawCar() {
     }
 }
 
+function drawAmbient() {
+    /* distant ferris wheels turning in the corners plus twinkling stars */
+    if (ferrisSpr) {
+        var fwS = ferrisSpr.width / dpr;
+        ctx.save();
+        ctx.translate((W - fwS * 0.22) | 0, (H - fwS * 0.18) | 0);
+        ctx.rotate(time * 0.12);
+        ctx.globalAlpha = 0.85;
+        ctx.drawImage(ferrisSpr, -fwS / 2, -fwS / 2, fwS, fwS);
+        ctx.restore();
+        ctx.save();
+        ctx.translate((fwS * 0.1) | 0, (fwS * 0.06) | 0);
+        ctx.rotate(-time * 0.08);
+        ctx.globalAlpha = 0.55;
+        ctx.drawImage(ferrisSpr, -fwS * 0.35, -fwS * 0.35, fwS * 0.7, fwS * 0.7);
+        ctx.restore();
+        ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = '#FFFDF7';
+    for (var i = 0; i < twinkles.length; i++) {
+        var tw = twinkles[i];
+        ctx.globalAlpha = 0.14 + 0.36 * (0.5 + 0.5 * Math.sin(time * tw.sp + tw.ph));
+        ctx.fillRect(tw.x | 0, tw.y | 0, tw.w, tw.w);
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawSpeedLines() {
+    if (currentState !== State.PLAYING) return;
+    var f = (currentSpeed() / carScale - 205) / (MAX_SPEED - 205);
+    if (f <= 0) return;
+    f = Math.min(1, f);
+    /* streaks trail behind the car (screen angle 0, moving clockwise) */
+    ctx.strokeStyle = '#FFFDF7';
+    ctx.lineCap = 'round';
+    for (var i = 0; i < 7; i++) {
+        var r = car.radius + (i - 3) * 15 * carScale + Math.sin(time * 13 + i * 2.1) * 5 * carScale;
+        if (r < trackIn + 10 * carScale || r > trackOut - 10 * carScale) continue;
+        var trail = -0.18 - ((i * 37) % 10) * 0.035 - f * 0.1;
+        var len = 0.1 + f * 0.17;
+        ctx.globalAlpha = f * (0.09 + 0.1 * ((i * 53) % 3));
+        ctx.lineWidth = (1.4 + (i % 3)) * carScale;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, trail - len, trail);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawLabels() {
+    var any = false;
+    for (var i = 0; i < labels.length; i++) if (labels[i].active) { any = true; break; }
+    if (!any) return;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (i = 0; i < labels.length; i++) {
+        var l = labels[i];
+        if (!l.active) continue;
+        var t = l.life / l.ttl;
+        var sc = t < 0.3 ? easeOutBack(t / 0.3) : 1;
+        var fs2 = Math.round(l.size * sc);
+        if (fs2 < 2) continue;
+        var y = (l.y - t * 36 * carScale) | 0;
+        ctx.globalAlpha = t > 0.6 ? 1 - (t - 0.6) / 0.4 : 1;
+        ctx.font = '800 ' + fs2 + 'px Nunito, sans-serif';
+        ctx.lineWidth = Math.max(3, fs2 * 0.22);
+        ctx.strokeStyle = 'rgba(20,16,50,0.85)';
+        ctx.strokeText(l.txt, l.x | 0, y);
+        ctx.fillStyle = l.color;
+        ctx.fillText(l.txt, l.x | 0, y);
+    }
+    ctx.globalAlpha = 1;
+}
+
 function drawHelp() {
     if (currentState !== State.PLAYING || elapsed > 6 || data.totalPlays > 2) return;
     ctx.textAlign = 'center';
@@ -2158,6 +2711,7 @@ function render() {
 
     /* night carnival grounds */
     ctx.drawImage(bgSpr, 0, 0, W, H);
+    drawAmbient();
 
     /* world space: everything rotates around the track center under the car */
     ctx.save();
@@ -2183,8 +2737,10 @@ function render() {
 
     ctx.restore();
 
+    drawSpeedLines();
     drawCar();
     drawParticlesScreen();
+    drawLabels();
     drawHelp();
 
     if (flash > 0) {
@@ -2302,6 +2858,13 @@ var last = performance.now();
 function loop(now) {
     var dt = Math.min(0.05, (now - last) / 1000);
     last = now;
+    if (hitStop > 0) {
+        /* frozen beat on big moments; the shake still renders */
+        hitStop -= dt;
+        render();
+        requestAnimationFrame(loop);
+        return;
+    }
     update(dt);
     render();
     requestAnimationFrame(loop);
@@ -2324,6 +2887,9 @@ window.__driftTest = {
     mult: function () { return comboMult(combo); },
     magnetT: function () { return magnetT; },
     slideT: function () { return slideT; },
+    nearMisses: function () { return runNearMisses; },
+    gems: function () { return runGems; },
+    diff: function () { return diff01(); },
     coins: function () { return coins.filter(function (c) { return c.active; }); },
     obstacles: function () { return obstacles.filter(function (o) { return o.active; }); },
     geom: function () {

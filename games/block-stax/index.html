@@ -8,7 +8,7 @@
 <link rel="canonical" href="https://woopkid.com/games/block-stax/">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#FFF6E9">
+<meta name="theme-color" content="#1a1a2e">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E%F0%9F%9F%AA%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -73,7 +73,7 @@
 html, body {
     height: 100%;
     overflow: hidden;
-    background: #FFF6E9;
+    background: #12122B;
     touch-action: none;
     -webkit-user-select: none;
     user-select: none;
@@ -87,22 +87,22 @@ html, body {
     width: 48px;
     height: 48px;
     border-radius: 14px;
-    background: #FFFDF7;
-    border: 3px solid #2B2350;
-    box-shadow: 3px 3px 0 rgba(43, 35, 80, 0.2);
+    background: #23234E;
+    border: 3px solid #454590;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: inherit;
     font-size: 22px;
     font-weight: 800;
-    color: #2B2350;
+    color: #EAEAFF;
     z-index: 40;
     cursor: pointer;
     text-decoration: none;
     line-height: 1;
 }
-.btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(43, 35, 80, 0.2); }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4); }
 #backBtn { top: 14px; left: 14px; font-size: 26px; }
 #muteBtn { top: 14px; right: 14px; }
 #pauseBtn { top: 14px; right: 72px; display: none; font-size: 15px; letter-spacing: 2px; }
@@ -118,12 +118,13 @@ html, body {
 
 #score {
     position: fixed;
-    top: 16px;
+    top: 12px;
     left: 50%;
     transform: translateX(-50%);
     font-weight: 800;
-    font-size: min(12vw, 46px);
-    color: #2B2350;
+    font-size: min(11vw, 44px);
+    color: #FFFFFF;
+    text-shadow: 0 3px 0 rgba(0, 0, 0, 0.45), 0 0 22px rgba(123, 77, 255, 0.55);
     z-index: 20;
     display: none;
     pointer-events: none;
@@ -137,7 +138,7 @@ html, body {
 
 #title {
     position: fixed;
-    top: 12%;
+    top: 10%;
     width: 100%;
     text-align: center;
     z-index: 20;
@@ -145,10 +146,10 @@ html, body {
 }
 #title h1 {
     font-weight: 800;
-    font-size: min(15vw, 78px);
-    color: #2B2350;
+    font-size: min(15vw, 80px);
+    color: #FFFFFF;
     letter-spacing: 2px;
-    text-shadow: 4px 4px 0 rgba(43, 35, 80, 0.14);
+    text-shadow: 0 5px 0 #4B2FB8, 0 10px 24px rgba(0, 0, 0, 0.55), 0 0 44px rgba(123, 77, 255, 0.5);
     animation: titleBob 2.6s ease-in-out infinite;
 }
 @keyframes titleBob {
@@ -156,33 +157,34 @@ html, body {
     50% { transform: translateY(-8px) rotate(1deg); }
 }
 #title p {
-    margin-top: 6px;
+    margin-top: 8px;
     font-weight: 700;
     font-size: min(4.6vw, 20px);
-    color: #2B2350;
-    opacity: 0.68;
+    color: #B9B9EC;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
 }
 #menuBest {
-    margin-top: 12px;
+    margin-top: 14px;
     display: inline-block;
-    background: #FFFDF7;
-    border: 3px solid #2B2350;
-    color: #2B2350;
+    background: #23234E;
+    border: 3px solid #454590;
+    color: #FFD23F;
     font-weight: 800;
     font-size: 16px;
     padding: 6px 18px;
     border-radius: 999px;
-    box-shadow: 3px 3px 0 rgba(43, 35, 80, 0.16);
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4);
 }
 
 #tapHint {
     position: fixed;
-    top: 66%;
+    top: 68%;
     width: 100%;
     text-align: center;
     font-weight: 800;
     font-size: min(8vw, 32px);
-    color: #2B2350;
+    color: #FFD23F;
+    text-shadow: 0 3px 0 rgba(0, 0, 0, 0.5), 0 0 26px rgba(255, 210, 63, 0.45);
     z-index: 20;
     pointer-events: none;
     display: none;
@@ -198,11 +200,11 @@ html, body {
     left: 50%;
     bottom: 12%;
     transform: translateX(-50%);
-    background: #FFFDF7;
-    border: 3px solid #2B2350;
+    background: rgba(30, 30, 68, 0.94);
+    border: 3px solid #454590;
     border-radius: 18px;
-    box-shadow: 5px 5px 0 rgba(43, 35, 80, 0.16);
-    color: #2B2350;
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.4);
+    color: #EAEAFF;
     font-weight: 800;
     font-size: min(3.8vw, 16px);
     line-height: 1.7;
@@ -221,17 +223,17 @@ html, body {
 #pauseOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(43, 35, 80, 0.45);
+    background: rgba(8, 8, 26, 0.66);
     z-index: 50;
     display: none;
     align-items: center;
     justify-content: center;
     flex-direction: column;
     gap: 10px;
-    color: #FFFDF7;
+    color: #FFFFFF;
     text-align: center;
 }
-#pauseOverlay h2 { font-weight: 800; font-size: 44px; text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25); }
+#pauseOverlay h2 { font-weight: 800; font-size: 44px; text-shadow: 0 4px 0 rgba(0, 0, 0, 0.4); }
 #pauseOverlay p { font-weight: 700; font-size: 18px; opacity: 0.9; }
 
 #overPanel {
@@ -239,11 +241,11 @@ html, body {
     left: 50%;
     top: 50%;
     width: min(88vw, 360px);
-    background: #FFFDF7;
-    border: 3px solid #2B2350;
+    background: #20204A;
+    border: 3px solid #454590;
     border-radius: 24px;
     padding: 24px 22px 22px;
-    box-shadow: 8px 8px 0 rgba(43, 35, 80, 0.16);
+    box-shadow: 0 10px 0 rgba(0, 0, 0, 0.45), 0 0 60px rgba(123, 77, 255, 0.25);
     text-align: center;
     z-index: 60;
     opacity: 0;
@@ -267,7 +269,7 @@ html, body {
     padding: 10px 14px;
     border-radius: 16px;
     margin-bottom: 12px;
-    box-shadow: 0 4px 0 rgba(216, 106, 34, 0.5);
+    box-shadow: 0 4px 0 rgba(120, 50, 0, 0.5);
     animation: bannerPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes bannerPop {
@@ -277,32 +279,34 @@ html, body {
 }
 #newBest {
     display: none;
-    color: #FF8A3D;
+    color: #FFD23F;
     font-weight: 800;
     font-size: 26px;
     letter-spacing: 1px;
     margin-bottom: 2px;
+    text-shadow: 0 0 22px rgba(255, 210, 63, 0.6);
     animation: bestBounce 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) infinite alternate;
 }
 @keyframes bestBounce {
     from { transform: scale(1) rotate(-1.5deg); }
     to { transform: scale(1.1) rotate(1.5deg); }
 }
-#overPanel h2 { color: #2B2350; font-weight: 800; font-size: 26px; margin-bottom: 4px; }
+#overPanel h2 { color: #FFFFFF; font-weight: 800; font-size: 26px; margin-bottom: 4px; }
 #panelScore {
     font-weight: 800;
     font-size: 58px;
-    color: #2B2350;
+    color: #FFFFFF;
     line-height: 1.05;
+    text-shadow: 0 0 26px rgba(123, 77, 255, 0.55);
 }
 #panelBestRow {
-    color: #6B6394;
+    color: #9F9FD6;
     font-weight: 700;
     font-size: 17px;
     margin-top: 2px;
 }
 #panelStats {
-    color: #6B6394;
+    color: #9F9FD6;
     font-weight: 700;
     font-size: 15px;
     margin-top: 6px;
@@ -318,7 +322,7 @@ html, body {
     margin-top: 16px;
     width: 100%;
     min-height: 64px;
-    border: 3px solid #2B2350;
+    border: 3px solid #10102A;
     border-radius: 18px;
     background: #FFD23F;
     color: #2B2350;
@@ -326,10 +330,10 @@ html, body {
     font-weight: 800;
     font-size: 25px;
     letter-spacing: 1px;
-    box-shadow: 5px 5px 0 rgba(43, 35, 80, 0.25);
+    box-shadow: 0 6px 0 #B8860B;
     cursor: pointer;
 }
-#playBtn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 rgba(43, 35, 80, 0.25); }
+#playBtn:active { transform: translateY(4px); box-shadow: 0 2px 0 #B8860B; }
 </style>
 </head>
 <body>
@@ -462,7 +466,8 @@ const WoopProfile = {
 function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
 function rand(a, b) { return a + Math.random() * (b - a); }
 function rr(c, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
+    if (w <= 0 || h <= 0) { c.beginPath(); return; }
+    r = Math.max(0, Math.min(r, w / 2, h / 2));
     c.beginPath();
     c.moveTo(x + r, y);
     c.arcTo(x + w, y, x + w, y + h, r);
@@ -513,8 +518,12 @@ function tone(freq, dur, gain, type, delay) {
 function sfxMove() { tone(250, 0.04, 0.035, 'square'); }
 function sfxRotate() { tone(440, 0.05, 0.05, 'triangle'); }
 function sfxLock() { tone(110, 0.1, 0.13, 'sine'); tone(220, 0.05, 0.045, 'square'); }
-function sfxHardDrop() { tone(90, 0.11, 0.16, 'sine'); tone(180, 0.06, 0.07, 'square'); }
+function sfxHardDrop() { tone(80, 0.13, 0.18, 'sine'); tone(160, 0.07, 0.08, 'square'); tone(55, 0.16, 0.1, 'sine', 0.02); }
 function sfxHold() { tone(520, 0.07, 0.06, 'triangle'); tone(720, 0.07, 0.05, 'triangle', 0.06); }
+function sfxTwirl() {
+    var run = [660, 880, 1100, 880, 1320];
+    for (var i = 0; i < run.length; i++) tone(run[i], 0.09, 0.07, 'triangle', i * 0.045);
+}
 
 /* Rising arpeggio, one note as each column of the row pops */
 var ARP_NOTES = [523, 587, 659, 784, 880, 1047];
@@ -529,9 +538,10 @@ function sfxQuad() {
     var chord = [262, 330, 392, 523, 659];
     for (var i = 0; i < chord.length; i++) tone(chord[i], 0.34, 0.1, 'triangle', i * 0.05);
     tone(1047, 0.4, 0.07, 'sine', 0.28);
+    tone(1319, 0.36, 0.05, 'sine', 0.38);
 }
 function sfxLevelUp() {
-    var run = [420, 530, 650, 840];
+    var run = [420, 530, 650, 840, 1050];
     for (var i = 0; i < run.length; i++) tone(run[i], 0.16, 0.09, 'triangle', i * 0.07);
 }
 function sfxFanfare() {
@@ -574,25 +584,31 @@ var ROWS = 40;       /* total grid rows, row 0 = bottom */
 var VISIBLE = 20;    /* visible rows */
 var LOCK_DELAY = 0.5;
 var MAX_LOCK_RESETS = 15;
-var DAS_DELAY = 0.17;
-var ARR_RATE = 0.05;
-var SOFT_RATE = 0.045;
+var DAS_DELAY = 0.15;
+var ARR_RATE = 0.04;
+var SOFT_RATE = 0.04;
 var DANGER_ROW = 15; /* stack at or above this row = danger */
+var LINES_PER_LEVEL = 8;
+var MAX_LEVEL = 18;
 
 var TYPES = ['I', 'J', 'L', 'O', 'S', 'Z', 'T'];
-/* Hub accent palette: fill, dark edge, light bevel */
+/* Saturated palette on deep navy: fill, dark edge, light bevel */
 var PCOL = {
-    I: { f: '#4FC3F7', d: '#1E88C9', l: '#B5E9FF' },
-    J: { f: '#4C75FF', d: '#2A4FD0', l: '#AEC1FF' },
-    L: { f: '#FF8A3D', d: '#D96A22', l: '#FFC9A0' },
-    O: { f: '#FFD23F', d: '#D8A80F', l: '#FFEA9E' },
-    S: { f: '#2EC4B6', d: '#1B9C90', l: '#9AEDE4' },
-    Z: { f: '#FF5C5C', d: '#D63A3A', l: '#FFB0B0' },
-    T: { f: '#7B4DFF', d: '#5A2ED6', l: '#C6B0FF' }
+    I: { f: '#3FD4FF', d: '#0E8FC4', l: '#C9F3FF' },
+    J: { f: '#5A7BFF', d: '#2A46C8', l: '#C0CDFF' },
+    L: { f: '#FF9440', d: '#C85E14', l: '#FFD4AB' },
+    O: { f: '#FFD53F', d: '#C79A08', l: '#FFF0A8' },
+    S: { f: '#38DFC8', d: '#0F9C8A', l: '#B4F5EC' },
+    Z: { f: '#FF6270', d: '#C42B3E', l: '#FFBCC2' },
+    T: { f: '#A566FF', d: '#6B2FD6', l: '#DCC4FF' }
 };
-var INK = '#2B2350';
-var CREAM = '#FFF6E9';
-var PAPER = '#FFFDF7';
+var INK = '#10102A';
+var NAVY = '#12122B';
+var CARD = '#20204A';
+var CARD_EDGE = '#454590';
+var FIELD = '#161638';
+var TXT_DIM = '#9F9FD6';
+var LEVEL_TINTS = ['#7B4DFF', '#3FD4FF', '#38DFC8', '#FFD53F', '#FF9440', '#FF5FA2'];
 
 /* Piece cell tables: 4 rotation states, offsets are [rowUp, col] from piece origin */
 var PIECES = {
@@ -604,6 +620,8 @@ var PIECES = {
     Z: [[[1,0],[1,1],[0,1],[0,2]],[[2,2],[1,1],[1,2],[0,1]],[[1,0],[1,1],[0,1],[0,2]],[[2,2],[1,1],[1,2],[0,1]]],
     T: [[[1,1],[0,0],[0,1],[0,2]],[[2,1],[1,1],[1,2],[0,1]],[[1,0],[1,1],[1,2],[0,1]],[[2,1],[1,0],[1,1],[0,1]]]
 };
+/* Center cell of the T for each rotation (used for TWIRL detection), [rowUp, col] */
+var T_CENTER = [[0, 1], [1, 1], [1, 1], [1, 1]];
 /* SRS style wall kicks, [dx, dy] with +y up */
 var JLSTZ_KICKS = {
     '0>1': [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]], '1>0': [[0,0],[1,0],[1,-1],[0,2],[1,2]],
@@ -655,7 +673,9 @@ var board = { x: 0, y: 0, w: 240, h: 480 };
 var blockSpr = {};
 var ghostSpr = {};
 var boardSpr = null;
-var boardSprPad = 22; /* extra margin baked around the card for outline + shadow */
+var boardSprPad = 22; /* extra margin baked around the card for outline + glow */
+var bgSpr = null;
+var stars = [];
 
 function makeCanvas(w, h) {
     var c = document.createElement('canvas');
@@ -673,14 +693,14 @@ function buildBlockSprite(t, ghost) {
     var rad = cell * 0.24;
     var lw = Math.max(2, cell * 0.09);
     if (ghost) {
-        c.globalAlpha = 0.18;
+        c.globalAlpha = 0.13;
         rr(c, inset, inset, cell - inset * 2, cell - inset * 2, rad);
         c.fillStyle = col.f;
         c.fill();
-        c.globalAlpha = 0.5;
+        c.globalAlpha = 0.75;
         rr(c, inset + lw / 2, inset + lw / 2, cell - inset * 2 - lw, cell - inset * 2 - lw, rad * 0.85);
         c.lineWidth = lw * 0.7;
-        c.strokeStyle = col.d;
+        c.strokeStyle = col.f;
         c.stroke();
         c.globalAlpha = 1;
         return s;
@@ -690,15 +710,22 @@ function buildBlockSprite(t, ghost) {
     c.fillStyle = col.f;
     c.fill();
     /* bottom shade */
-    rr(c, inset + cell * 0.08, cell * 0.58, cell - inset * 2 - cell * 0.16, cell * 0.3, rad * 0.6);
+    rr(c, inset + cell * 0.07, cell * 0.52, cell - inset * 2 - cell * 0.14, cell * 0.38, rad * 0.6);
     c.fillStyle = col.d;
-    c.globalAlpha = 0.3;
+    c.globalAlpha = 0.5;
     c.fill();
     c.globalAlpha = 1;
-    /* soft top bevel */
-    rr(c, inset + cell * 0.1, inset + cell * 0.07, cell - inset * 2 - cell * 0.2, cell * 0.26, rad * 0.7);
+    /* glossy top bevel */
+    rr(c, inset + cell * 0.09, inset + cell * 0.06, cell - inset * 2 - cell * 0.18, cell * 0.3, rad * 0.7);
     c.fillStyle = col.l;
-    c.globalAlpha = 0.75;
+    c.globalAlpha = 0.85;
+    c.fill();
+    c.globalAlpha = 1;
+    /* shine dot */
+    c.fillStyle = '#FFFFFF';
+    c.globalAlpha = 0.9;
+    c.beginPath();
+    c.arc(inset + cell * 0.24, inset + cell * 0.22, cell * 0.07, 0, Math.PI * 2);
     c.fill();
     c.globalAlpha = 1;
     /* ink outline */
@@ -711,10 +738,9 @@ function buildBlockSprite(t, ghost) {
 
 function buildBoardSprite() {
     var pad = 12; /* card border around the field */
-    var so = Math.max(6, cell * 0.32); /* hard offset shadow */
-    boardSprPad = pad + 4;
-    var w = board.w + boardSprPad * 2 + so;
-    var h = board.h + boardSprPad * 2 + so;
+    boardSprPad = pad + 10;
+    var w = board.w + boardSprPad * 2;
+    var h = board.h + boardSprPad * 2;
     boardSpr = makeCanvas(w * dpr, h * dpr);
     var c = boardSpr.getContext('2d');
     c.scale(dpr, dpr);
@@ -722,30 +748,44 @@ function buildBoardSprite() {
     var cy = boardSprPad - pad;
     var cw = board.w + pad * 2;
     var chh = board.h + pad * 2;
-    /* hard offset shadow */
-    rr(c, cx + so, cy + so, cw, chh, 20);
-    c.fillStyle = 'rgba(43,35,80,0.18)';
-    c.fill();
+    var i;
+    /* baked outer glow rings (cheap: strokes, not shadowBlur) */
+    for (i = 5; i >= 1; i--) {
+        rr(c, cx - i * 1.6, cy - i * 1.6, cw + i * 3.2, chh + i * 3.2, 22 + i * 1.6);
+        c.lineWidth = 2.2;
+        c.strokeStyle = 'rgba(123,77,255,' + (0.05 + (5 - i) * 0.018) + ')';
+        c.stroke();
+    }
     /* card */
     rr(c, cx, cy, cw, chh, 20);
-    c.fillStyle = PAPER;
+    c.fillStyle = CARD;
     c.fill();
     rr(c, cx + 2, cy + 2, cw - 4, chh - 4, 18);
     c.lineWidth = 4;
-    c.strokeStyle = INK;
+    c.strokeStyle = CARD_EDGE;
     c.stroke();
-    /* field inset */
+    rr(c, cx + 5.5, cy + 5.5, cw - 11, chh - 11, 15);
+    c.lineWidth = 1.5;
+    c.strokeStyle = 'rgba(255,255,255,0.10)';
+    c.stroke();
+    /* field inset with subtle vertical falloff */
     rr(c, boardSprPad - 3, boardSprPad - 3, board.w + 6, board.h + 6, 10);
-    c.fillStyle = '#F6EEDD';
+    c.fillStyle = FIELD;
+    c.fill();
+    var vg = c.createLinearGradient(0, boardSprPad, 0, boardSprPad + board.h);
+    vg.addColorStop(0, 'rgba(123,77,255,0.10)');
+    vg.addColorStop(0.5, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.28)');
+    rr(c, boardSprPad - 3, boardSprPad - 3, board.w + 6, board.h + 6, 10);
+    c.fillStyle = vg;
     c.fill();
     rr(c, boardSprPad - 3, boardSprPad - 3, board.w + 6, board.h + 6, 10);
     c.lineWidth = 2;
-    c.strokeStyle = 'rgba(43,35,80,0.25)';
+    c.strokeStyle = 'rgba(0,0,0,0.4)';
     c.stroke();
-    /* faint grid */
-    c.strokeStyle = 'rgba(43,35,80,0.07)';
+    /* glowing grid */
+    c.strokeStyle = 'rgba(130,140,255,0.10)';
     c.lineWidth = 1;
-    var i;
     for (i = 1; i < COLS; i++) {
         c.beginPath();
         c.moveTo(boardSprPad + i * cell, boardSprPad);
@@ -757,6 +797,64 @@ function buildBoardSprite() {
         c.moveTo(boardSprPad, boardSprPad + i * cell);
         c.lineTo(boardSprPad + board.w, boardSprPad + i * cell);
         c.stroke();
+    }
+    /* faint grid node dots */
+    c.fillStyle = 'rgba(150,160,255,0.13)';
+    for (var gx = 1; gx < COLS; gx++) {
+        for (var gy = 1; gy < VISIBLE; gy++) {
+            c.fillRect(boardSprPad + gx * cell - 1, boardSprPad + gy * cell - 1, 2, 2);
+        }
+    }
+}
+
+function buildBackground() {
+    bgSpr = makeCanvas(W * dpr, H * dpr);
+    var c = bgSpr.getContext('2d');
+    c.scale(dpr, dpr);
+    /* deep navy vertical wash */
+    var g = c.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#1B1B40');
+    g.addColorStop(0.55, '#14142F');
+    g.addColorStop(1, '#0C0C22');
+    c.fillStyle = g;
+    c.fillRect(0, 0, W, H);
+    /* soft nebula blobs (baked, never per-frame) */
+    var blobs = [
+        { x: W * 0.18, y: H * 0.2, r: Math.max(W, H) * 0.4, col: '123,77,255', a: 0.10 },
+        { x: W * 0.85, y: H * 0.35, r: Math.max(W, H) * 0.35, col: '63,212,255', a: 0.07 },
+        { x: W * 0.5, y: H * 0.92, r: Math.max(W, H) * 0.45, col: '255,95,162', a: 0.06 },
+        { x: W * 0.9, y: H * 0.85, r: Math.max(W, H) * 0.3, col: '56,223,200', a: 0.05 }
+    ];
+    for (var i = 0; i < blobs.length; i++) {
+        var b = blobs[i];
+        var rg = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+        rg.addColorStop(0, 'rgba(' + b.col + ',' + b.a + ')');
+        rg.addColorStop(1, 'rgba(' + b.col + ',0)');
+        c.fillStyle = rg;
+        c.fillRect(0, 0, W, H);
+    }
+    /* static distant dust dots */
+    c.fillStyle = 'rgba(200,205,255,0.14)';
+    for (i = 0; i < 60; i++) {
+        c.fillRect((Math.random() * W) | 0, (Math.random() * H) | 0, 1, 1);
+    }
+    /* vignette */
+    var vg = c.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.34)');
+    c.fillStyle = vg;
+    c.fillRect(0, 0, W, H);
+    /* twinkling star field (drawn per frame, positions rebuilt on resize) */
+    stars = [];
+    var n = Math.min(70, Math.floor(W * H / 12000));
+    for (i = 0; i < n; i++) {
+        stars.push({
+            x: (Math.random() * W) | 0,
+            y: (Math.random() * H) | 0,
+            s: Math.random() < 0.8 ? 2 : 3,
+            ph: rand(0, Math.PI * 2),
+            sp: rand(0.7, 2.1)
+        });
     }
 }
 
@@ -782,6 +880,7 @@ function resize() {
         ghostSpr[TYPES[i]] = buildBlockSprite(TYPES[i], true);
     }
     buildBoardSprite();
+    buildBackground();
 }
 window.addEventListener('resize', resize);
 
@@ -797,22 +896,20 @@ var score = 0;
 var level = 1;
 var lines = 0;
 var quads = 0;
+var twirls = 0;
 var maxCombo = 0;
 var combo = -1;
 var backToBack = false;
 var dropAcc = 0;
 var lockTimer = 0;
 var lockResets = 0;
+var lastMoveWasRotate = false;
 var clearRows = [];
 var clearT = 0;
 var clearTotal = 0;
 var clearPopped = [];
+var clearN = 0;
 var clearIsQuad = false;
-var banner = '';
-var bannerT = 0;
-var bannerMax = 1;
-var comboText = '';
-var comboT = 0;
 var trauma = 0;
 var lean = 0;
 var leanTarget = 0;
@@ -824,63 +921,135 @@ var earnedTiers = [];
 var lastScoreShown = -1;
 var touchSoftT = 0;
 var hardFlashT = 0;
+var levelFlashT = 0;
 var lockFx = { t: 99, col: 0, row: 0 };
 var blinkIn = rand(1.5, 4);
 var blinkT = 0;
 var hintT = 0;
+/* hard drop trail + landing squash */
+var trailFx = { t: 99, type: 'I', segs: [] };
+var squashFx = { t: 99, cells: [] };
 
 var keys = { left: false, right: false, soft: false };
 var das = { dir: 0, delay: 0, arr: 0 };
 var softTimer = 0;
 
-var CLEAR_STAGGER = 0.055; /* seconds between column pops, left to right */
+var CLEAR_STAGGER = 0.05; /* seconds between column pops, left to right */
 var POP_DUR = 0.18;
 
-/* Confetti pool */
+/* ================= Pooled effects ================= */
+/* One pooled particle system, kinds: conf(etti), shard, dust, glint, spark */
 var parts = [];
-for (var qi = 0; qi < 150; qi++) {
-    parts.push({ active: false, x: 0, y: 0, vx: 0, vy: 0, rot: 0, vr: 0, life: 0, ttl: 1, size: 5, color: '#fff', seed: 0 });
+var PART_CAP = 120;
+for (var qi = 0; qi < PART_CAP; qi++) {
+    parts.push({ active: false, kind: 'conf', x: 0, y: 0, vx: 0, vy: 0, rot: 0, vr: 0, life: 0, ttl: 1, size: 5, color: '#fff', color2: '#fff', seed: 0, grav: 380 });
 }
-function spawnPart(x, y, vx, vy, ttl, size, color) {
-    for (var i = 0; i < parts.length; i++) {
-        var p = parts[i];
-        if (!p.active) {
-            p.active = true;
-            p.x = x; p.y = y; p.vx = vx; p.vy = vy;
-            p.rot = rand(0, Math.PI * 2);
-            p.vr = rand(-8, 8);
-            p.life = 0; p.ttl = ttl; p.size = size; p.color = color;
-            p.seed = rand(0, 10);
-            return;
-        }
+var partCursor = 0;
+function spawnPart(kind, x, y, vx, vy, ttl, size, color, color2, grav) {
+    /* ring-scan: reuse oldest slot if pool is full so big moments never stall */
+    var idx = -1;
+    for (var i = 0; i < PART_CAP; i++) {
+        var j = (partCursor + i) % PART_CAP;
+        if (!parts[j].active) { idx = j; break; }
     }
+    if (idx === -1) { idx = partCursor % PART_CAP; }
+    partCursor = idx + 1;
+    var p = parts[idx];
+    p.active = true;
+    p.kind = kind;
+    p.x = x; p.y = y; p.vx = vx; p.vy = vy;
+    p.rot = rand(0, Math.PI * 2);
+    p.vr = rand(-9, 9);
+    p.life = 0; p.ttl = ttl; p.size = size;
+    p.color = color;
+    p.color2 = color2 || color;
+    p.grav = grav == null ? 380 : grav;
+    p.seed = rand(0, 10);
 }
-var CONFETTI_COLORS = ['#FF8A3D', '#2EC4B6', '#4FC3F7', '#FFD23F', '#FF5FA2', '#7B4DFF'];
-function burstCellConfetti(px, py, color) {
-    for (var i = 0; i < 5; i++) {
-        var a = rand(-Math.PI, 0);
-        var sp = rand(60, 220);
-        spawnPart(px, py, Math.cos(a) * sp, Math.sin(a) * sp - 40, rand(0.5, 0.9), rand(3, 6),
-            i < 3 ? color : CONFETTI_COLORS[(i * 7 + (px | 0)) % CONFETTI_COLORS.length]);
-    }
-}
+var CONFETTI_COLORS = ['#FF9440', '#38DFC8', '#3FD4FF', '#FFD53F', '#FF5FA2', '#A566FF'];
 function bigConfetti() {
-    for (var i = 0; i < 80; i++) {
-        spawnPart(rand(W * 0.1, W * 0.9), rand(-60, -10), rand(-80, 80), rand(60, 220), rand(1.4, 2.4), rand(5, 10), CONFETTI_COLORS[i % CONFETTI_COLORS.length]);
+    for (var i = 0; i < 60; i++) {
+        spawnPart('conf', rand(W * 0.1, W * 0.9), rand(-60, -10), rand(-80, 80), rand(60, 220), rand(1.3, 2.2), rand(5, 10), CONFETTI_COLORS[i % CONFETTI_COLORS.length]);
+    }
+}
+function cellClearBurst(px, py, t, big) {
+    var col = PCOL[t];
+    /* chunky shards with gravity */
+    var n = big ? 3 : 2;
+    for (var i = 0; i < n; i++) {
+        var a = rand(-Math.PI * 0.95, -Math.PI * 0.05);
+        var sp = rand(90, big ? 320 : 240);
+        spawnPart('shard', px, py, Math.cos(a) * sp, Math.sin(a) * sp - 60, rand(0.45, 0.8), rand(cell * 0.22, cell * 0.4), col.f, col.d, 620);
+    }
+    /* star glint sometimes */
+    if (Math.random() < (big ? 0.55 : 0.3)) {
+        spawnPart('glint', px + rand(-4, 4), py + rand(-4, 4), rand(-16, 16), rand(-30, -6), rand(0.35, 0.6), rand(cell * 0.28, cell * 0.5), big ? '#FFE894' : '#FFFFFF', null, 0);
+    }
+}
+function dustBurst(px, py) {
+    for (var i = 0; i < 2; i++) {
+        spawnPart('dust', px + rand(-cell * 0.3, cell * 0.3), py, rand(-70, 70), rand(-46, -8), rand(0.3, 0.5), rand(2.5, 4.5), 'rgba(190,196,255,', null, -40);
     }
 }
 function updateParticles(dt) {
-    for (var i = 0; i < parts.length; i++) {
+    for (var i = 0; i < PART_CAP; i++) {
         var p = parts[i];
         if (!p.active) continue;
         p.life += dt;
         if (p.life >= p.ttl) { p.active = false; continue; }
-        p.vy = Math.min(320, p.vy + 380 * dt);
-        p.x += p.vx * dt + Math.sin(p.life * 5 + p.seed) * 24 * dt;
+        p.vy = Math.min(360, p.vy + p.grav * dt);
+        p.x += p.vx * dt + (p.kind === 'conf' ? Math.sin(p.life * 5 + p.seed) * 24 * dt : 0);
         p.y += p.vy * dt;
         p.rot += p.vr * dt;
     }
+    for (i = 0; i < RING_CAP; i++) {
+        var r = rings[i];
+        if (!r.active) continue;
+        r.t += dt;
+        if (r.t >= r.ttl) r.active = false;
+    }
+    for (i = 0; i < LABEL_CAP; i++) {
+        var l = labels[i];
+        if (!l.active) continue;
+        l.t += dt;
+        if (l.t >= l.ttl) l.active = false;
+    }
 }
+
+/* Shockwave rings pool */
+var RING_CAP = 8;
+var rings = [];
+for (qi = 0; qi < RING_CAP; qi++) rings.push({ active: false, x: 0, y: 0, r0: 0, r1: 60, t: 0, ttl: 0.4, color: '#fff', lw: 4 });
+function spawnRing(x, y, r0, r1, ttl, color, lw) {
+    for (var i = 0; i < RING_CAP; i++) {
+        if (!rings[i].active) {
+            var r = rings[i];
+            r.active = true; r.x = x; r.y = y; r.r0 = r0; r.r1 = r1; r.t = 0; r.ttl = ttl; r.color = color; r.lw = lw;
+            return;
+        }
+    }
+}
+
+/* Floating celebration labels pool */
+var LABEL_CAP = 5;
+var labels = [];
+for (qi = 0; qi < LABEL_CAP; qi++) labels.push({ active: false, text: '', sub: '', x: 0, y: 0, t: 0, ttl: 1, size: 30, color: '#fff', wobble: 0 });
+function spawnLabel(text, sub, x, y, ttl, size, color, wobble) {
+    var slot = null;
+    for (var i = 0; i < LABEL_CAP; i++) {
+        if (!labels[i].active) { slot = labels[i]; break; }
+    }
+    if (!slot) { slot = labels[0]; }
+    slot.active = true;
+    slot.text = text; slot.sub = sub || '';
+    slot.x = x; slot.y = y;
+    slot.t = 0; slot.ttl = ttl;
+    slot.size = size; slot.color = color;
+    slot.wobble = wobble == null ? 0.05 : wobble;
+}
+
+/* Row flash overlays for line clears (local, not full-screen) */
+var rowFlash = []; /* {y, t} refreshed per clear */
 
 /* Decorative resting blocks on the menu screen */
 var MENU_DECOR = [
@@ -888,6 +1057,13 @@ var MENU_DECOR = [
     { x: 6, y: 0, t: 'J' }, { x: 7, y: 0, t: 'J' }, { x: 8, y: 0, t: 'I' }, { x: 9, y: 0, t: 'I' },
     { x: 1, y: 1, t: 'T' }, { x: 2, y: 1, t: 'T' }, { x: 7, y: 1, t: 'O' }, { x: 8, y: 1, t: 'O' }
 ];
+/* Slowly drifting pieces behind the menu */
+var floaters = [];
+(function () {
+    for (var i = 0; i < 7; i++) {
+        floaters.push({ t: TYPES[i % 7], x: Math.random(), y: Math.random(), vy: rand(0.02, 0.05), rot: rand(0, Math.PI * 2), vr: rand(-0.5, 0.5), s: rand(0.5, 0.95) });
+    }
+})();
 
 /* ================= Bag / queue / spawn ================= */
 function shuffle(a) {
@@ -953,6 +1129,7 @@ function spawnPiece(type) {
     lockTimer = 0;
     lockResets = 0;
     dropAcc = 0;
+    lastMoveWasRotate = false;
     return true;
 }
 
@@ -966,6 +1143,7 @@ function tryMove(dx, dy, manual) {
     if (!collides(piece.x + dx, piece.y + dy, piece.r)) {
         piece.x += dx;
         piece.y += dy;
+        lastMoveWasRotate = false;
         if (manual) resetLockOnMove();
         return true;
     }
@@ -988,6 +1166,7 @@ function rotate(dir) {
             piece.x += dx;
             piece.y += dy;
             piece.r = to;
+            lastMoveWasRotate = true;
             resetLockOnMove();
             sfxRotate();
             return true;
@@ -997,13 +1176,30 @@ function rotate(dir) {
 }
 function hardDrop() {
     if (!piece || currentState !== State.PLAYING) return;
+    var startY = piece.y;
+    var cs0 = cellsOf(piece, piece.x, piece.y, piece.r);
     var d = 0;
-    while (tryMove(0, -1, false)) d++;
+    while (!collides(piece.x, piece.y - 1, piece.r)) { piece.y--; d++; }
+    if (d > 0) lastMoveWasRotate = false;
     score += d * 2;
+    /* drop trail: one seg per column of the piece */
+    if (d > 1) {
+        trailFx.t = 0;
+        trailFx.type = piece.type;
+        trailFx.segs.length = 0;
+        var colTop = {};
+        for (var i = 0; i < 4; i++) {
+            var c = cs0[i];
+            if (colTop[c.x] == null || c.y > colTop[c.x]) colTop[c.x] = c.y;
+        }
+        for (var k in colTop) {
+            trailFx.segs.push({ x: +k, yTop: colTop[k], yBot: colTop[k] - d });
+        }
+    }
     hardFlashT = 0.18;
-    trauma = Math.max(trauma, 0.22);
+    trauma = Math.max(trauma, 0.24 + Math.min(0.1, d * 0.006));
     sfxHardDrop();
-    lockPiece();
+    lockPiece(true);
 }
 function holdPiece() {
     if (!piece || currentState !== State.PLAYING || holdUsed) return;
@@ -1029,8 +1225,8 @@ function ghostY() {
 }
 
 function getDropInterval() {
-    var l = Math.min(level, 15);
-    return Math.pow(0.8 - ((l - 1) * 0.007), l - 1);
+    var l = Math.min(level, MAX_LEVEL);
+    return Math.max(0.045, Math.pow(0.82 - (l - 1) * 0.008, l - 1));
 }
 
 function highestBlock() {
@@ -1048,31 +1244,85 @@ function stackComX() {
     return n ? sum / n : 4.5;
 }
 
+/* ================= TWIRL (T-spin style) detection ================= */
+function isTwirl() {
+    if (!piece || piece.type !== 'T' || !lastMoveWasRotate) return false;
+    var c = T_CENTER[piece.r];
+    var cx = piece.x + c[1];
+    var cy = piece.y + c[0];
+    var n = 0;
+    var dxs = [-1, 1, -1, 1], dys = [1, 1, -1, -1];
+    for (var i = 0; i < 4; i++) {
+        var x = cx + dxs[i], y = cy + dys[i];
+        if (x < 0 || x >= COLS || y < 0) { n++; continue; }
+        if (y < ROWS && grid[y][x]) n++;
+    }
+    return n >= 3;
+}
+
 /* ================= Lock / clear / score ================= */
-function lockPiece() {
+function lockPiece(fromHardDrop) {
     if (!piece) return;
+    var twirl = isTwirl();
     var cs = cellsOf(piece, piece.x, piece.y, piece.r);
     var allAbove = true;
+    squashFx.t = 0;
+    squashFx.cells.length = 0;
+    var minY = 99;
     for (var i = 0; i < 4; i++) {
         var c = cs[i];
         if (c.y >= 0 && c.y < ROWS) grid[c.y][c.x] = piece.type;
         if (c.y < VISIBLE) allAbove = false;
+        squashFx.cells.push(c.y * COLS + c.x);
+        if (c.y < minY) minY = c.y;
+    }
+    /* landing dust puffs along the bottom cells */
+    if (fromHardDrop) {
+        for (i = 0; i < 4; i++) {
+            var cc = cs[i];
+            if (cc.y === minY || !collidesCellBelowSameSet(cs, cc)) {
+                if (cc.y >= 0 && cc.y < VISIBLE) {
+                    dustBurst(cellPx(cc.x) + cell / 2, cellPy(cc.y) + cell);
+                }
+            }
+        }
     }
     var fi = FACE_IDX[piece.type][piece.r];
     lockFx.t = 0;
     lockFx.col = cs[fi].x;
     lockFx.row = cs[fi].y;
+    var pieceCenterX = cellPx(cs[fi].x) + cell / 2;
+    var pieceCenterY = cellPy(clamp(cs[fi].y, 0, VISIBLE - 1)) + cell / 2;
     piece = null;
     sfxLock();
     leanTarget = computeLean();
     if (allAbove) { endGame(); return; }
     var rows = findFullRows();
     if (rows.length) {
-        beginClear(rows);
+        beginClear(rows, twirl);
     } else {
+        if (twirl) {
+            /* TWIRL with no lines: still celebrate the trick */
+            var pts = 150 * level;
+            score += pts;
+            twirls++;
+            spawnLabel('TWIRL!', '+' + pts, pieceCenterX, pieceCenterY - cell, 0.9, Math.min(34, cell * 1.4), '#DCC4FF', 0.09);
+            spawnRing(pieceCenterX, pieceCenterY, cell * 0.4, cell * 2.2, 0.35, '#A566FF', 3);
+            for (i = 0; i < 4; i++) {
+                spawnPart('glint', pieceCenterX + rand(-cell, cell), pieceCenterY + rand(-cell, cell), rand(-20, 20), rand(-40, -10), 0.5, cell * 0.4, '#DCC4FF', null, 0);
+            }
+            trauma = Math.max(trauma, 0.16);
+            sfxTwirl();
+        }
         combo = -1;
         spawnPiece();
     }
+}
+function collidesCellBelowSameSet(cs, c) {
+    for (var i = 0; i < 4; i++) {
+        if (cs[i].x === c.x && cs[i].y === c.y - 1) return true;
+    }
+    return false;
 }
 function findFullRows() {
     var rows = [];
@@ -1083,54 +1333,89 @@ function findFullRows() {
     }
     return rows;
 }
-function beginClear(rows) {
+function beginClear(rows, twirl) {
     clearRows = rows;
     clearT = 0;
+    clearN = rows.length;
     clearIsQuad = rows.length >= 4;
     clearTotal = CLEAR_STAGGER * (COLS - 1) + POP_DUR + 0.12;
     clearPopped = [];
     for (var i = 0; i < COLS; i++) clearPopped.push(false);
+    rowFlash.length = 0;
+    var midRowPy = 0, visRows = 0;
+    for (i = 0; i < rows.length; i++) {
+        if (rows[i] < VISIBLE) {
+            rowFlash.push({ y: rows[i], t: 0 });
+            midRowPy += cellPy(rows[i]) + cell / 2;
+            visRows++;
+        }
+    }
+    if (visRows > 0) midRowPy /= visRows;
+    else midRowPy = board.y + board.h / 2;
     currentState = State.LINE_CLEAR;
-    scoreClear(rows.length);
-    if (clearIsQuad) {
-        trauma = Math.max(trauma, 0.62);
+    scoreClear(rows.length, twirl);
+    /* layered celebration scaling with rows cleared */
+    var cx = board.x + board.w / 2;
+    var n = rows.length;
+    spawnRing(cx, midRowPy, cell * 0.5, board.w * (0.35 + n * 0.12), 0.32 + n * 0.05, n >= 4 ? '#FFD53F' : (twirl ? '#A566FF' : '#FFFFFF'), 3 + n);
+    if (n >= 2) spawnRing(cx, midRowPy, cell * 0.3, board.w * (0.25 + n * 0.1), 0.45 + n * 0.04, '#3FD4FF', 2 + n);
+    if (clearIsQuad || (twirl && n >= 2)) {
+        trauma = Math.max(trauma, 0.55);
         bigConfetti();
         sfxQuad();
     } else {
-        trauma = Math.max(trauma, 0.12 + rows.length * 0.07);
-        sfxArpeggio(rows.length);
+        trauma = Math.max(trauma, 0.12 + n * 0.08);
+        sfxArpeggio(n);
+        if (twirl) sfxTwirl();
     }
     scoreEl.classList.remove('pop');
     void scoreEl.offsetWidth;
     scoreEl.classList.add('pop');
 }
-function scoreClear(n) {
-    var base = [0, 100, 300, 500, 800][n] || 0;
+function scoreClear(n, twirl) {
+    var base = twirl ? [0, 800, 1200, 1600, 1600][n] : [0, 100, 300, 500, 800][n];
     combo++;
     if (combo > maxCombo) maxCombo = combo;
     var pts = base * level;
+    var difficult = (n === 4) || twirl;
     var wasB2B = false;
-    if (n === 4) {
+    if (difficult) {
         if (backToBack) { pts = Math.floor(pts * 1.5); wasB2B = true; }
         backToBack = true;
-        quads++;
+        if (n === 4) quads++;
+        if (twirl) twirls++;
     } else {
         backToBack = false;
     }
     if (combo > 0) pts += 50 * combo * level;
     score += pts;
     lines += n;
-    if (n === 4) setBanner('QUAD!', 1.4);
-    else setBanner((n === 1 ? 'SINGLE!' : n === 2 ? 'DOUBLE!' : 'TRIPLE!') + ' +' + pts, 0.9);
-    if (wasB2B) { comboText = 'BACK 2 BACK!'; comboT = 1.1; }
-    else if (combo > 0) { comboText = 'COMBO x' + (combo + 1); comboT = 0.9; }
-    var newLevel = Math.min(15, Math.floor(lines / 10) + 1);
+    /* floating labels over the cleared rows, escalating with n */
+    var lx = board.x + board.w / 2;
+    var ly = board.y + board.h * 0.34;
+    if (twirl) {
+        spawnLabel(n >= 2 ? 'TWIRL DOUBLE!' : 'TWIRL!', '+' + pts, lx, ly, 1.3, Math.min(46, cell * 1.8), '#DCC4FF', 0.08);
+    } else if (n === 4) {
+        spawnLabel('QUAD!', '+' + pts, lx, ly, 1.5, Math.min(58, cell * 2.3), '#FFD53F', 0.06);
+    } else {
+        var names = ['', 'NICE!', 'DOUBLE!', 'TRIPLE!'];
+        spawnLabel(names[n], '+' + pts, lx, ly, 0.95 + n * 0.12, Math.min(34 + n * 7, cell * (1.3 + n * 0.3)), n >= 3 ? '#FF9440' : '#FFFFFF', 0.05);
+    }
+    if (wasB2B) spawnLabel('BACK-2-BACK!', '', lx, ly + cell * 2.4, 1.1, Math.min(26, cell * 1.05), '#FF5FA2', 0.09);
+    else if (combo > 0) spawnLabel('COMBO x' + (combo + 1), '', lx, ly + cell * 2.4, 0.9, Math.min(26, cell * 1.05), '#FF5FA2', 0.09);
+    var newLevel = Math.min(MAX_LEVEL, Math.floor(lines / LINES_PER_LEVEL) + 1);
     if (newLevel > level) {
         level = newLevel;
-        setBanner('LEVEL ' + level + '!', 1.3);
+        levelFlashT = 1.2;
+        spawnLabel('LEVEL ' + level + '!', 'faster!', lx, board.y + board.h * 0.55, 1.5, Math.min(48, cell * 1.9), tintFor(level), 0.05);
+        spawnRing(lx, board.y + board.h / 2, cell, board.w * 0.9, 0.55, tintFor(level), 5);
+        for (var i = 0; i < 10; i++) {
+            spawnPart('spark', lx + rand(-board.w * 0.4, board.w * 0.4), board.y + board.h * 0.5 + rand(-cell * 3, cell * 3), rand(-90, 90), rand(-160, -40), rand(0.5, 0.9), rand(3, 6), tintFor(level), null, 260);
+        }
         sfxLevelUp();
     }
 }
+function tintFor(lv) { return LEVEL_TINTS[(lv - 1) % LEVEL_TINTS.length]; }
 function finishClear() {
     clearRows.sort(function (a, b) { return b - a; });
     for (var i = 0; i < clearRows.length; i++) {
@@ -1138,14 +1423,10 @@ function finishClear() {
         grid.push(new Array(COLS).fill(null));
     }
     clearRows = [];
+    rowFlash.length = 0;
     currentState = State.PLAYING;
     leanTarget = computeLean();
     spawnPiece();
-}
-function setBanner(txt, dur) {
-    banner = txt;
-    bannerT = dur;
-    bannerMax = dur;
 }
 function computeLean() {
     var h = highestBlock();
@@ -1173,17 +1454,16 @@ function resetRun() {
     level = 1;
     lines = 0;
     quads = 0;
+    twirls = 0;
     maxCombo = 0;
     combo = -1;
     backToBack = false;
     dropAcc = 0;
     lockTimer = 0;
     lockResets = 0;
+    lastMoveWasRotate = false;
     clearRows = [];
-    banner = '';
-    bannerT = 0;
-    comboText = '';
-    comboT = 0;
+    rowFlash.length = 0;
     trauma = 0;
     lean = 0;
     leanTarget = 0;
@@ -1192,11 +1472,16 @@ function resetRun() {
     newBest = false;
     earnedTiers = [];
     lockFx.t = 99;
+    trailFx.t = 99;
+    squashFx.t = 99;
     touchSoftT = 0;
     hardFlashT = 0;
+    levelFlashT = 0;
     keys.left = keys.right = keys.soft = false;
     das.dir = 0;
-    for (var i = 0; i < parts.length; i++) parts[i].active = false;
+    for (var i = 0; i < PART_CAP; i++) parts[i].active = false;
+    for (i = 0; i < RING_CAP; i++) rings[i].active = false;
+    for (i = 0; i < LABEL_CAP; i++) labels[i].active = false;
     lastScoreShown = -1;
     scoreEl.textContent = '0';
 }
@@ -1292,7 +1577,10 @@ function showPanel() {
     panelBestEl.textContent = data.highScore.toLocaleString();
     newBestEl.style.display = newBest ? 'block' : 'none';
     panelTitleEl.textContent = newBest ? 'AMAZING!' : 'NICE STACKING!';
-    panelStatsEl.textContent = 'Lines: ' + lines + '  •  Top level: ' + level + (quads > 0 ? '  •  Quads: ' + quads : '');
+    var statBits = ['Lines: ' + lines, 'Top level: ' + level];
+    if (quads > 0) statBits.push('Quads: ' + quads);
+    if (twirls > 0) statBits.push('Twirls: ' + twirls);
+    panelStatsEl.textContent = statBits.join('  •  ');
     var diff = prevBest - score;
     if (!newBest && prevBest >= 500 && score < prevBest && diff <= prevBest * 0.2) {
         nearMissEl.textContent = 'SO CLOSE! Only ' + diff.toLocaleString() + ' away from your best';
@@ -1301,9 +1589,9 @@ function showPanel() {
         nearMissEl.style.display = 'none';
     }
     if (earnedTiers.length > 0) {
-        var labels = [];
-        for (var i = 0; i < earnedTiers.length; i++) labels.push(TIER_LABELS[earnedTiers[i]]);
-        stickerBanner.textContent = 'STICKER EARNED! ' + labels.join(' + ');
+        var lbls = [];
+        for (var i = 0; i < earnedTiers.length; i++) lbls.push(TIER_LABELS[earnedTiers[i]]);
+        stickerBanner.textContent = 'STICKER EARNED! ' + lbls.join(' + ');
         stickerBanner.style.display = 'block';
     } else {
         stickerBanner.style.display = 'none';
@@ -1350,7 +1638,7 @@ function updateGame(dt) {
     }
     if (piece && grounded()) {
         lockTimer += dt;
-        if (lockTimer >= LOCK_DELAY) lockPiece();
+        if (lockTimer >= LOCK_DELAY) lockPiece(false);
     } else {
         lockTimer = 0;
     }
@@ -1358,7 +1646,7 @@ function updateGame(dt) {
 
 function updateClear(dt) {
     clearT += dt;
-    /* pop columns left to right, confetti per cell */
+    /* pop columns left to right, shards + glints per cell */
     for (var x = 0; x < COLS; x++) {
         if (!clearPopped[x] && clearT >= x * CLEAR_STAGGER) {
             clearPopped[x] = true;
@@ -1367,11 +1655,12 @@ function updateClear(dt) {
                 if (y < VISIBLE && grid[y][x]) {
                     var px = board.x + x * cell + cell / 2;
                     var py = board.y + (VISIBLE - 1 - y) * cell + cell / 2;
-                    burstCellConfetti(px, py, PCOL[grid[y][x]].f);
+                    cellClearBurst(px, py, grid[y][x], clearIsQuad);
                 }
             }
         }
     }
+    for (var f = 0; f < rowFlash.length; f++) rowFlash[f].t += dt;
     if (clearT >= clearTotal) finishClear();
 }
 
@@ -1380,12 +1669,22 @@ function updateDying(dt) {
     if (slumpT > 1.15) showPanel();
 }
 
+function updateMenu(dt) {
+    for (var i = 0; i < floaters.length; i++) {
+        var f = floaters[i];
+        f.y += f.vy * dt;
+        f.rot += f.vr * dt;
+        if (f.y > 1.15) { f.y = -0.15; f.x = Math.random(); }
+    }
+}
+
 function updateCosmetics(dt) {
     if (touchSoftT > 0) touchSoftT -= dt;
     if (hardFlashT > 0) hardFlashT -= dt;
+    if (levelFlashT > 0) levelFlashT -= dt;
     if (lockFx.t < 10) lockFx.t += dt;
-    if (bannerT > 0) { bannerT -= dt; if (bannerT <= 0) banner = ''; }
-    if (comboT > 0) comboT -= dt;
+    if (trailFx.t < 10) trailFx.t += dt;
+    if (squashFx.t < 10) squashFx.t += dt;
     if (trauma > 0) trauma = Math.max(0, trauma - 2.4 * dt);
     lean += (leanTarget - lean) * Math.min(1, 4 * dt);
     if (hintT > 0) { hintT -= dt; if (hintT <= 0) hideGestureHint(); }
@@ -1405,6 +1704,7 @@ function update(dt) {
     time += dt;
     updateCosmetics(dt);
     switch (currentState) {
+        case State.MENU: updateMenu(dt); break;
         case State.PLAYING: updateGame(dt); break;
         case State.LINE_CLEAR: updateClear(dt); break;
         case State.DYING: updateDying(dt); break;
@@ -1482,7 +1782,7 @@ function drawFace(cx, cy, s, mood) {
         ctx.ellipse(0, my, s * 0.09, s * 0.12, 0, 0, Math.PI * 2);
         ctx.fill();
         /* sweat drop */
-        ctx.fillStyle = '#4FC3F7';
+        ctx.fillStyle = '#3FD4FF';
         ctx.beginPath();
         ctx.ellipse(s * 0.34, -s * 0.2, s * 0.05, s * 0.08, 0.3, 0, Math.PI * 2);
         ctx.fill();
@@ -1525,8 +1825,37 @@ function activeMood() {
 function cellPx(x) { return board.x + x * cell; }
 function cellPy(y) { return board.y + (VISIBLE - 1 - y) * cell; }
 
-function drawBlockAt(px, py, t, w, h) {
-    ctx.drawImage(blockSpr[t], px | 0, py | 0, (w || cell) | 0 || cell, (h || cell) | 0 || cell);
+function drawBlockAt(px, py, t) {
+    ctx.drawImage(blockSpr[t], px | 0, py | 0, cell, cell);
+}
+
+function drawBackground() {
+    ctx.drawImage(bgSpr, 0, 0, W, H);
+    /* level tint wash (single cheap rect) */
+    if (currentState !== State.MENU && level > 1) {
+        ctx.globalAlpha = 0.055;
+        ctx.fillStyle = tintFor(level);
+        ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = 1;
+    }
+    /* twinkling stars */
+    ctx.fillStyle = '#DDE2FF';
+    for (var i = 0; i < stars.length; i++) {
+        var s = stars[i];
+        var a = 0.25 + 0.55 * (0.5 + 0.5 * Math.sin(time * s.sp + s.ph));
+        ctx.globalAlpha = a;
+        ctx.fillRect(s.x, s.y, s.s, s.s);
+    }
+    ctx.globalAlpha = 1;
+}
+
+function inSquash(x, y) {
+    if (squashFx.t >= 0.14) return false;
+    var key = y * COLS + x;
+    for (var i = 0; i < squashFx.cells.length; i++) {
+        if (squashFx.cells[i] === key) return true;
+    }
+    return false;
 }
 
 function drawGridBlocks() {
@@ -1535,6 +1864,10 @@ function drawGridBlocks() {
         slumpE = easeOutQuad(clamp(slumpT / 0.8, 0, 1));
     }
     var k = 1 - 0.2 * slumpE;
+    var squashActive = squashFx.t < 0.14;
+    var sqk = squashActive ? squashFx.t / 0.14 : 1;
+    /* squash: start 22 percent shorter, spring back */
+    var sqScale = squashActive ? (0.78 + 0.22 * easeOutBack(sqk)) : 1;
     for (var y = 0; y < VISIBLE; y++) {
         for (var x = 0; x < COLS; x++) {
             var t = grid[y][x];
@@ -1563,6 +1896,9 @@ function drawGridBlocks() {
                 var spx = cellPx(x) + Math.sin(x * 1.7 + y * 2.3) * 2.5 * slumpE;
                 var spy = board.y + board.h - (y + 1) * ch;
                 ctx.drawImage(blockSpr[t], spx | 0, spy | 0, cell, Math.ceil(ch));
+            } else if (squashActive && inSquash(x, y)) {
+                var sh = cell * sqScale;
+                ctx.drawImage(blockSpr[t], cellPx(x) | 0, (cellPy(y) + cell - sh) | 0, cell, Math.ceil(sh));
             } else {
                 drawBlockAt(cellPx(x), cellPy(y), t);
             }
@@ -1581,6 +1917,38 @@ function drawGridBlocks() {
             }
         }
     }
+}
+
+function drawRowFlashes() {
+    /* local bright flash on clearing rows, fades fast */
+    for (var i = 0; i < rowFlash.length; i++) {
+        var f = rowFlash[i];
+        if (f.t > 0.3) continue;
+        var a = (1 - f.t / 0.3);
+        var py = cellPy(f.y);
+        ctx.globalAlpha = a * 0.55;
+        ctx.fillStyle = clearIsQuad ? '#FFEBA0' : '#FFFFFF';
+        rr(ctx, board.x - 2, py + 1, board.w + 4, cell - 2, 6);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+}
+
+function drawTrail() {
+    if (trailFx.t >= 0.18) return;
+    var a = (1 - trailFx.t / 0.18) * 0.3;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = PCOL[trailFx.type].f;
+    for (var i = 0; i < trailFx.segs.length; i++) {
+        var s = trailFx.segs[i];
+        var yTop = clamp(s.yTop, 0, VISIBLE - 1);
+        var yBot = clamp(s.yBot, 0, VISIBLE - 1);
+        var py1 = cellPy(yTop);
+        var py2 = cellPy(yBot) + cell;
+        rr(ctx, cellPx(s.x) + cell * 0.18, py1, cell * 0.64, py2 - py1, cell * 0.3);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
 }
 
 function drawPieceBlocks(p, y, ghost, mood) {
@@ -1631,18 +1999,18 @@ function drawMiniPiece(x, y, t, s, alpha, mood) {
 }
 
 function drawSideCard(x, y, w, h, label) {
-    rr(ctx, x + 4, y + 4, w, h, 14);
-    ctx.fillStyle = 'rgba(43,35,80,0.16)';
+    rr(ctx, x, y + 4, w, h, 14);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.fill();
     rr(ctx, x, y, w, h, 14);
-    ctx.fillStyle = PAPER;
+    ctx.fillStyle = CARD;
     ctx.fill();
     rr(ctx, x + 1.5, y + 1.5, w - 3, h - 3, 12);
     ctx.lineWidth = 3;
-    ctx.strokeStyle = INK;
+    ctx.strokeStyle = CARD_EDGE;
     ctx.stroke();
     if (label) {
-        ctx.fillStyle = INK;
+        ctx.fillStyle = TXT_DIM;
         ctx.font = '800 ' + Math.max(11, cell * 0.5) + 'px Nunito, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'alphabetic';
@@ -1664,20 +2032,34 @@ function drawPanels() {
 
     /* stats */
     var statY = topY + cell * 3.4 + 14;
-    drawSideCard(leftX, statY, boxW, cell * 4.6, null);
-    ctx.fillStyle = '#6B6394';
+    drawSideCard(leftX, statY, boxW, cell * 5.4, null);
+    ctx.fillStyle = TXT_DIM;
     ctx.font = '800 ' + Math.max(10, cell * 0.44) + 'px Nunito, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('LEVEL', leftX + boxW / 2, statY + cell * 0.85);
-    ctx.fillStyle = INK;
+    ctx.fillStyle = levelFlashT > 0 ? tintFor(level) : '#FFFFFF';
     ctx.font = '800 ' + Math.max(15, cell * 0.85) + 'px Nunito, sans-serif';
     ctx.fillText(level, leftX + boxW / 2, statY + cell * 1.8);
-    ctx.fillStyle = '#6B6394';
+    ctx.fillStyle = TXT_DIM;
     ctx.font = '800 ' + Math.max(10, cell * 0.44) + 'px Nunito, sans-serif';
     ctx.fillText('LINES', leftX + boxW / 2, statY + cell * 2.9);
-    ctx.fillStyle = INK;
+    ctx.fillStyle = '#FFFFFF';
     ctx.font = '800 ' + Math.max(15, cell * 0.85) + 'px Nunito, sans-serif';
     ctx.fillText(lines, leftX + boxW / 2, statY + cell * 3.85);
+    /* progress to next level */
+    var frac = level >= MAX_LEVEL ? 1 : (lines % LINES_PER_LEVEL) / LINES_PER_LEVEL;
+    var barX = leftX + cell * 0.4;
+    var barW = boxW - cell * 0.8;
+    var barY = statY + cell * 4.45;
+    var barH = Math.max(6, cell * 0.32);
+    rr(ctx, barX, barY, barW, barH, barH / 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fill();
+    if (frac > 0.02) {
+        rr(ctx, barX + 1, barY + 1, Math.max(barH - 2, (barW - 2) * frac), barH - 2, (barH - 2) / 2);
+        ctx.fillStyle = tintFor(level + 1);
+        ctx.fill();
+    }
 
     /* NEXT x3 */
     drawSideCard(rightX, topY, boxW, cell * 8.6, 'NEXT');
@@ -1686,66 +2068,128 @@ function drawPanels() {
     }
 }
 
-function drawBanner() {
-    if (bannerT > 0 && banner) {
-        var t = 1 - bannerT / bannerMax;
-        var sc = t < 0.3 ? easeOutBack(t / 0.3) : 1;
-        var wob = Math.sin(time * 9) * 0.05;
+function drawRings() {
+    for (var i = 0; i < RING_CAP; i++) {
+        var r = rings[i];
+        if (!r.active) continue;
+        var k = r.t / r.ttl;
+        var rad = r.r0 + (r.r1 - r.r0) * easeOutQuad(k);
+        ctx.globalAlpha = (1 - k) * 0.8;
+        ctx.lineWidth = r.lw * (1 - k * 0.6);
+        ctx.strokeStyle = r.color;
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, rad, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawLabels() {
+    for (var i = 0; i < LABEL_CAP; i++) {
+        var l = labels[i];
+        if (!l.active) continue;
+        var k = l.t / l.ttl;
+        var sc = k < 0.28 ? easeOutBack(k / 0.28) : 1;
+        var rise = easeOutQuad(k) * cell * 1.2;
         ctx.save();
-        ctx.translate(W / 2, board.y + board.h * 0.36);
-        ctx.rotate(wob);
+        ctx.translate(l.x, l.y - rise);
+        ctx.rotate(Math.sin(time * 9 + i) * l.wobble);
         ctx.scale(sc, sc);
-        ctx.globalAlpha = bannerT < 0.25 ? bannerT / 0.25 : 1;
-        ctx.font = '800 ' + Math.min(52, cell * 2) + 'px Nunito, sans-serif';
+        ctx.globalAlpha = k > 0.7 ? (1 - k) / 0.3 : 1;
+        ctx.font = '800 ' + l.size + 'px Nunito, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.lineWidth = Math.max(5, cell * 0.28);
+        ctx.lineWidth = Math.max(5, l.size * 0.16);
         ctx.lineJoin = 'round';
         ctx.strokeStyle = INK;
-        ctx.strokeText(banner, 0, 0);
-        ctx.fillStyle = banner === 'QUAD!' ? '#FFD23F' : PAPER;
-        ctx.fillText(banner, 0, 0);
+        ctx.strokeText(l.text, 0, 0);
+        ctx.fillStyle = l.color;
+        ctx.fillText(l.text, 0, 0);
+        if (l.sub) {
+            ctx.font = '800 ' + Math.round(l.size * 0.5) + 'px Nunito, sans-serif';
+            ctx.lineWidth = Math.max(3, l.size * 0.09);
+            ctx.strokeText(l.sub, 0, l.size * 0.75);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(l.sub, 0, l.size * 0.75);
+        }
         ctx.restore();
     }
-    if (comboT > 0 && comboText) {
-        var wob2 = Math.sin(time * 12) * 0.08;
-        ctx.save();
-        ctx.translate(W / 2, board.y + board.h * 0.5);
-        ctx.rotate(wob2);
-        ctx.globalAlpha = comboT < 0.25 ? comboT / 0.25 : 1;
-        ctx.font = '800 ' + Math.min(30, cell * 1.15) + 'px Nunito, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.lineWidth = Math.max(4, cell * 0.2);
-        ctx.lineJoin = 'round';
-        ctx.strokeStyle = INK;
-        ctx.strokeText(comboText, 0, 0);
-        ctx.fillStyle = '#FF5FA2';
-        ctx.fillText(comboText, 0, 0);
-        ctx.restore();
-    }
+    ctx.globalAlpha = 1;
+}
+
+function drawGlint(p, k) {
+    /* 4-point star */
+    var s = p.size * (0.4 + 0.6 * Math.sin(k * Math.PI));
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot + k * 1.5);
+    ctx.globalAlpha = 1 - k;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.quadraticCurveTo(s * 0.16, -s * 0.16, s, 0);
+    ctx.quadraticCurveTo(s * 0.16, s * 0.16, 0, s);
+    ctx.quadraticCurveTo(-s * 0.16, s * 0.16, -s, 0);
+    ctx.quadraticCurveTo(-s * 0.16, -s * 0.16, 0, -s);
+    ctx.fill();
+    ctx.restore();
 }
 
 function drawParticles() {
-    for (var i = 0; i < parts.length; i++) {
+    for (var i = 0; i < PART_CAP; i++) {
         var p = parts[i];
         if (!p.active) continue;
-        ctx.globalAlpha = 1 - p.life / p.ttl;
-        ctx.fillStyle = p.color;
+        var k = p.life / p.ttl;
+        if (p.kind === 'glint') {
+            drawGlint(p, k);
+            continue;
+        }
+        if (p.kind === 'dust') {
+            ctx.globalAlpha = (1 - k) * 0.4;
+            ctx.fillStyle = p.color + '1)';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size + k * 14, 0, Math.PI * 2);
+            ctx.fill();
+            continue;
+        }
+        ctx.globalAlpha = 1 - k;
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rot);
-        ctx.fillRect(-p.size / 2, -p.size * 0.7, p.size, p.size * 1.4);
+        if (p.kind === 'shard') {
+            /* chunky block shard with a darker edge */
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+            ctx.fillStyle = p.color2;
+            ctx.fillRect(-p.size / 2, p.size * 0.1, p.size, p.size * 0.4);
+        } else {
+            /* conf / spark */
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size * 0.7, p.size, p.size * 1.4);
+        }
+        ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawMenuFloaters() {
+    for (var i = 0; i < floaters.length; i++) {
+        var f = floaters[i];
+        ctx.save();
+        ctx.translate(f.x * W, f.y * H);
+        ctx.rotate(f.rot);
+        ctx.globalAlpha = 0.4;
+        drawMiniPiece(0, 0, f.t, cell * f.s, 0.4, null);
         ctx.restore();
     }
     ctx.globalAlpha = 1;
 }
 
 function render() {
-    /* cream page around a playfield card */
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = CREAM;
-    ctx.fillRect(0, 0, W, H);
+    drawBackground();
+
+    if (currentState === State.MENU) drawMenuFloaters();
 
     var ox = 0, oy = 0;
     if (trauma > 0) {
@@ -1767,8 +2211,19 @@ function render() {
     ctx.drawImage(boardSpr, (board.x - boardSprPad) | 0, (board.y - boardSprPad) | 0,
         boardSpr.width / dpr, boardSpr.height / dpr);
 
+    /* level-up pulse on the board edge */
+    if (levelFlashT > 0) {
+        ctx.globalAlpha = clamp(levelFlashT, 0, 1) * (0.35 + 0.2 * Math.sin(time * 14));
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = tintFor(level);
+        rr(ctx, board.x - 8, board.y - 8, board.w + 16, board.h + 16, 16);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+    }
+
     if (grid) {
         drawGridBlocks();
+        drawRowFlashes();
         if (currentState === State.MENU) {
             for (var i = 0; i < MENU_DECOR.length; i++) {
                 var m = MENU_DECOR[i];
@@ -1778,6 +2233,7 @@ function render() {
             drawFace(cellPx(8) + cell / 2, cellPy(1) + cell / 2, cell, 'sleep');
         }
     }
+    drawTrail();
     if (piece && (currentState === State.PLAYING || currentState === State.PAUSED)) {
         drawPieceBlocks(piece, ghostY(), true, null);
         drawPieceBlocks(piece, null, false, activeMood());
@@ -1790,15 +2246,16 @@ function render() {
     }
     /* danger tint on the top rows */
     if ((currentState === State.PLAYING || currentState === State.LINE_CLEAR) && inDanger()) {
-        ctx.fillStyle = 'rgba(255,92,92,' + (0.05 + 0.04 * Math.sin(time * 5)) + ')';
+        ctx.fillStyle = 'rgba(255,92,110,' + (0.07 + 0.05 * Math.sin(time * 5)) + ')';
         rr(ctx, board.x, board.y, board.w, cell * 4, 8);
         ctx.fill();
     }
     ctx.restore();
 
     if (currentState !== State.MENU) drawPanels();
+    drawRings();
     drawParticles();
-    drawBanner();
+    drawLabels();
 }
 
 /* ================= Input: keyboard ================= */
@@ -1816,9 +2273,18 @@ window.addEventListener('keydown', function (e) {
     }
     if (currentState !== State.PLAYING) return;
     ensureAudio();
-    if (e.code === 'ArrowLeft') { e.preventDefault(); if (!keys.left) { keys.left = true; das.dir = 0; } hideGestureHint(); }
-    else if (e.code === 'ArrowRight') { e.preventDefault(); if (!keys.right) { keys.right = true; das.dir = 0; } hideGestureHint(); }
-    else if (e.code === 'ArrowDown') { e.preventDefault(); if (!keys.soft) { keys.soft = true; softTimer = 0; } }
+    if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        /* move immediately on keydown (sub-frame response), then let DAS repeat */
+        if (!keys.left) { keys.left = true; moveLeft(); das.dir = -1; das.delay = DAS_DELAY; das.arr = ARR_RATE; }
+        hideGestureHint();
+    }
+    else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        if (!keys.right) { keys.right = true; moveRight(); das.dir = 1; das.delay = DAS_DELAY; das.arr = ARR_RATE; }
+        hideGestureHint();
+    }
+    else if (e.code === 'ArrowDown') { e.preventDefault(); if (!keys.soft) { keys.soft = true; softDrop(); softTimer = SOFT_RATE; } }
     else if ((e.code === 'ArrowUp' || e.code === 'KeyX') && !e.repeat) { e.preventDefault(); rotate(1); }
     else if (e.code === 'KeyZ' && !e.repeat) rotate(-1);
     else if (e.code === 'Space' && !e.repeat) { e.preventDefault(); hideGestureHint(); hardDrop(); }
@@ -1831,9 +2297,9 @@ window.addEventListener('keyup', function (e) {
 });
 
 /* ================= Input: touch gestures on the canvas ================= */
-/* swipe left/right = move (cell snapped), slow drag down = soft drop,
+/* horizontal drag = piece column tracks the finger, slow drag down = soft drop,
    fast swipe down = hard drop, tap = spin, swipe up = hold */
-var touchS = { active: false, sx: 0, sy: 0, lx: 0, ly: 0, lt: 0, startT: 0, axis: 0, ax: 0, ay: 0, moved: false, done: false };
+var touchS = { active: false, sx: 0, sy: 0, lx: 0, ly: 0, lt: 0, startT: 0, axis: 0, ay: 0, moved: false, done: false, baseX: 0, baseClientX: 0, pieceRef: null };
 
 canvas.addEventListener('pointerdown', function (e) {
     e.preventDefault();
@@ -1845,29 +2311,48 @@ canvas.addEventListener('pointerdown', function (e) {
     touchS.done = false;
     touchS.moved = false;
     touchS.axis = 0;
-    touchS.ax = 0;
     touchS.ay = 0;
     touchS.sx = touchS.lx = e.clientX;
     touchS.sy = touchS.ly = e.clientY;
     touchS.startT = touchS.lt = performance.now();
+    touchS.pieceRef = piece;
+    touchS.baseX = piece ? piece.x : 0;
+    touchS.baseClientX = e.clientX;
 });
 window.addEventListener('pointermove', function (e) {
     if (!touchS.active || touchS.done) return;
     var now = performance.now();
-    var dx = e.clientX - touchS.lx;
     var dy = e.clientY - touchS.ly;
     var tx = e.clientX - touchS.sx;
     var ty = e.clientY - touchS.sy;
     if (touchS.axis === 0 && (Math.abs(tx) > 12 || Math.abs(ty) > 12)) {
         touchS.axis = Math.abs(tx) > Math.abs(ty) ? 1 : 2;
         hideGestureHint();
+        if (touchS.axis === 1 && piece) {
+            touchS.pieceRef = piece;
+            touchS.baseX = piece.x;
+            touchS.baseClientX = e.clientX;
+        }
     }
     if (touchS.axis === 1) {
-        /* horizontal: snap one cell per cell width dragged */
-        touchS.ax += dx;
-        var step = cell * 0.85;
-        while (touchS.ax >= step) { moveRight(); touchS.ax -= step; touchS.moved = true; }
-        while (touchS.ax <= -step) { moveLeft(); touchS.ax += step; touchS.moved = true; }
+        /* column tracking: the piece follows the finger's column offset */
+        if (piece && piece !== touchS.pieceRef) {
+            touchS.pieceRef = piece;
+            touchS.baseX = piece.x;
+            touchS.baseClientX = e.clientX;
+        }
+        if (piece) {
+            var target = touchS.baseX + Math.round((e.clientX - touchS.baseClientX) / (cell * 0.9));
+            var guard = 0;
+            while (piece && piece.x < target && guard++ < COLS) {
+                if (!moveRight()) break;
+                touchS.moved = true;
+            }
+            while (piece && piece.x > target && guard++ < COLS * 2) {
+                if (!moveLeft()) break;
+                touchS.moved = true;
+            }
+        }
     } else if (touchS.axis === 2) {
         if (ty < -50) {
             holdPiece();
@@ -1982,6 +2467,7 @@ window.__blockStaxTest = {
     score: function () { return score; },
     lines: function () { return lines; },
     level: function () { return level; },
+    twirls: function () { return twirls; },
     moveLeft: moveLeft,
     moveRight: moveRight,
     rotate: rotate,
