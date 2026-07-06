@@ -237,6 +237,11 @@ html, body {
     color: #2B2350;
     min-width: min(78vw, 340px);
 }
+.panel.show #clearCard { animation: cardIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes cardIn {
+    0% { transform: scale(0.4) translateY(60px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
 #clearCard h2 {
     font-weight: 800;
     font-size: min(8vw, 38px);
@@ -268,6 +273,55 @@ html, body {
     border-radius: 999px;
     padding: 4px 14px;
     animation: pulse 0.9s ease-in-out infinite;
+}
+#clearGoal { font-weight: 800; font-size: 14px; margin-top: 4px; opacity: 0.75; font-variant-numeric: tabular-nums; }
+#clearGoal.beat { color: #2FA84F; opacity: 1; }
+#flawless {
+    display: none;
+    margin: 6px auto 0;
+    width: fit-content;
+    background: #7ED957;
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 2px;
+    border-radius: 999px;
+    padding: 4px 14px;
+}
+.rowbtns { display: flex; gap: 12px; align-items: stretch; margin-top: 26px; }
+.rowbtns .bigbtn { margin-top: 0; }
+.retrybtn {
+    animation: none;
+    background: rgba(255, 255, 255, 0.94);
+    font-size: min(6.5vw, 26px);
+    padding: 18px 24px;
+}
+#worldLine {
+    margin-top: 14px;
+    font-weight: 800;
+    font-size: min(4vw, 16px);
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, 0.85);
+    text-shadow: 0 2px 0 rgba(43, 35, 80, 0.22);
+}
+#nearMiss {
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 25;
+    display: none;
+    font-weight: 800;
+    font-size: min(8vw, 36px);
+    color: #FFFFFF;
+    text-shadow: 0 4px 0 rgba(43, 35, 80, 0.35);
+    white-space: nowrap;
+    pointer-events: none;
+}
+#nearMiss.show { display: block; animation: nearPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes nearPop {
+    0% { transform: translateX(-50%) scale(0.3); opacity: 0; }
+    100% { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 #stickerToast {
     position: fixed;
@@ -325,6 +379,7 @@ html, body {
 <div id="startPanel" class="panel">
     <h1>ROPE RUSH</h1>
     <div class="sub">HOLD to hook &nbsp;•&nbsp; RELEASE to fly</div>
+    <div id="worldLine"></div>
     <div id="lvlPicker">
         <button id="lvlPrev" class="arrowbtn" aria-label="Previous level">◀</button>
         <div id="lvlLabel"><span class="n">LEVEL 1</span><span class="s"></span><span class="t"></span></div>
@@ -340,10 +395,17 @@ html, body {
         <div id="clearStars"><span>⭐</span><span>⭐</span><span>⭐</span></div>
         <div id="clearTime">12.3s</div>
         <div id="clearBest">Best: 10.1s</div>
+        <div id="clearGoal"></div>
         <div id="newBest">NEW BEST!</div>
+        <div id="flawless">💯 FLAWLESS!</div>
     </div>
-    <button id="nextBtn" class="bigbtn">NEXT ▶</button>
+    <div class="rowbtns">
+        <button id="retryBtn" class="bigbtn retrybtn" aria-label="Retry level">↻</button>
+        <button id="nextBtn" class="bigbtn">NEXT ▶</button>
+    </div>
 </div>
+
+<div id="nearMiss"></div>
 
 <div id="pausePanel" class="panel">
     <h1 style="font-size:min(12vw,64px)">PAUSED</h1>
@@ -575,6 +637,26 @@ function sfxRing() {
     o.onended = voiceDone;
     o.start(t); o.stop(t + 0.26);
 }
+/* Crumble anchor breaking: dry crack + tumble */
+function sfxCrack() {
+    if (!canPlay()) return;
+    activeVoices++;
+    const t = audioCtx.currentTime, p = pitchVar();
+    const src = audioCtx.createBufferSource();
+    src.buffer = getNoise();
+    const bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 2.4;
+    bp.frequency.setValueAtTime(2400 * p, t);
+    bp.frequency.exponentialRampToValueAtTime(500 * p, t + 0.12);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.18, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+    src.connect(bp); bp.connect(g); g.connect(audioCtx.destination);
+    src.onended = voiceDone;
+    src.start(t); src.stop(t + 0.16);
+}
 /* Death: comedic wet splat, never harsh */
 function sfxSplat() {
     if (!canPlay()) return;
@@ -666,13 +748,14 @@ const PHYS_STEP = 1 / 120;
 const State = { MENU: 'menu', PLAYING: 'playing', PAUSED: 'paused', DEAD: 'dead', CLEAR: 'clear' };
 let state = State.MENU;
 
-/* ================= Palettes (rotate per level) ================= */
+/* ================= Palettes: one world mood per 5-level group ================= */
 const PALETTES = [
-    { skyTop: '#8F7BFF', skyBot: '#C9B8FF', hillA: '#7A63E8', hillB: '#6A55D6', goo: '#5CE07A', gooDark: '#3FBF5E', anchor: '#FFE14D', cloud: 'rgba(255,255,255,0.5)' },
-    { skyTop: '#4FC3F7', skyBot: '#B3E5FC', hillA: '#3BA9DD', hillB: '#2E93C4', goo: '#FF8A3D', gooDark: '#E56F24', anchor: '#FF5FA2', cloud: 'rgba(255,255,255,0.6)' },
-    { skyTop: '#FF8A65', skyBot: '#FFD180', hillA: '#E8734F', hillB: '#D2603E', goo: '#7B4DFF', gooDark: '#6238E0', anchor: '#4DFFDF', cloud: 'rgba(255,255,255,0.45)' },
-    { skyTop: '#2B2350', skyBot: '#5C4B9E', hillA: '#241D42', hillB: '#1C1634', goo: '#FF5FA2', gooDark: '#E0447F', anchor: '#FFE14D', cloud: 'rgba(255,255,255,0.25)' }
+    { name: '🌸 BLOOM VALLEY', skyTop: '#8F7BFF', skyBot: '#C9B8FF', far: '#8974F4', hillA: '#7A63E8', hillB: '#6A55D6', goo: '#5CE07A', gooDark: '#3FBF5E', anchor: '#FFE14D', cloud: 'rgba(255,255,255,0.5)', sun: '#FFF3B0', night: false },
+    { name: '🌊 BREEZY BAY', skyTop: '#4FC3F7', skyBot: '#B3E5FC', far: '#43B4EB', hillA: '#3BA9DD', hillB: '#2E93C4', goo: '#FF8A3D', gooDark: '#E56F24', anchor: '#FF5FA2', cloud: 'rgba(255,255,255,0.6)', sun: '#FFFDE7', night: false },
+    { name: '🌅 SUNSET CANYON', skyTop: '#FF8A65', skyBot: '#FFD180', far: '#F27C57', hillA: '#E8734F', hillB: '#D2603E', goo: '#7B4DFF', gooDark: '#6238E0', anchor: '#4DFFDF', cloud: 'rgba(255,255,255,0.45)', sun: '#FFD54F', night: false },
+    { name: '🌙 STARRY PEAKS', skyTop: '#2B2350', skyBot: '#5C4B9E', far: '#332A5E', hillA: '#241D42', hillB: '#1C1634', goo: '#FF5FA2', gooDark: '#E0447F', anchor: '#FFE14D', cloud: 'rgba(255,255,255,0.25)', sun: '#F4F1FF', night: true }
 ];
+function palForLevel(n) { return PALETTES[clamp(Math.floor((n - 1) / 5), 0, PALETTES.length - 1)]; }
 let pal = PALETTES[0];
 
 /* ================= Level generation =================
@@ -698,11 +781,17 @@ function buildLevel(idx) {
        Later levels earn the scarcity that makes momentum-carry mandatory. */
     const padChance = idx <= 6 ? 1 : lerp(0.7, 0.18, t);
     const ringChance = idx >= 4 ? 0.22 : 0;
+    /* late-game variety knobs. All new rnd() calls below are gated behind
+       these flags so levels 1-8 keep their exact original geometry. */
+    const movingAnchors = idx >= 9;     /* hooks that bob on a vertical track */
+    const windLevels = idx >= 11;       /* updraft columns (pure assist) */
+    const crumbleLevels = idx >= 13;    /* one-use hooks that break on release */
 
-    const anchors = [];   /* {x,y} */
+    const anchors = [];   /* {x,y,baseY,amp,spd,ph,crumble,broken} */
     const saws = [];      /* {x,y,r,amp,spd,ph} amp=0 → static */
     const pads = [];      /* {x,y,w} */
     const rings = [];     /* {x,y,r} */
+    const winds = [];     /* {x,w,str} updraft columns */
     const stars = [];     /* {x,y} — exactly 3 */
 
     /* home pad under the spawn: hesitating at the start bounces you,
@@ -720,7 +809,15 @@ function buildLevel(idx) {
             const maxDy = Math.sqrt(Math.max(0, 370 * 370 - gapX * gapX));
             y = clamp(y, prev.y - maxDy, prev.y + maxDy);
         }
-        anchors.push({ x, y });
+        anchors.push({ x, y, baseY: y, amp: 0, spd: 0, ph: 0, crumble: false, broken: false });
+        /* moving anchors: vertical bob on a track. Never the first or last
+           hook — the opener and the flag fling stay dependable. */
+        if (movingAnchors && i > 0 && i < hookCount - 1 && rnd() < lerp(0.25, 0.5, t)) {
+            const ma = anchors[i];
+            ma.amp = Math.min(lerp(36, 80, rnd()), Math.max(0, ma.baseY - 64));
+            ma.spd = lerp(0.9, 1.7, rnd());
+            ma.ph = rnd() * Math.PI * 2;
+        }
         const gap = lerp(gapMin, gapMax, rnd());
 
         if (i > 0 && i < hookCount - 1) {
@@ -739,12 +836,39 @@ function buildLevel(idx) {
                 });
             } else if (rnd() < padChance) {
                 pads.push({ x: midX - 70, y: lerp(600, 680, rnd()), w: 140 });
+            } else if (windLevels && rnd() < 0.45) {
+                /* updraft column in an empty gap: a gentle rescue, pure assist */
+                winds.push({ x: midX - 80, w: 160, str: lerp(620, 900, rnd()) });
             }
             if (rnd() < ringChance) {
                 rings.push({ x: midX, y: lerp(180, 380, rnd()), r: 46 });
             }
         }
         x += gap;
+    }
+    /* crumble pass: some mid-level hooks break after one use. Never the
+       first or last hook, never two in a row (a fallback always exists),
+       and never a moving hook (one gimmick per anchor). */
+    if (crumbleLevels) {
+        for (let i = 1; i < anchors.length - 1; i++) {
+            if (anchors[i - 1].crumble || anchors[i].amp) continue;
+            if (rnd() < lerp(0.22, 0.4, t)) anchors[i].crumble = true;
+        }
+    }
+    /* geometry invariant (binding): worst-case hook gap — base distance plus
+       both bob amplitudes — must stay comfortably under GRAB_RANGE so every
+       hook is always ropeable from its neighbor at any point in its travel. */
+    for (let i = 1; i < anchors.length; i++) {
+        const pv = anchors[i - 1], cu = anchors[i];
+        const bd = Math.hypot(cu.x - pv.x, cu.baseY - pv.baseY);
+        const budget = 385 - bd;
+        const need = pv.amp + cu.amp;
+        if (need > budget) {
+            const k = Math.max(0, budget) / (need || 1);
+            pv.amp *= k; cu.amp *= k;
+        }
+        if (pv.amp < 22) pv.amp = 0;
+        if (cu.amp < 22) cu.amp = 0;
     }
     /* x has already advanced one gap past the last hook — anchor the flag
        to the last hook itself so the final fling is a fair, tuned distance */
@@ -771,8 +895,14 @@ function buildLevel(idx) {
     const last = a[a.length - 1];
     stars.push({ x: lerp(last.x + 130, finishX - 60, rnd()), y: lerp(200, 330, rnd()) });
 
-    return { idx, anchors, saws, pads, rings, stars, finishX, len: finishX + 300 };
+    /* par time: the 3-star "beat this" goal shown before the level starts */
+    const par = Math.max(6, Math.round((finishX / 400) * 2) / 2);
+
+    return { idx, anchors, saws, pads, rings, winds, stars, finishX, len: finishX + 300, par };
 }
+/* Cache par times once so panels can show goals without rebuilding levels */
+const PARS = [0];
+for (let li = 1; li <= LEVEL_COUNT; li++) PARS.push(buildLevel(li).par);
 
 /* ================= Player + cosmetic ragdoll ================= */
 const player = {
@@ -783,8 +913,11 @@ const player = {
     time: 0,                 /* attempt timer */
     starsGot: [false, false, false],
     ringsUsed: [],
-    squash: 0                /* landing/attach squash animation 0..1 */
+    squash: 0,               /* landing/attach squash animation 0..1 */
+    airT: 0                  /* seconds since last hook/pad — big-air tracker */
 };
+let levelDeaths = 0;         /* deaths since this level was loaded (flawless tag) */
+let slowmo = 0;              /* seconds of time-dilation left after a perfect launch */
 
 /* Ragdoll: pure decoration driven by Verlet points hanging off the body.
    4 limbs + a scarf tail. Each limb is one point constrained to a mount
@@ -829,11 +962,14 @@ function ragStep(dt) {
 
 /* ================= Camera ================= */
 const cam = { x: 0, y: 300, zoom: 1 };
+let zoomPunch = 0;   /* brief extra zoom-out on a perfect launch */
 function camStep(dt) {
+    zoomPunch = Math.max(0, zoomPunch - dt * 0.32);
     const sp = Math.hypot(player.vx, player.vy);
     const tx = player.x + player.vx * 0.22;
-    const ty = clamp(player.y * 0.55 + 140, 180, 470);
-    const tz = clamp(1.05 - sp / 4200, 0.82, 1.05);
+    /* slight vertical lead in the direction of travel */
+    const ty = clamp(player.y * 0.55 + 140 + clamp(player.vy * 0.045, -34, 50), 175, 475);
+    const tz = clamp(1.05 - sp / 4200, 0.82, 1.05) - zoomPunch;
     const k = 1 - Math.pow(0.0018, dt);   /* smooth, framerate-independent */
     cam.x = lerp(cam.x, tx, k);
     cam.y = lerp(cam.y, ty, k);
@@ -848,13 +984,16 @@ function camSnap() {
 /* ================= Particles (pooled) ================= */
 const POOL = 140;
 const parts = [];
-for (let i = 0; i < POOL; i++) parts.push({ on: false, x: 0, y: 0, vx: 0, vy: 0, t: 0, life: 1, r: 3, col: '#fff', grav: 1 });
-function spawnPart(x, y, vx, vy, life, r, col, grav) {
+for (let i = 0; i < POOL; i++) parts.push({ on: false, x: 0, y: 0, vx: 0, vy: 0, t: 0, life: 1, r: 3, col: '#fff', grav: 1, sh: 0, rot: 0, vr: 0 });
+function spawnPart(x, y, vx, vy, life, r, col, grav, sh) {
     for (let i = 0; i < POOL; i++) {
         const p = parts[i];
         if (!p.on) {
             p.on = true; p.x = x; p.y = y; p.vx = vx; p.vy = vy;
             p.t = 0; p.life = life; p.r = r; p.col = col; p.grav = grav === undefined ? 1 : grav;
+            p.sh = sh || 0;
+            p.rot = p.sh ? rand(0, Math.PI * 2) : 0;
+            p.vr = p.sh ? rand(-8, 8) : 0;
             return;
         }
     }
@@ -863,6 +1002,15 @@ function burst(x, y, n, cols, speed, life, grav) {
     for (let i = 0; i < n; i++) {
         const a = rand(0, Math.PI * 2), s = rand(speed * 0.3, speed);
         spawnPart(x, y, Math.cos(a) * s, Math.sin(a) * s, rand(life * 0.6, life), rand(2.5, 6), cols[(Math.random() * cols.length) | 0], grav);
+    }
+}
+/* confetti: chunky spinning rectangles fanned upward */
+function confetti(x, y, n) {
+    const cols = ['#FFE14D', '#FF5FA2', '#4FC3F7', '#7ED957', '#FFFFFF', '#FFB13D'];
+    for (let i = 0; i < n; i++) {
+        const a = rand(-Math.PI * 0.95, -Math.PI * 0.05), s = rand(260, 680);
+        spawnPart(x + rand(-30, 30), y + rand(-20, 20), Math.cos(a) * s, Math.sin(a) * s,
+            rand(0.9, 1.5), rand(3.2, 6), cols[(Math.random() * cols.length) | 0], 0.9, 1);
     }
 }
 function partsStep(dt) {
@@ -874,7 +1022,31 @@ function partsStep(dt) {
         p.vy += 900 * p.grav * dt;
         p.x += p.vx * dt;
         p.y += p.vy * dt;
+        if (p.sh) { p.rot += p.vr * dt; p.vx *= (1 - 1.4 * dt); }
     }
+}
+
+/* Layered celebration FX: expanding rings, radial rays, star glints.
+   Small capped list — cheap strokes only, no gradients or filters. */
+const fxList = [];
+function addFx(type, x, y, delay, life) {
+    if (fxList.length > 26) fxList.shift();
+    fxList.push({ type, x, y, t: 0, delay: delay || 0, life: life || 0.7 });
+}
+function fxStep(dt) {
+    for (let i = fxList.length - 1; i >= 0; i--) {
+        const f = fxList[i];
+        f.t += dt;
+        if (f.t - f.delay > f.life) fxList.splice(i, 1);
+    }
+}
+function celebrate(x, y) {
+    addFx('ring', x, y, 0, 0.7);
+    addFx('ring', x, y, 0.13, 0.7);
+    addFx('ring', x, y, 0.26, 0.7);
+    addFx('rays', x, y, 0.05, 0.9);
+    for (let i = 0; i < 7; i++) addFx('glint', x + rand(-150, 150), y + rand(-130, 90), rand(0, 0.55), 0.6);
+    confetti(x, y - 20, 36);
 }
 
 /* Trail ribbon */
@@ -916,11 +1088,15 @@ function startAttempt(resetTimer) {
     player.lastAnchor = null; player.regrabT = 0;
     player.dead = false; player.deadT = 0;
     player.squash = 0;
+    player.airT = 0;
+    slowmo = 0;
     if (resetTimer !== false) {
         player.time = 0;
         player.starsGot = [false, false, false];
     }
     player.ringsUsed = level.rings.map(() => false);
+    /* crumbled hooks regrow on every attempt */
+    for (const a of level.anchors) { a.broken = false; if (a.amp) a.y = a.baseY; }
     ragReset();
     trailClear();
     camSnap();
@@ -929,21 +1105,38 @@ function startAttempt(resetTimer) {
 function loadLevel(n) {
     curLevel = clamp(n, 1, LEVEL_COUNT);
     level = buildLevel(curLevel);
-    pal = PALETTES[(curLevel - 1) % PALETTES.length];
+    pal = palForLevel(curLevel);
+    levelDeaths = 0;
     document.getElementById('hudLevel').textContent = 'LEVEL ' + curLevel;
     const bt = data.bestTimes[curLevel];
-    document.getElementById('hudBest').textContent = bt ? 'BEST ' + fmtTime(bt) + 's' : '';
+    document.getElementById('hudBest').textContent =
+        (bt ? 'BEST ' + fmtTime(bt) + 's • ' : '') + '⚡ GOAL ' + fmtTime(level.par) + 's';
     startAttempt(true);
 }
 
+let nearMissTimer = 0;
+function showNearMiss(msg) {
+    const el = document.getElementById('nearMiss');
+    el.textContent = msg;
+    el.classList.remove('show');
+    void el.offsetWidth;   /* restart the pop animation */
+    el.classList.add('show');
+    clearTimeout(nearMissTimer);
+    nearMissTimer = setTimeout(() => el.classList.remove('show'), 1500);
+}
 function die() {
     if (player.dead) return;
     player.dead = true;
     player.deadT = 0;
     player.hooked = false;
+    levelDeaths++;
     sfxSplat();
     addTrauma(0.45);
     burst(player.x, player.y, 26, ['#8F7BFF', '#FFE14D', '#FFFFFF', pal.goo], 460, 0.7, 1);
+    /* near-miss psychology: show how close they got */
+    const pct = clamp(Math.round(player.x / level.finishX * 100), 0, 99);
+    if (pct >= 90) showNearMiss('SO CLOSE! ' + pct + '% there!');
+    else if (pct >= 55) showNearMiss(pct + '% there — go again!');
     state = State.DEAD;
 }
 
@@ -951,7 +1144,11 @@ function clearLevel() {
     state = State.CLEAR;
     sfxFanfare();
     addTrauma(0.2);
-    burst(player.x, player.y, 40, ['#FFE14D', '#FF5FA2', '#4FC3F7', '#7ED957', '#FFFFFF'], 520, 1.1, 0.5);
+    /* layered celebration: confetti + rings + rays + glints at the flag */
+    const fsp = Math.hypot(player.vx, player.vy);
+    burst(player.x, player.y, 24, ['#FFE14D', '#FF5FA2', '#4FC3F7', '#7ED957', '#FFFFFF'], 520, 1.1, 0.5);
+    celebrate(player.x, player.y);
+    if (fsp > 900) addFloat(player.x, player.y - 80, 'SUPER SPEED!', '#4DFFDF');
 
     const t = Math.round(player.time * 10) / 10;
     const prevBest = data.bestTimes[curLevel];
@@ -990,6 +1187,11 @@ function clearLevel() {
     }
     document.getElementById('clearTime').textContent = fmtTime(t) + 's';
     document.getElementById('clearBest').textContent = 'Best: ' + fmtTime(data.bestTimes[curLevel]) + 's';
+    const goalEl = document.getElementById('clearGoal');
+    const beatPar = t <= level.par;
+    goalEl.textContent = beatPar ? '⚡ Goal ' + fmtTime(level.par) + 's — BEATEN!' : '⚡ Goal: ' + fmtTime(level.par) + 's';
+    goalEl.className = beatPar ? 'beat' : '';
+    document.getElementById('flawless').style.display = levelDeaths === 0 ? 'block' : 'none';
     document.getElementById('newBest').style.display = isNewBest && prevBest ? 'block' : 'none';
     document.getElementById('nextBtn').textContent = curLevel === LEVEL_COUNT ? 'PLAY AGAIN ↻' : 'NEXT ▶';
     document.getElementById('clearPanel').classList.add('show');
@@ -1015,6 +1217,7 @@ function findTarget() {
        Generous on purpose — the skill is WHEN you release, not aiming. */
     let best = null, bestScore = Infinity;
     for (const a of level.anchors) {
+        if (a.broken) continue;   /* crumbled hooks are gone this attempt */
         if (player.regrabT > 0 && a === player.lastAnchor) continue;
         const dx = a.x - player.x, dy = a.y - player.y;
         if (dx < -60) continue;               /* don't grab behind you */
@@ -1036,17 +1239,33 @@ function tryHook() {
     player.anchor = a;
     player.ropeLen = Math.hypot(a.x - player.x, a.y - player.y);
     player.squash = 1;
+    if (player.airT > 1.6) addFloat(player.x, player.y - 50, 'BIG AIR!', '#FFFFFF');
+    player.airT = 0;
     sfxAttach();
     burst(a.x, a.y, 6, [pal.anchor, '#FFFFFF'], 200, 0.4, 0.4);
     if (hintStage === 0 && curLevel === 1) { hintStage = 1; hintEl.textContent = 'RELEASE to fly!'; }
 }
 function unhook() {
     if (!player.hooked) return;
+    const ax = player.anchor.x, ay = player.anchor.y;
     player.lastAnchor = player.anchor;
     player.regrabT = 0.4;
     player.hooked = false;
     player.anchor = null;
-    sfxRelease(Math.hypot(player.vx, player.vy));
+    const sp = Math.hypot(player.vx, player.vy);
+    sfxRelease(sp);
+    /* crumble hooks break the moment you let go of them */
+    if (player.lastAnchor.crumble && !player.lastAnchor.broken) {
+        player.lastAnchor.broken = true;
+        sfxCrack();
+        burst(ax, ay, 10, ['#FFB13D', '#2B2350', '#FFFFFF'], 300, 0.6, 1);
+    }
+    /* perfect launch: brief time-dilation + camera zoom punch */
+    if (sp > 1020) {
+        slowmo = 0.18;
+        zoomPunch = 0.07;
+        burst(player.x, player.y, 5, ['#FFFFFF'], 220, 0.35, 0);
+    }
     if (hintStage === 1) { hintStage = 2; hintEl.style.display = 'none'; }
 }
 
@@ -1055,15 +1274,29 @@ function physStep(dt) {
     if (player.dead) return;
     if (player.regrabT > 0) player.regrabT -= dt;
 
+    /* moving anchors bob on their vertical track (amp pre-clamped so the
+       worst-case hook gap always stays under grab range) */
+    for (const a of level.anchors) {
+        if (a.amp) a.y = a.baseY + Math.sin(player.time * a.spd + a.ph) * a.amp;
+    }
+
     /* gravity + drag */
     player.vy += GRAVITY * dt;
     const drag = 1 - AIR_DRAG * dt;
     player.vx *= drag;
     player.vy *= drag;
 
+    /* wind columns: gentle updraft, pure assist (capped so it can't fling) */
+    for (const w of level.winds) {
+        if (player.x > w.x && player.x < w.x + w.w && player.y > 40 && player.vy > -640) {
+            player.vy -= w.str * dt;
+        }
+    }
+
     /* integrate */
     player.x += player.vx * dt;
     player.y += player.vy * dt;
+    if (!player.hooked) player.airT += dt;
 
     /* rope constraint: one-sided (rope, not rod) + slow reel-in for energy */
     if (player.hooked) {
@@ -1114,6 +1347,8 @@ function physStep(dt) {
             player.y = pad.y - PLAYER_R;
             player.vy = -Math.max(Math.abs(player.vy) * 0.88, 560);
             player.vx += 40;   /* nudge toward the flag */
+            if (player.airT > 1.6) addFloat(player.x, player.y - 50, 'BIG AIR!', '#FFFFFF');
+            player.airT = 0;
             player.squash = 1;
             pad.hit = 0.001;   /* squash animation timer */
             sfxBoing();
@@ -1175,13 +1410,18 @@ function physStep(dt) {
 
 /* ================= Update ================= */
 let phys_acc = 0;
+let rushT = 0;   /* air-rush particle spawn throttle */
 function update(dt) {
     trauma = Math.max(0, trauma - dt * 1.7);
 
     if (state === State.PLAYING) {
         player.time += dt;
         player.squash = Math.max(0, player.squash - dt * 4);
-        phys_acc += dt;
+        /* time-dilation after a perfect launch: physics (and ragdoll) run at
+           45% for a beat — the attempt timer keeps counting real time. */
+        const tdt = slowmo > 0 ? dt * 0.45 : dt;
+        slowmo = Math.max(0, slowmo - dt);
+        phys_acc += tdt;
         let steps = 0;
         while (phys_acc >= PHYS_STEP && steps < 8) {
             physStep(PHYS_STEP);
@@ -1189,9 +1429,18 @@ function update(dt) {
             steps++;
             if (state !== State.PLAYING) break;   /* died or cleared mid-step */
         }
-        ragStep(dt);
-        trailStep(dt);
+        ragStep(tdt);
+        trailStep(tdt);
         camStep(dt);
+        /* air-rush streaks behind the body at high speed */
+        rushT += dt;
+        const rsp = Math.hypot(player.vx, player.vy);
+        if (rsp > 1000 && rushT > 0.05) {
+            rushT = 0;
+            const rdx = player.vx / rsp, rdy = player.vy / rsp;
+            spawnPart(player.x - rdx * 22 + rand(-9, 9), player.y - rdy * 22 + rand(-9, 9),
+                -rdx * 170 + rand(-40, 40), -rdy * 170 + rand(-40, 40), 0.3, 2.6, '#FFFFFF', 0);
+        }
         /* HUD timer */
         hudTimeEl.textContent = fmtTime(Math.round(player.time * 10) / 10);
         /* pad squash timers */
@@ -1209,6 +1458,7 @@ function update(dt) {
         camStep(dt);
     }
     partsStep(dt);
+    fxStep(dt);
     for (let i = floats.length - 1; i >= 0; i--) {
         floats[i].t += dt;
         if (floats[i].t > 1) floats.splice(i, 1);
@@ -1228,14 +1478,21 @@ function worldTransform() {
     return s;
 }
 
+/* sky gradient is cached — rebuilt only when the palette or height changes,
+   never inside the frame loop */
+let skyGrad = null, skyGradKey = '';
 function render() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     /* sky */
-    const g = ctx.createLinearGradient(0, 0, 0, ch);
-    g.addColorStop(0, pal.skyTop);
-    g.addColorStop(1, pal.skyBot);
-    ctx.fillStyle = g;
+    const skyKey = pal.skyTop + '|' + pal.skyBot + '|' + ch;
+    if (skyKey !== skyGradKey) {
+        skyGrad = ctx.createLinearGradient(0, 0, 0, ch);
+        skyGrad.addColorStop(0, pal.skyTop);
+        skyGrad.addColorStop(1, pal.skyBot);
+        skyGradKey = skyKey;
+    }
+    ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, cw, ch);
 
     /* parallax clouds + hills (screen space, offset by camera) */
@@ -1245,8 +1502,27 @@ function render() {
     const viewL = cam.x - cw * 0.38 / s - 80;
     const viewR = cam.x + cw * 0.62 / s + 80;
 
+    /* drifting atmosphere motes: world-anchored, tiled — fills the sky band
+       with depth. Tile index via Math.floor (safe on negative coords). */
+    {
+        const mt = performance.now() / 1000;
+        const P = 1600;
+        ctx.fillStyle = 'rgba(255,255,255,0.28)';
+        for (let i = 0; i < 10; i++) {
+            const ox = (i * 431) % P;
+            const oy = 80 + (i * 173) % 460;
+            const bob = Math.sin(mt * 0.5 + i * 1.3) * 12;
+            for (let kk = Math.floor((viewL - ox) / P); ox + kk * P <= viewR; kk++) {
+                ctx.beginPath();
+                ctx.arc(ox + kk * P, oy + bob, 2.2 + (i % 3), 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+
     drawGoo(viewL, viewR);
     drawFinish();
+    drawWinds(viewL, viewR);
 
     /* bounce pads */
     for (const pad of level.pads) {
@@ -1302,13 +1578,40 @@ function render() {
     const target = (state === State.PLAYING && !player.hooked && !player.dead) ? findTarget() : null;
     for (const a of level.anchors) {
         if (a.x < viewL || a.x > viewR) continue;
+        /* moving hooks show their track so the bob reads as intentional */
+        if (a.amp) {
+            ctx.strokeStyle = 'rgba(43,35,80,0.28)';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.baseY - a.amp - 6);
+            ctx.lineTo(a.x, a.baseY + a.amp + 6);
+            ctx.stroke();
+        }
+        if (a.broken) {
+            /* crumbled stub — clearly not grabbable */
+            ctx.globalAlpha = 0.35;
+            ctx.fillStyle = '#5A5470';
+            ctx.beginPath(); ctx.arc(a.x, a.y, 9, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1;
+            continue;
+        }
         const isT = a === target;
         const isH = player.hooked && a === player.anchor;
         /* pin */
         ctx.fillStyle = '#2B2350';
         ctx.beginPath(); ctx.arc(a.x, a.y, 16, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = isH ? '#FFFFFF' : pal.anchor;
+        ctx.fillStyle = isH ? '#FFFFFF' : (a.crumble ? '#FFB13D' : pal.anchor);
         ctx.beginPath(); ctx.arc(a.x, a.y, 10, 0, Math.PI * 2); ctx.fill();
+        if (a.crumble) {
+            /* crack marks: one-use hooks read as fragile at a glance */
+            ctx.strokeStyle = '#2B2350';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(a.x - 6, a.y - 3); ctx.lineTo(a.x - 1, a.y); ctx.lineTo(a.x - 5, a.y + 6);
+            ctx.moveTo(a.x + 6, a.y - 5); ctx.lineTo(a.x + 3, a.y + 1);
+            ctx.stroke();
+        }
         if (isT) {
             const pu = 1 + Math.sin(performance.now() / 160) * 0.14;
             ctx.lineWidth = 5;
@@ -1338,21 +1641,36 @@ function render() {
             ctx.lineTo(player.x, player.y);
         }
         ctx.stroke();
+        /* bright core so the rope reads taut and shiny */
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+        ctx.stroke();
     }
 
     /* player */
     if (!(state === State.DEAD && player.deadT > 0.1)) drawPlayer();
 
-    /* particles */
+    /* particles (circles + spinning confetti rects) */
     for (let i = 0; i < POOL; i++) {
         const p = parts[i];
         if (!p.on) continue;
         const k = 1 - p.t / p.life;
         ctx.globalAlpha = k;
         ctx.fillStyle = p.col;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r * k + 1, 0, Math.PI * 2); ctx.fill();
+        if (p.sh) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.fillRect(-p.r, -p.r * 0.6, p.r * 2, p.r * 1.2);
+            ctx.restore();
+        } else {
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r * k + 1, 0, Math.PI * 2); ctx.fill();
+        }
     }
     ctx.globalAlpha = 1;
+
+    /* celebration fx layer (rings / rays / glints) */
+    drawFx();
 
     /* floating texts */
     ctx.textAlign = 'center';
@@ -1366,9 +1684,33 @@ function render() {
 
     /* speed lines (screen space) */
     drawSpeedLines();
+    /* level intro banner: level number + goal time, first 2 seconds */
+    drawIntro();
 }
 
 function drawBackdrop() {
+    /* sun / moon (fixed sky position, subtle glow ring — no shadowBlur) */
+    ctx.fillStyle = pal.sun;
+    const sunX = (cw * 0.8) | 0, sunY = (ch * 0.15) | 0;
+    ctx.globalAlpha = 0.22;
+    ctx.beginPath(); ctx.arc(sunX, sunY, 56, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.beginPath(); ctx.arc(sunX, sunY, 34, 0, Math.PI * 2); ctx.fill();
+    if (pal.night) {
+        /* crescent bite + twinkling stars */
+        ctx.fillStyle = pal.skyTop;
+        ctx.beginPath(); ctx.arc(sunX + 13, sunY - 8, 27, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        const tw = performance.now() / 700;
+        for (let i = 0; i < 14; i++) {
+            const sx = (((i * 379 - cam.x * 0.08) % cw) + cw) % cw;
+            const sy2 = 24 + (i * 131) % ((ch * 0.5) | 0);
+            const a = 0.35 + 0.4 * Math.abs(Math.sin(tw + i * 1.7));
+            ctx.globalAlpha = a;
+            ctx.fillRect(sx | 0, sy2 | 0, 3, 3);
+        }
+        ctx.globalAlpha = 1;
+    }
     /* clouds */
     ctx.fillStyle = pal.cloud;
     const cx0 = cam.x * 0.25;
@@ -1381,6 +1723,17 @@ function drawBackdrop() {
         ctx.arc(wx - 32, wy + 10, 22, 0, Math.PI * 2);
         ctx.fill();
     }
+    /* distant ridge — slowest parallax layer for depth */
+    const fx0 = cam.x * 0.28;
+    ctx.fillStyle = pal.far;
+    ctx.beginPath();
+    ctx.moveTo(0, ch);
+    for (let x = 0; x <= cw + 60; x += 60) {
+        ctx.lineTo(x, ch * 0.66 + Math.sin((x + fx0) / 340) * 52 + Math.sin((x + fx0) / 90) * 9);
+    }
+    ctx.lineTo(cw, ch);
+    ctx.closePath();
+    ctx.fill();
     /* far hills */
     const hx = cam.x * 0.45;
     ctx.fillStyle = pal.hillA;
@@ -1425,6 +1778,38 @@ function drawGoo(viewL, viewR) {
         ctx.beginPath();
         ctx.arc(x + Math.sin(t + x) * 8, by, br, 0, Math.PI * 2);
         ctx.fill();
+    }
+}
+
+function drawWinds(viewL, viewR) {
+    if (!level.winds || !level.winds.length) return;
+    const now = performance.now();
+    for (let wi = 0; wi < level.winds.length; wi++) {
+        const w = level.winds[wi];
+        if (w.x + w.w < viewL || w.x > viewR) continue;
+        /* soft column */
+        ctx.fillStyle = 'rgba(255,255,255,0.07)';
+        ctx.fillRect(w.x | 0, 40, w.w | 0, GOO_Y - 70);
+        /* rising streaks — all modulo inputs kept positive (abs-guarded) */
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        const span = Math.max(1, (w.w - 28) | 0);
+        for (let j = 0; j < 6; j++) {
+            const colX = w.x + 14 + Math.abs((j * 97 + wi * 41) % span);
+            const yy = GOO_Y - 40 - Math.abs((now * (0.2 + (j % 3) * 0.07) + j * 173 + wi * 311) % 600);
+            const ln = 24 + (j % 3) * 12;
+            ctx.globalAlpha = 0.2 + 0.18 * (j % 3);
+            ctx.beginPath();
+            ctx.moveTo(colX, yy + ln);
+            ctx.lineTo(colX, yy);
+            /* arrow tip */
+            ctx.moveTo(colX - 5, yy + 7);
+            ctx.lineTo(colX, yy);
+            ctx.lineTo(colX + 5, yy + 7);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
     }
 }
 
@@ -1518,6 +1903,49 @@ function drawTrail() {
     ctx.globalAlpha = 1;
 }
 
+function drawFx() {
+    for (const f of fxList) {
+        const t = f.t - f.delay;
+        if (t < 0) continue;
+        const k = clamp(t / f.life, 0, 1);
+        if (f.type === 'ring') {
+            const r = Math.max(1, 22 + k * 200);
+            ctx.globalAlpha = (1 - k) * 0.85;
+            ctx.lineWidth = 2 + 9 * (1 - k);
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, Math.PI * 2); ctx.stroke();
+        } else if (f.type === 'rays') {
+            ctx.globalAlpha = (1 - k) * 0.7;
+            ctx.strokeStyle = '#FFE14D';
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            for (let i = 0; i < 10; i++) {
+                const a = (i / 10) * Math.PI * 2 + k * 0.7;
+                const r1 = 34 + k * 160;
+                const r2 = r1 + 12 + 48 * (1 - k);
+                ctx.beginPath();
+                ctx.moveTo(f.x + Math.cos(a) * r1, f.y + Math.sin(a) * r1);
+                ctx.lineTo(f.x + Math.cos(a) * r2, f.y + Math.sin(a) * r2);
+                ctx.stroke();
+            }
+        } else if (f.type === 'glint') {
+            /* 4-point sparkle that scales in and out */
+            const r = Math.max(0.5, Math.sin(k * Math.PI) * 15);
+            ctx.globalAlpha = 0.95;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.moveTo(f.x, f.y - r * 1.8);
+            ctx.quadraticCurveTo(f.x + r * 0.35, f.y - r * 0.35, f.x + r * 1.8, f.y);
+            ctx.quadraticCurveTo(f.x + r * 0.35, f.y + r * 0.35, f.x, f.y + r * 1.8);
+            ctx.quadraticCurveTo(f.x - r * 0.35, f.y + r * 0.35, f.x - r * 1.8, f.y);
+            ctx.quadraticCurveTo(f.x - r * 0.35, f.y - r * 0.35, f.x, f.y - r * 1.8);
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+    ctx.globalAlpha = 1;
+}
+
 function drawPlayer() {
     const sp = Math.hypot(player.vx, player.vy);
     const dirX = sp > 1 ? player.vx / sp : 1;
@@ -1555,25 +1983,56 @@ function drawPlayer() {
     ctx.fillStyle = '#A794FF';
     ctx.beginPath(); ctx.arc(-3, -4, PLAYER_R - 4, 0, Math.PI * 2); ctx.fill();
 
-    /* face looks where you're going */
+    /* face looks where you're going; expression tracks the moment:
+       worried when plummeting, joy-squint at top speed, grin when fast */
     const fx = dirX * 4, fy = dirY * 4;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.beginPath();
-    ctx.arc(fx - 4, fy - 3, 5.4, 0, Math.PI * 2);
-    ctx.arc(fx + 5, fy - 3, 5.4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#2B2350';
-    const look = player.hooked ? 1.6 : 2.2;
-    ctx.beginPath();
-    ctx.arc(fx - 4 + dirX * look, fy - 3 + dirY * look, 2.6, 0, Math.PI * 2);
-    ctx.arc(fx + 5 + dirX * look, fy - 3 + dirY * look, 2.6, 0, Math.PI * 2);
-    ctx.fill();
-    /* mouth: grin when fast, small o when slow */
+    const worried = !player.hooked && !player.dead && player.vy > 640;
+    const thrilled = sp > 1150 && !worried;
+    if (thrilled) {
+        /* happy closed eyes (upside-down arcs) */
+        ctx.strokeStyle = '#2B2350';
+        ctx.lineWidth = 2.6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(fx - 4, fy - 2, 4.4, 1.1 * Math.PI, 1.9 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(fx + 5, fy - 2, 4.4, 1.1 * Math.PI, 1.9 * Math.PI);
+        ctx.stroke();
+    } else {
+        ctx.fillStyle = '#FFFFFF';
+        const er = worried ? 6.4 : 5.4;
+        ctx.beginPath();
+        ctx.arc(fx - 4, fy - 3, er, 0, Math.PI * 2);
+        ctx.arc(fx + 5, fy - 3, er, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#2B2350';
+        const look = player.hooked ? 1.6 : 2.2;
+        const pr = worried ? 1.9 : 2.6;
+        const pdy = worried ? 2.4 : dirY * look;
+        const pdx = worried ? 0 : dirX * look;
+        ctx.beginPath();
+        ctx.arc(fx - 4 + pdx, fy - 3 + pdy, pr, 0, Math.PI * 2);
+        ctx.arc(fx + 5 + pdx, fy - 3 + pdy, pr, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    /* rosy cheeks at speed */
+    if (sp > 620 && !worried) {
+        ctx.fillStyle = 'rgba(255,95,162,0.5)';
+        ctx.beginPath();
+        ctx.arc(fx - 9, fy + 3, 2.6, 0, Math.PI * 2);
+        ctx.arc(fx + 10, fy + 3, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    /* mouth: big grin when fast, wobbly o when worried, small o when slow */
     ctx.strokeStyle = '#2B2350';
     ctx.lineWidth = 2.2;
     ctx.beginPath();
-    if (sp > 620) {
-        ctx.arc(fx, fy + 5, 5, 0.15 * Math.PI, 0.85 * Math.PI);
+    if (worried) {
+        const wob = Math.sin(performance.now() / 60) * 0.8;
+        ctx.arc(fx, fy + 6 + wob, 3.4, 0, Math.PI * 2);
+    } else if (sp > 620) {
+        ctx.arc(fx, fy + 5, thrilled ? 6 : 5, 0.15 * Math.PI, 0.85 * Math.PI);
     } else {
         ctx.arc(fx, fy + 6, 2.6, 0, Math.PI * 2);
     }
@@ -1583,21 +2042,57 @@ function drawPlayer() {
 
 function drawSpeedLines() {
     const sp = Math.hypot(player.vx, player.vy);
-    if (state !== State.PLAYING || sp < 950) return;
-    const k = clamp((sp - 950) / (MAX_SPEED - 950), 0, 1);
+    if (state !== State.PLAYING || sp < 880) return;
+    const k = clamp((sp - 880) / (MAX_SPEED - 880), 0, 1);
+    /* streaks aligned with the travel direction, denser toward screen edges
+       so the middle stays readable. All modulo inputs are non-negative. */
+    const ang = Math.atan2(player.vy, player.vx);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.strokeStyle = 'rgba(255,255,255,' + (0.25 * k).toFixed(3) + ')';
-    ctx.lineWidth = 3;
-    const n = Math.floor(3 + k * 5);
+    ctx.save();
+    ctx.translate((cw / 2) | 0, (ch / 2) | 0);
+    ctx.rotate(ang);
+    const diag = Math.max(1, Math.hypot(cw, ch));
+    const n = (4 + k * 6) | 0;
+    const now = performance.now();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineCap = 'round';
     for (let i = 0; i < n; i++) {
-        const y = ((i * 173 + performance.now() * 0.9) % ch);
-        const len = 60 + k * 130;
-        const x = cw - ((performance.now() * (1.6 + i * 0.3)) % (cw + len));
+        const off = Math.abs((i * 379 + 131) % (diag | 0)) - diag / 2;
+        const edge = clamp(Math.abs(off) / (diag * 0.5), 0, 1);
+        ctx.globalAlpha = (0.07 + 0.3 * edge) * k;
+        ctx.lineWidth = 2 + edge * 3;
+        const len = 70 + k * 160 + edge * 60;
+        const x = diag / 2 - Math.abs((now * (0.9 + i * 0.14)) % (diag + len));
         ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + len, y);
+        ctx.moveTo(x, off);
+        ctx.lineTo(x - len, off);
         ctx.stroke();
     }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+}
+
+function drawIntro() {
+    if (state !== State.PLAYING || player.time > 2.1) return;
+    const t = player.time;
+    const aIn = clamp(t / 0.22, 0, 1);
+    const aOut = clamp((2.1 - t) / 0.4, 0, 1);
+    const a = Math.min(aIn, aOut);
+    if (a <= 0) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.textAlign = 'center';
+    ctx.globalAlpha = a;
+    const y = (ch * 0.3 - (1 - aIn) * 26) | 0;
+    const big = Math.min(44, cw * 0.1) | 0;
+    ctx.font = '800 ' + big + 'px Nunito, sans-serif';
+    ctx.fillStyle = 'rgba(43,35,80,0.35)';
+    ctx.fillText('LEVEL ' + curLevel, (cw / 2) | 0, y + 3);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText('LEVEL ' + curLevel, (cw / 2) | 0, y);
+    ctx.font = '800 ' + ((big * 0.48) | 0) + 'px Nunito, sans-serif';
+    ctx.fillStyle = '#FFE14D';
+    ctx.fillText('⚡ BEAT ' + fmtTime(level.par) + 's', (cw / 2) | 0, y + big * 0.85);
+    ctx.globalAlpha = 1;
 }
 
 /* ================= HUD / panels ================= */
@@ -1611,7 +2106,10 @@ function refreshStartPanel() {
     lbl.querySelector('.n').textContent = 'LEVEL ' + curLevel;
     lbl.querySelector('.s').innerHTML = st.map(b => '<span class="' + (b ? '' : 'off') + '">⭐</span>').join('');
     const bt = data.bestTimes[curLevel];
-    lbl.querySelector('.t').textContent = bt ? 'Best ' + fmtTime(bt) + 's' : 'Not cleared yet';
+    const beat = bt && bt <= PARS[curLevel];
+    lbl.querySelector('.t').textContent =
+        (bt ? 'Best ' + fmtTime(bt) + 's • ' : '') + '⚡ Goal ' + fmtTime(PARS[curLevel]) + 's' + (beat ? ' ✔' : '');
+    document.getElementById('worldLine').textContent = palForLevel(curLevel).name;
     document.getElementById('lvlPrev').disabled = curLevel <= 1;
     document.getElementById('lvlNext').disabled = curLevel >= Math.min(data.unlocked, LEVEL_COUNT);
     document.getElementById('totalStarsLine').textContent = '⭐ ' + countTotalStars() + ' / ' + (LEVEL_COUNT * 3) + ' stars collected';
@@ -1677,6 +2175,7 @@ window.addEventListener('keydown', (e) => {
         if (state === State.PLAYING) pauseGame();
         else if (state === State.PAUSED) resumeGame();
     }
+    if (e.code === 'KeyR' && state === State.CLEAR) { ensureAudio(); startPlay(); }
 });
 window.addEventListener('keyup', (e) => {
     if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
@@ -1712,6 +2211,8 @@ function nextFromClear() {
     startPlay();
 }
 document.getElementById('nextBtn').addEventListener('click', nextFromClear);
+/* instant retry from the clear panel — chase the goal time and the stars */
+document.getElementById('retryBtn').addEventListener('click', () => { ensureAudio(); startPlay(); });
 
 function pauseGame() {
     if (state !== State.PLAYING) return;
@@ -1741,12 +2242,25 @@ muteBtn.addEventListener('click', () => {
 refreshMute();
 
 /* ================= Boot + main loop ================= */
-level = buildLevel(1);
-pal = PALETTES[0];
 curLevel = clamp(data.unlocked, 1, LEVEL_COUNT);
+level = buildLevel(curLevel);
+pal = palForLevel(curLevel);
 startAttempt(true);
 camSnap();
 showMenu();
+
+/* Read-only test hooks (enabled only when a harness sets __RR_TEST__) */
+if (window.__RR_TEST__) {
+    window.__rr = {
+        get state() { return state; },
+        player,
+        get level() { return level; },
+        get curLevel() { return curLevel; },
+        get deaths() { return levelDeaths; },
+        buildLevel, findTarget,
+        LEVEL_COUNT, GRAB_RANGE, GOO_Y, PARS
+    };
+}
 
 let last = performance.now();
 function loop(now) {
