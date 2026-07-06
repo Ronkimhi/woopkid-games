@@ -23,6 +23,8 @@ Live: https://ronkimhi.github.io/woopkid-games/ (woopkid.com will point here)
 | 13 | Drift & Collect | Hold-to-steer racer | Wave 2c rebuild |
 | 14 | Color Pop | Bubble shooter | Wave 2c rebuild |
 | 15 | Block Stax | Falling blocks | Wave 2c rebuild |
+| 16 | Merge Squad | Toy merge auto-battler | Wave 3 |
+| 17 | Rope Rush | Swing & fly momentum | Wave 3 |
 
 ## Principles
 
