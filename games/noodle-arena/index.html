@@ -112,7 +112,7 @@ html, body {
     left: 50%;
     transform: translateX(-50%);
     text-align: center;
-    z-index: 20;
+    z-index: 35;
     display: none;
     pointer-events: none;
 }
@@ -146,6 +146,22 @@ html, body {
     font-size: 13px;
     padding: 2px 12px;
     border-radius: 999px;
+}
+#comboChip {
+    display: none;
+    margin-top: 5px;
+    background: linear-gradient(135deg, #FF5FA2, #FF9F40);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: 13px;
+    padding: 2px 12px;
+    border-radius: 999px;
+    animation: comboPulse 0.45s ease-in-out infinite alternate;
+}
+@keyframes comboPulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.1); }
 }
 
 #lb {
@@ -261,6 +277,19 @@ html, body {
     line-height: 1.05;
     text-shadow: 0 5px 0 rgba(255, 95, 162, 0.55), 0 14px 30px rgba(0, 0, 0, 0.55);
     animation: titleBob 2.6s ease-in-out infinite;
+}
+#mascot {
+    font-size: min(13vw, 62px);
+    line-height: 1;
+    margin-bottom: 4px;
+    animation: mascotWiggle 2.2s ease-in-out infinite;
+    display: inline-block;
+}
+@keyframes mascotWiggle {
+    0%, 100% { transform: rotate(-8deg) translateY(0); }
+    25% { transform: rotate(6deg) translateY(-6px); }
+    50% { transform: rotate(-5deg) translateY(0); }
+    75% { transform: rotate(8deg) translateY(-8px); }
 }
 @keyframes titleBob {
     0%, 100% { transform: translateY(0); }
@@ -390,6 +419,7 @@ html, body {
 }
 #panelRank { color: #7DF9FF; font-weight: 800; font-size: 16px; margin-top: 4px; }
 #panelKills { display: none; color: #9CFF57; font-weight: 800; font-size: 15px; margin-top: 4px; }
+#panelStats { color: #8E92C9; font-weight: 700; font-size: 14px; margin-top: 6px; }
 #nearMiss {
     display: none;
     color: #FF5FA2;
@@ -426,6 +456,7 @@ html, body {
     <div id="score">10</div>
     <div id="scoreLabel">LENGTH</div>
     <div><span id="rankChip">RANK #13</span></div>
+    <div><span id="comboChip">&#128293; COMBO x3</span></div>
 </div>
 
 <div id="lb"><div id="lbTitle"><span class="dot"></span>LIVE TOP 5</div></div>
@@ -434,6 +465,7 @@ html, body {
 <div id="toast"></div>
 
 <div id="title">
+    <div id="mascot">&#127836;</div>
     <h1>NOODLE<br>ARENA</h1>
     <p>Steer with your finger. Hold to boost!</p>
     <div><span id="menuBest" style="display:none;"></span></div>
@@ -455,6 +487,7 @@ html, body {
     <div id="panelBestRow">Your best: <span id="panelBest">0</span></div>
     <div id="panelRank"></div>
     <div id="panelKills"></div>
+    <div id="panelStats"></div>
     <div id="nearMiss"></div>
     <button id="playBtn">PLAY AGAIN</button>
 </div>
@@ -469,6 +502,8 @@ var ctx = canvas.getContext('2d', { alpha: false });
 var hudEl = document.getElementById('hud');
 var scoreEl = document.getElementById('score');
 var rankChipEl = document.getElementById('rankChip');
+var comboChipEl = document.getElementById('comboChip');
+var panelStatsEl = document.getElementById('panelStats');
 var lbEl = document.getElementById('lb');
 var crownBannerEl = document.getElementById('crownBanner');
 var toastEl = document.getElementById('toast');
@@ -622,6 +657,46 @@ function sfxEat() {
     o.stop(t + 0.15);
 }
 
+/* Combo ping: bright rising sparkle, pitch climbs with the combo count */
+function sfxCombo(n) {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var f = 780 * Math.pow(1.059, Math.min(14, n)) * pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(f, t);
+    o.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.07);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.14, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.22);
+}
+
+/* Powerup: magical two-note swirl up */
+function sfxPower() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(523 * p, t);
+    o.frequency.exponentialRampToValueAtTime(1568 * p, t + 0.22);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.34);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone;
+    o.start(t);
+    o.stop(t + 0.36);
+}
+
 /* Bot popped nearby: bubbly descending boing plus soft noise puff */
 function sfxKill() {
     if (!canPlay()) return;
@@ -769,6 +844,11 @@ var GRID_DIM = 30;         /* 3000 / 100 */
 var ORB_POOL = 900;
 var ORB_TARGET = 480;      /* ambient orbs kept in the arena */
 var ORB_COLORS = ['#FFD93D', '#7DF9FF', '#FF7BD5', '#9CFF57', '#FF9F40', '#B388FF'];
+var COMBO_WINDOW = 2.2;      /* seconds between eats to keep the combo alive */
+var DIFF_RAMP = 150;         /* seconds until the arena reaches full spice */
+var SAFE_TIME = 20;          /* hunters leave a fresh player alone this long */
+var MILESTONES = [25, 50, 100, 150, 200, 300, 400, 550];
+var MILE_NAMES = ['BIG NOODLE!', 'SUPER NOODLE!', 'MEGA NOODLE!', 'ULTRA NOODLE!', 'GIGA NOODLE!', 'COSMIC NOODLE!', 'LEGEND NOODLE!', 'INFINITE NOODLE!'];
 
 var State = {
     MENU: 'menu',
@@ -815,24 +895,26 @@ function radiusOf(len) { return Math.min(26, 6.5 + Math.sqrt(len) * 0.85); }
 function bodyPx(len) { return Math.min(6500, 70 + len * 3.2); }
 function turnRateOf(len) { return 4.3 - Math.min(1.7, Math.sqrt(len) * 0.055); }
 
-function makeSnake(id, isBot, name, tier, c1, c2) {
+function makeSnake(id, isBot, name, tier, pi) {
     return {
-        id: id, isBot: isBot, name: name, tier: tier, c1: c1, c2: c2,
+        id: id, isBot: isBot, name: name, tier: tier, pi: pi,
+        c1: PALETTES[pi][0], c2: PALETTES[pi][1],
         x: 0, y: 0, heading: 0, len: START_LEN, r: radiusOf(START_LEN),
         dead: true, respawnT: 0, grace: 0,
         boosting: false, dropT: 0, sparkT: 0,
         thinkT: rand(0, 0.25), desired: 0, prevLen: 0,
+        tongueT: 0, blinkT: rand(1.5, 4.5),
         ptsX: new Float64Array(CAP), ptsY: new Float64Array(CAP),
         headIdx: 0, ptCount: 0, distSince: 0
     };
 }
 
 var snakes = [];
-var player = makeSnake(0, false, 'YOU', -1, PALETTES[0][0], PALETTES[0][1]);
+var player = makeSnake(0, false, 'YOU', -1, 0);
 snakes.push(player);
 for (var bi = 0; bi < BOT_DEFS.length; bi++) {
     var def = BOT_DEFS[bi];
-    snakes.push(makeSnake(bi + 1, true, def[0], def[1], PALETTES[bi + 1][0], PALETTES[bi + 1][1]));
+    snakes.push(makeSnake(bi + 1, true, def[0], def[1], bi + 1));
 }
 
 function pIdx(s, k) { return (s.headIdx - k + K2) % CAP; }
@@ -902,8 +984,9 @@ function turnToward(s, target, dt) {
 }
 
 function advanceSnake(s, dt) {
-    var base = s.isBot ? BOT_SPEED : BASE_SPEED;
-    var boostV = s.isBot ? BOT_BOOST : BOOST_SPEED;
+    /* bots quicken as the run heats up, but a boosting player always stays a hair faster */
+    var base = s.isBot ? BOT_SPEED * (1 + 0.16 * diffCur) : BASE_SPEED;
+    var boostV = s.isBot ? Math.min(BOOST_SPEED - 5, BOT_BOOST * (1 + 0.16 * diffCur)) : BOOST_SPEED;
     if (s.boosting && s.len <= MIN_LEN) s.boosting = false;
     var spd = s.boosting ? boostV : base;
 
@@ -1039,16 +1122,29 @@ function spawnAmbientOrbs() {
 
 function eatOrb(s, o) {
     killOrb(o);
-    s.len += o.val;
+    s.tongueT = 0.3;
     if (s === player) {
-        player.maxLen = Math.max(player.maxLen || player.len, player.len);
+        /* quick consecutive munches build a combo worth bonus length */
         if (time - lastEatSfxT > 1) eatStreak = 0;
         eatStreak++;
         lastEatSfxT = time;
-        sfxEat();
-    }
-    if (inView(o.x, o.y, 40)) {
-        for (var i = 0; i < 3; i++) {
+        combo++;
+        comboT = COMBO_WINDOW;
+        if (combo > bestCombo) bestCombo = combo;
+        var bonus = combo >= 3 ? Math.min(3, (combo / 3) | 0) : 0;
+        player.len += o.val + bonus;
+        player.maxLen = Math.max(player.maxLen || player.len, player.len);
+        if (combo >= 3) {
+            sfxCombo(combo);
+            comboChipEl.textContent = '🔥 x' + combo;
+            comboChipEl.style.display = 'inline-block';
+        } else {
+            sfxEat();
+        }
+        if (inView(o.x, o.y, 40)) spawnEatFX(o.x, o.y, ORB_COLORS[o.ci], o.val + bonus, combo >= 5);
+    } else {
+        s.len += o.val;
+        if (inView(o.x, o.y, 40)) {
             var a = rand(0, Math.PI * 2);
             spawnPart(1, o.x, o.y, Math.cos(a) * rand(30, 110), Math.sin(a) * rand(30, 110),
                 rand(0.2, 0.4), rand(1.6, 3), ORB_COLORS[o.ci]);
@@ -1067,16 +1163,19 @@ function updateOrbs(dt) {
         for (var j = 0; j < snakes.length; j++) {
             var s = snakes[j];
             if (s.dead) continue;
+            var hasMag = s === player && magnetT > 0;
+            var box = hasMag ? 176 : 64;
             var dx = s.x - o.x, dy = s.y - o.y;
-            if (dx > 64 || dx < -64 || dy > 64 || dy < -64) continue;
+            if (dx > box || dx < -box || dy > box || dy < -box) continue;
             var d2 = dx * dx + dy * dy;
             var eatR = s.r + o.r + 2;
             if (d2 < eatR * eatR) { eatOrb(s, o); break; }
-            var mag = s.r + 36;
+            var mag = s.r + (hasMag ? 160 : 36);
             if (d2 < mag * mag) {
                 var d = Math.sqrt(d2) || 1;
-                o.x += (dx / d) * 300 * dt;
-                o.y += (dy / d) * 300 * dt;
+                var pull = hasMag ? 520 : 300;
+                o.x += (dx / d) * pull * dt;
+                o.y += (dy / d) * pull * dt;
             }
         }
     }
@@ -1085,7 +1184,7 @@ function updateOrbs(dt) {
 /* ================= Particles (pooled, world space) ================= */
 /* type 1: spark circle, type 2: confetti rect */
 var parts = [];
-for (var qi = 0; qi < 240; qi++) {
+for (var qi = 0; qi < 120; qi++) {
     parts.push({ active: false, type: 1, x: 0, y: 0, vx: 0, vy: 0, rot: 0, vr: 0, life: 0, ttl: 1, size: 4, color: '#fff' });
 }
 function spawnPart(type, x, y, vx, vy, ttl, size, color) {
@@ -1124,7 +1223,122 @@ function updateParticles(dt) {
     }
 }
 
-/* ================= Spatial hash ================= */
+/* ================= Shockwave rings (pooled) ================= */
+var rings = [];
+for (var ri2 = 0; ri2 < 24; ri2++) {
+    rings.push({ active: false, x: 0, y: 0, maxR: 60, life: 0, ttl: 0.5, color: '#fff', lw: 4 });
+}
+function spawnRing(x, y, maxR, ttl, color, lw) {
+    for (var i = 0; i < rings.length; i++) {
+        var g = rings[i];
+        if (!g.active) {
+            g.active = true;
+            g.x = x; g.y = y; g.maxR = maxR; g.life = 0; g.ttl = ttl; g.color = color; g.lw = lw;
+            return;
+        }
+    }
+}
+function updateRings(dt) {
+    for (var i = 0; i < rings.length; i++) {
+        var g = rings[i];
+        if (!g.active) continue;
+        g.life += dt;
+        if (g.life >= g.ttl) g.active = false;
+    }
+}
+
+/* ================= Floating labels (pooled, world space) ================= */
+var labels = [];
+for (var li2 = 0; li2 < 16; li2++) {
+    labels.push({ active: false, x: 0, y: 0, life: 0, ttl: 0.9, text: '', color: '#fff', size: 14 });
+}
+function spawnLabel(x, y, text, color, size) {
+    var oldest = null, oldestLife = -1;
+    for (var i = 0; i < labels.length; i++) {
+        var l = labels[i];
+        if (!l.active) { oldest = l; break; }
+        if (l.life > oldestLife) { oldestLife = l.life; oldest = l; }
+    }
+    oldest.active = true;
+    oldest.x = x; oldest.y = y; oldest.life = 0; oldest.ttl = 0.9;
+    oldest.text = text; oldest.color = color; oldest.size = size;
+}
+function updateLabels(dt) {
+    for (var i = 0; i < labels.length; i++) {
+        var l = labels[i];
+        if (!l.active) continue;
+        l.life += dt;
+        l.y -= 46 * dt;
+        if (l.life >= l.ttl) l.active = false;
+    }
+}
+
+/* Layered munch feedback: halo ring + sparks + star glint + floating score */
+function spawnEatFX(x, y, color, val, big) {
+    spawnRing(x, y, big ? 46 : 26, big ? 0.4 : 0.3, color, big ? 4 : 3);
+    var n = big ? 5 : 3;
+    for (var i = 0; i < n; i++) {
+        var a = rand(0, Math.PI * 2);
+        spawnPart(1, x, y, Math.cos(a) * rand(40, 130), Math.sin(a) * rand(40, 130),
+            rand(0.2, 0.42), rand(1.6, 3.2), Math.random() < 0.4 ? '#FFFFFF' : color);
+    }
+    spawnPart(3, x, y, rand(-14, 14), rand(-30, -8), rand(0.3, 0.5), big ? 9 : 6, '#FFFFFF');
+    if (val >= 2 || big) spawnLabel(x, y - 10, '+' + val, big ? '#FFD93D' : '#FFFFFF', big ? 17 : 13);
+}
+
+/* ================= Powerups: magnet + star shield ================= */
+var pows = [
+    { active: false, type: 0, x: 0, y: 0, ttl: 0, phase: 0 },
+    { active: false, type: 0, x: 0, y: 0, ttl: 0, phase: 0 }
+];
+function spawnPow() {
+    for (var i = 0; i < pows.length; i++) {
+        var w = pows[i];
+        if (w.active) continue;
+        var a = rand(0, Math.PI * 2);
+        var d = rand(380, 760);
+        w.active = true;
+        w.type = Math.random() < 0.55 ? 0 : 1;
+        w.x = clamp(player.x + Math.cos(a) * d, 60, WORLD - 60);
+        w.y = clamp(player.y + Math.sin(a) * d, 60, WORLD - 60);
+        w.ttl = 15;
+        w.phase = rand(0, Math.PI * 2);
+        return;
+    }
+}
+function updatePows(dt) {
+    if (currentState === State.PLAYING && !player.dead) {
+        powSpawnT -= dt;
+        if (powSpawnT <= 0) {
+            powSpawnT = rand(11, 17);
+            spawnPow();
+        }
+    }
+    for (var i = 0; i < pows.length; i++) {
+        var w = pows[i];
+        if (!w.active) continue;
+        w.ttl -= dt;
+        if (w.ttl <= 0) { w.active = false; continue; }
+        if (currentState !== State.PLAYING || player.dead) continue;
+        var dx = player.x - w.x, dy = player.y - w.y;
+        var pr = player.r + 18;
+        if (dx * dx + dy * dy < pr * pr) {
+            w.active = false;
+            sfxPower();
+            spawnRing(w.x, w.y, 70, 0.5, w.type === 0 ? '#7DF9FF' : '#FFD93D', 5);
+            for (var k = 0; k < 3; k++) spawnPart(3, w.x + rand(-12, 12), w.y + rand(-12, 12), rand(-20, 20), rand(-40, -10), rand(0.35, 0.6), rand(6, 10), '#FFFFFF');
+            if (w.type === 0) {
+                magnetT = 8;
+                spawnLabel(w.x, w.y - 14, 'ORB MAGNET!', '#7DF9FF', 17);
+                showToast('🧲 Orb magnet! Slurp them all!');
+            } else {
+                shieldT = 6;
+                spawnLabel(w.x, w.y - 14, 'STAR SHIELD!', '#FFD93D', 17);
+                showToast('⭐ Star shield! Nothing can pop you!');
+            }
+        }
+    }
+}
 var gridCells = [];
 for (var gi = 0; gi < GRID_DIM * GRID_DIM; gi++) gridCells.push([]);
 var usedCells = [];
@@ -1161,7 +1375,9 @@ function checkCollisions() {
     for (var i = 0; i < snakes.length; i++) {
         var s = snakes[i];
         if (s.dead || s.grace > 0) continue;
-        if (!s.isBot && currentState !== State.PLAYING) continue;
+        if (!s.isBot && (currentState !== State.PLAYING || shieldT > 0)) continue;
+        var isP = !s.isBot;
+        var nearD2 = Infinity, nearThr = 0;
         var cx = clamp((s.x / GRID_CELL) | 0, 0, GRID_DIM - 1);
         var cy = clamp((s.y / GRID_CELL) | 0, 0, GRID_DIM - 1);
         var hit = -1;
@@ -1174,12 +1390,27 @@ function checkCollisions() {
                     var other = snakes[oid];
                     if (other.dead) continue;
                     var dx = s.x - cell[e], dy = s.y - cell[e + 1];
+                    var d2v = dx * dx + dy * dy;
                     var thr = (s.r + other.r) * 0.7;
-                    if (dx * dx + dy * dy < thr * thr) { hit = oid; break; }
+                    if (d2v < thr * thr) { hit = oid; break; }
+                    if (isP && d2v < nearD2) { nearD2 = d2v; nearThr = thr; }
                 }
             }
         }
-        if (hit >= 0) { deathList.push(s); deathKiller.push(hit); }
+        if (hit >= 0) {
+            deathList.push(s);
+            deathKiller.push(hit);
+        } else if (isP && s.boosting && nearMissCd <= 0) {
+            /* boosting a whisker past another noodle pays out: risk = reward */
+            var nz = nearThr + 22;
+            if (nearD2 < nz * nz) {
+                nearMissCd = 1.6;
+                player.len += 2;
+                spawnLabel(s.x, s.y - s.r - 14, 'CLOSE ONE! +2', '#7DF9FF', 15);
+                spawnRing(s.x, s.y, 34, 0.35, '#7DF9FF', 3);
+                sfxCombo(8);
+            }
+        }
     }
     for (var d = 0; d < deathList.length; d++) {
         if (!deathList[d].dead) killSnake(deathList[d], deathKiller[d]);
@@ -1196,18 +1427,27 @@ function killSnake(victim, killerId) {
         if (!spawnOrb(tmpPt.x + rand(-7, 7), tmpPt.y + rand(-7, 7), 4, true)) break;
         dropped++;
     }
-    burstConfetti(victim.x, victim.y, victim.isBot ? 22 : 40);
+    burstConfetti(victim.x, victim.y, victim.isBot ? 16 : 28);
     victim.dead = true;
     victim.boosting = false;
     if (inView(victim.x, victim.y, 300)) {
         sfxKill();
         trauma = Math.min(0.6, trauma + 0.22);
+        /* layered kid-safe pop: double shockwave + star glints */
+        spawnRing(victim.x, victim.y, 90, 0.5, victim.c1, 5);
+        spawnRing(victim.x, victim.y, 55, 0.4, '#FFFFFF', 3);
+        for (var gl = 0; gl < 4; gl++) {
+            spawnPart(3, victim.x + rand(-26, 26), victim.y + rand(-26, 26),
+                rand(-30, 30), rand(-50, -10), rand(0.35, 0.6), rand(6, 11), '#FFFFFF');
+        }
     }
     var killer = (killerId >= 0 && killerId < snakes.length) ? snakes[killerId] : null;
     if (victim.isBot) {
         victim.respawnT = rand(1.6, 3);
         if (killer === player && currentState === State.PLAYING) {
             runKills++;
+            player.len += 6;
+            spawnLabel(victim.x, victim.y - 20, 'NOODLED! +6', '#9CFF57', 18);
             showToast('You noodled ' + victim.name + '!');
         }
     } else {
@@ -1216,8 +1456,8 @@ function killSnake(victim, killerId) {
 }
 
 function respawnBot(b) {
-    /* bots come back small so the arena always stays alive */
-    spawnBot(b, rand(12, 28));
+    /* bots come back small early on, chunkier as the run heats up */
+    spawnBot(b, rand(12 + 40 * diffCur, 28 + 90 * diffCur));
 }
 
 /* ================= Run state ================= */
@@ -1238,6 +1478,17 @@ var lastShownLen = -1;
 var toastTimer = null;
 var camX = WORLD / 2, camY = WORLD / 2;
 var zoom = 0.9;
+var runTime = 0;
+var diffCur = 0.25;          /* menu ambience runs at gentle spice */
+var combo = 0;
+var comboT = 0;
+var bestCombo = 0;
+var mileIdx = 0;
+var magnetT = 0;
+var shieldT = 0;
+var nearMissCd = 0;
+var powSpawnT = 9;
+var playerAim = 0;
 
 function mergeEarned(arr) {
     for (var i = 0; i < arr.length; i++) {
@@ -1267,6 +1518,21 @@ function startRun() {
     killerName = '';
     deathT = 0;
     eatStreak = 0;
+    runTime = 0;
+    combo = 0;
+    comboT = 0;
+    bestCombo = 0;
+    mileIdx = 0;
+    magnetT = 0;
+    shieldT = 0;
+    nearMissCd = 0;
+    powSpawnT = 9;
+    pows[0].active = false;
+    pows[1].active = false;
+    comboChipEl.style.display = 'none';
+    /* fresh biome every run */
+    biomeIdx = (biomeIdx + 1 + ((Math.random() * 2) | 0)) % BIOMES.length;
+    buildFloor();
     safeSpawnPos(tmpPt);
     player.x = tmpPt.x;
     player.y = tmpPt.y;
@@ -1299,6 +1565,7 @@ function playerDie(byName) {
     trauma = 0.6;
     sfxDeath();
     pauseBtn.style.display = 'none';
+    comboChipEl.style.display = 'none';
     /* record the run immediately */
     var score = Math.floor(player.maxLen);
     newBest = score > prevBest;
@@ -1327,6 +1594,10 @@ function showPanel() {
     } else {
         panelKillsEl.style.display = 'none';
     }
+    var mins = (runTime / 60) | 0;
+    var secs = Math.floor(runTime % 60);
+    panelStatsEl.textContent = '⏱ ' + (mins > 0 ? mins + 'm ' : '') + secs + 's survived' +
+        (bestCombo >= 3 ? ' · 🔥 combo x' + bestCombo : '');
     var diff = prevBest - score;
     if (!newBest && prevBest >= 30 && diff > 0 && diff <= prevBest * 0.2) {
         nearMissEl.textContent = 'SO CLOSE! ' + diff + ' away from your best';
@@ -1436,10 +1707,12 @@ function doCrown() {
 
 /* ================= Bot AI ================= */
 function botThink(b) {
-    b.thinkT = rand(0.12, 0.28);
+    /* bots think faster and get bolder as the run heats up */
+    b.thinkT = rand(0.12, 0.28) * (1 - 0.4 * diffCur);
     var wantBoost = false;
-    /* wall avoidance always wins */
-    var margin = 240;
+    /* wall avoidance always wins, but late-game hunters dare closer to the edge
+       so wall-hugging stops being a free sanctuary */
+    var margin = b.tier === 1 ? 240 - 140 * diffCur : 240;
     if (b.x < margin || b.x > WORLD - margin || b.y < margin || b.y > WORLD - margin) {
         b.desired = Math.atan2(WORLD / 2 - b.y, WORLD / 2 - b.x) + rand(-0.4, 0.4);
         b.boosting = false;
@@ -1447,24 +1720,42 @@ function botThink(b) {
     }
     var i, o, dx, dy, d2;
     var target = null, targetD2 = Infinity;
+    var playerSafe = currentState === State.PLAYING && runTime < SAFE_TIME;
     if (b.tier === 1) {
-        /* hunter: seek a smaller snake and aim ahead of its head to cut it off */
+        /* hunter: seek a smaller snake and aim ahead of its head to cut it off.
+           Late game they chase near-equals, prefer the player, and see further. */
+        var sight = 700 + 500 * diffCur;
+        var preyFactor = 0.75 + 0.3 * diffCur;
         for (i = 0; i < snakes.length; i++) {
             o = snakes[i];
             if (o === b || o.dead || o.grace > 0) continue;
-            if (o.len >= b.len * 0.75) continue;
+            if (!o.isBot && (playerSafe || shieldT > 0)) continue;
+            if (o.len >= b.len * preyFactor) continue;
             dx = o.x - b.x; dy = o.y - b.y;
+            d2 = (dx * dx + dy * dy) * (o.isBot ? 1 : 1 - 0.45 * diffCur);
+            if (d2 < sight * sight && d2 < targetD2) { target = o; targetD2 = d2; }
+        }
+        /* late game: even a giant player gets cut-off runs from hunters */
+        if (!target && diffCur > 0.45 && !playerSafe && shieldT <= 0 && !player.dead && currentState === State.PLAYING) {
+            dx = player.x - b.x; dy = player.y - b.y;
             d2 = dx * dx + dy * dy;
-            if (d2 < 700 * 700 && d2 < targetD2) { target = o; targetD2 = d2; }
+            if (d2 < 520 * 520 && player.len > b.len) {
+                b.desired = Math.atan2(
+                    player.y + Math.sin(player.heading) * 120 - b.y,
+                    player.x + Math.cos(player.heading) * 120 - b.x);
+                b.boosting = b.len > 30 && d2 < 400 * 400;
+                return;
+            }
         }
         if (target) {
-            var lead = 0.55;
+            var lead = 0.55 + 0.25 * diffCur;
             var tsp = target.boosting ? BOT_BOOST : BOT_SPEED;
             var ax = target.x + Math.cos(target.heading) * tsp * lead;
             var ay = target.y + Math.sin(target.heading) * tsp * lead;
             b.desired = Math.atan2(ay - b.y, ax - b.x);
-            var d = Math.sqrt(targetD2);
-            wantBoost = b.len > 40 && d < 420 && d > 110;
+            dx = target.x - b.x; dy = target.y - b.y;
+            var d = Math.sqrt(dx * dx + dy * dy);
+            wantBoost = b.len > 40 && d < 420 + 180 * diffCur && d > 110;
             b.boosting = wantBoost;
             return;
         }
@@ -1512,13 +1803,16 @@ function steerPlayer(dt) {
     if (keys.ArrowRight || keys.KeyD) kx += 1;
     if (keys.ArrowUp || keys.KeyW) ky -= 1;
     if (keys.ArrowDown || keys.KeyS) ky += 1;
+    playerAim = player.heading;
     if (kx !== 0 || ky !== 0) {
-        turnToward(player, Math.atan2(ky, kx), dt);
+        playerAim = Math.atan2(ky, kx);
+        turnToward(player, playerAim, dt);
     } else if (pointer.active) {
         var dx = pointer.x - cw / 2;
         var dy = pointer.y - ch / 2;
         if (dx * dx + dy * dy > 22 * 22) {
-            turnToward(player, Math.atan2(dy, dx), dt);
+            playerAim = Math.atan2(dy, dx);
+            turnToward(player, playerAim, dt);
         }
     }
     player.boosting = (pointer.down || keyBoost) && player.len > MIN_LEN;
@@ -1623,6 +1917,24 @@ var cw = 0, ch = 0, dpr = 1;
 var VS = 1;
 var hexPat = null;
 var orbSprs = [];
+var segSprs = [];          /* [paletteIdx][0|1] gradient body segment sprites */
+var powSprs = [];          /* magnet, star */
+var vigCanvas = null;      /* screen-space vignette, rebuilt on resize */
+var SPR_SCALE = 2 * (32 / 26.5);   /* sprite px per body radius */
+
+/* Biomes: each run gets a fresh floor + edge palette */
+var BIOMES = [
+    { bg: '#12122a', voidBg: '#0B0B1E', line: 'rgba(140,150,255,0.10)', freck: ['#1d1d48', '#191940', '#23234f'], edge: '#FF5FA2', edgeGlow: 'rgba(255,95,162,0.22)' },
+    { bg: '#0e2026', voidBg: '#081418', line: 'rgba(110,255,220,0.10)', freck: ['#14343a', '#102b31', '#1a3f42'], edge: '#2EE6D6', edgeGlow: 'rgba(46,230,214,0.22)' },
+    { bg: '#1e1430', voidBg: '#120b1e', line: 'rgba(255,170,255,0.10)', freck: ['#2c1d46', '#26183c', '#342252'], edge: '#B388FF', edgeGlow: 'rgba(179,136,255,0.24)' }
+];
+var biomeIdx = 0;
+
+/* Ambient drifting motes for a floor that feels alive */
+var motes = [];
+for (var mi2 = 0; mi2 < 64; mi2++) {
+    motes.push({ x: rand(20, WORLD - 20), y: rand(20, WORLD - 20), r: rand(1.2, 3.2), ph: rand(0, Math.PI * 2), sp: rand(0.25, 0.7) });
+}
 
 function makeCanvas(w, h) {
     var c = document.createElement('canvas');
@@ -1640,21 +1952,98 @@ function hexPath(c, x, y, R) {
     c.closePath();
 }
 
-function buildSprites() {
-    /* subtle hex grid tile: pattern repeats in world space */
+/* mix a hex color toward white (f>0) or black (f<0), at build time only */
+function shade(hex, f) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    if (f >= 0) { r += (255 - r) * f; g += (255 - g) * f; b += (255 - b) * f; }
+    else { r *= 1 + f; g *= 1 + f; b *= 1 + f; }
+    return 'rgb(' + (r | 0) + ',' + (g | 0) + ',' + (b | 0) + ')';
+}
+
+/* textured floor tile: hex grid + soft baked freckles, repeats in world space */
+function buildFloor() {
+    var biome = BIOMES[biomeIdx];
     var hw = 60, hh = 104;
+    var TW = hw * 3, TH = hh * 3;
     var R = hw / Math.sqrt(3);
-    var tile = makeCanvas(hw, hh);
+    var tile = makeCanvas(TW, TH);
     var tc = tile.getContext('2d');
-    tc.fillStyle = '#12122a';
-    tc.fillRect(0, 0, hw, hh);
-    tc.strokeStyle = 'rgba(140, 150, 255, 0.09)';
+    tc.fillStyle = biome.bg;
+    tc.fillRect(0, 0, TW, TH);
+    /* soft freckle blobs under the grid (baked, cheap at runtime) */
+    for (var f = 0; f < 16; f++) {
+        var fx = rand(0, TW), fy = rand(0, TH), fr = rand(14, 46);
+        var fg = tc.createRadialGradient(fx, fy, 1, fx, fy, fr);
+        var col = biome.freck[f % biome.freck.length];
+        fg.addColorStop(0, col);
+        fg.addColorStop(1, biome.bg);
+        tc.globalAlpha = 0.8;
+        tc.fillStyle = fg;
+        /* draw wrapped so the tile seams stay invisible */
+        for (var wx = -1; wx <= 1; wx++) {
+            for (var wy = -1; wy <= 1; wy++) {
+                tc.beginPath();
+                tc.arc(fx + wx * TW, fy + wy * TH, fr, 0, Math.PI * 2);
+                tc.fill();
+            }
+        }
+    }
+    tc.globalAlpha = 1;
+    /* tiny star specks */
+    tc.fillStyle = 'rgba(255,255,255,0.06)';
+    for (var sd = 0; sd < 26; sd++) {
+        tc.fillRect((rand(0, TW) | 0), (rand(0, TH) | 0), 2, 2);
+    }
+    /* hex grid on top */
+    tc.strokeStyle = biome.line;
     tc.lineWidth = 1.5;
     tc.beginPath();
-    var centers = [[0, 0], [hw, 0], [hw / 2, hh / 2], [0, hh], [hw, hh]];
-    for (var i = 0; i < centers.length; i++) hexPath(tc, centers[i][0], centers[i][1], R);
+    for (var gx2 = 0; gx2 <= 3; gx2++) {
+        for (var gy2 = 0; gy2 <= 3; gy2++) {
+            hexPath(tc, gx2 * hw, gy2 * hh, R);
+            hexPath(tc, gx2 * hw + hw / 2, gy2 * hh + hh / 2, R);
+        }
+    }
     tc.stroke();
     hexPat = ctx.createPattern(tile, 'repeat');
+}
+
+/* one glossy gradient segment sprite: dark rim, candy body, sheen highlight */
+function makeSegSprite(color) {
+    var s = makeCanvas(64, 64);
+    var c = s.getContext('2d');
+    c.beginPath();
+    c.arc(32, 32, 30, 0, Math.PI * 2);
+    c.fillStyle = 'rgba(8, 8, 26, 0.9)';
+    c.fill();
+    var g = c.createRadialGradient(25, 23, 3, 32, 33, 28);
+    g.addColorStop(0, shade(color, 0.5));
+    g.addColorStop(0.45, color);
+    g.addColorStop(1, shade(color, -0.32));
+    c.beginPath();
+    c.arc(32, 32, 26.5, 0, Math.PI * 2);
+    c.fillStyle = g;
+    c.fill();
+    c.beginPath();
+    c.ellipse(24, 19, 10, 5.5, -0.65, 0, Math.PI * 2);
+    c.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    c.fill();
+    return s;
+}
+
+function starPath(c, x, y, R, r0, rot) {
+    for (var i = 0; i < 10; i++) {
+        var a = rot + i * Math.PI / 5;
+        var rr2 = i % 2 === 0 ? R : r0;
+        var px = x + Math.cos(a) * rr2, py = y + Math.sin(a) * rr2;
+        if (i === 0) c.moveTo(px, py); else c.lineTo(px, py);
+    }
+    c.closePath();
+}
+
+function buildSprites() {
+    buildFloor();
 
     /* glowing food orbs, one sprite per color, drawn scaled */
     orbSprs = [];
@@ -1673,6 +2062,61 @@ function buildSprites() {
         sc.arc(24, 24, 5, 0, Math.PI * 2);
         sc.fill();
         orbSprs.push(s);
+    }
+
+    /* glossy body segments per palette */
+    segSprs = [];
+    for (var p = 0; p < PALETTES.length; p++) {
+        segSprs.push([makeSegSprite(PALETTES[p][0]), makeSegSprite(PALETTES[p][1])]);
+    }
+
+    /* powerup icons: magnet + star */
+    powSprs = [];
+    var m = makeCanvas(56, 56);
+    var mc = m.getContext('2d');
+    mc.lineWidth = 11;
+    mc.lineCap = 'butt';
+    mc.strokeStyle = '#FF4D6D';
+    mc.beginPath();
+    mc.arc(28, 26, 15, Math.PI, Math.PI * 2);
+    mc.stroke();
+    mc.strokeStyle = '#FF8FA9';
+    mc.lineWidth = 4;
+    mc.beginPath();
+    mc.arc(28, 26, 18.5, Math.PI * 1.15, Math.PI * 1.85);
+    mc.stroke();
+    mc.fillStyle = '#FF4D6D';
+    mc.fillRect(7.5, 26, 11, 12);
+    mc.fillRect(37.5, 26, 11, 12);
+    mc.fillStyle = '#EAF2FF';
+    mc.fillRect(7.5, 38, 11, 9);
+    mc.fillRect(37.5, 38, 11, 9);
+    powSprs.push(m);
+    var st = makeCanvas(56, 56);
+    var stc = st.getContext('2d');
+    stc.beginPath();
+    starPath(stc, 28, 29, 24, 11, -Math.PI / 2);
+    stc.fillStyle = 'rgba(140, 90, 0, 0.85)';
+    stc.fill();
+    var sg = stc.createRadialGradient(23, 22, 2, 28, 28, 24);
+    sg.addColorStop(0, '#FFF3B0');
+    sg.addColorStop(0.6, '#FFD93D');
+    sg.addColorStop(1, '#FF9F40');
+    stc.beginPath();
+    starPath(stc, 28, 28, 21, 9.5, -Math.PI / 2);
+    stc.fillStyle = sg;
+    stc.fill();
+    powSprs.push(st);
+
+    /* screen-space vignette (rebuilt with the canvas size) */
+    if (cw > 0 && ch > 0) {
+        vigCanvas = makeCanvas(cw, ch);
+        var vc = vigCanvas.getContext('2d');
+        var vg = vc.createRadialGradient(cw / 2, ch / 2, Math.min(cw, ch) * 0.42, cw / 2, ch / 2, Math.max(cw, ch) * 0.75);
+        vg.addColorStop(0, 'rgba(4, 4, 16, 0)');
+        vg.addColorStop(1, 'rgba(4, 4, 16, 0.42)');
+        vc.fillStyle = vg;
+        vc.fillRect(0, 0, cw, ch);
     }
 }
 
@@ -1734,6 +2178,29 @@ function update(dt) {
     if (trauma > 0) trauma = Math.max(0, trauma - 1.8 * dt);
     if (currentState === State.PAUSED) return;
 
+    /* difficulty ramp: easy first half-minute, spicy by minute three */
+    if (currentState === State.PLAYING) {
+        runTime += dt;
+        diffCur = clamp(runTime / DIFF_RAMP, 0, 1);
+    } else if (currentState === State.MENU) {
+        diffCur = 0.25;
+    }
+
+    /* combo + powerup + bonus timers */
+    if (comboT > 0) {
+        comboT -= dt;
+        if (comboT <= 0) {
+            combo = 0;
+            comboChipEl.style.display = 'none';
+        }
+    }
+    if (nearMissCd > 0) nearMissCd -= dt;
+    if (magnetT > 0) magnetT -= dt;
+    if (shieldT > 0) {
+        shieldT -= dt;
+        if (shieldT <= 0) player.grace = Math.max(player.grace, 1); /* fair exit if shield ends mid-crowd */
+    }
+
     spawnAmbientOrbs();
     if (currentState === State.PLAYING) steerPlayer(dt);
 
@@ -1747,6 +2214,9 @@ function update(dt) {
             continue;
         }
         if (s.grace > 0) s.grace -= dt;
+        if (s.tongueT > 0) s.tongueT -= dt;
+        s.blinkT -= dt;
+        if (s.blinkT <= -0.13) s.blinkT = rand(1.8, 4.8);
         if (s.isBot) {
             s.thinkT -= dt;
             if (s.thinkT <= 0) botThink(s);
@@ -1758,10 +2228,24 @@ function update(dt) {
     rebuildGrid();
     checkCollisions();
     updateOrbs(dt);
+    updatePows(dt);
     updateParticles(dt);
+    updateRings(dt);
+    updateLabels(dt);
 
     if (currentState === State.PLAYING) {
         player.maxLen = Math.max(player.maxLen, player.len);
+        /* size milestone celebrations */
+        while (mileIdx < MILESTONES.length && player.len >= MILESTONES[mileIdx]) {
+            showToast('🎉 ' + MILE_NAMES[mileIdx] + ' Length ' + MILESTONES[mileIdx]);
+            spawnRing(player.x, player.y, 110, 0.6, '#FFD93D', 6);
+            spawnRing(player.x, player.y, 70, 0.5, '#FFFFFF', 3);
+            burstConfetti(player.x, player.y, 14);
+            spawnLabel(player.x, player.y - player.r - 20, MILE_NAMES[mileIdx], '#FFD93D', 20);
+            trauma = Math.min(0.6, trauma + 0.12);
+            sfxFanfare();
+            mileIdx++;
+        }
         updateHud();
     }
 
@@ -1781,6 +2265,8 @@ function update(dt) {
 var SEG_MAX = 460;
 var segXs = new Float64Array(SEG_MAX);
 var segYs = new Float64Array(SEG_MAX);
+var dashPat = [26, 42];
+var emptyDash = [];
 
 function drawSnake(s) {
     var r = s.r;
@@ -1799,30 +2285,17 @@ function drawSnake(s) {
 
     if (s.grace > 0) ctx.globalAlpha = 0.55 + 0.25 * Math.sin(time * 12);
 
-    var j, x, y, stripe;
-    /* dark outline pass */
-    ctx.beginPath();
-    for (j = nSegs - 1; j >= 0; j--) {
+    var j, x, y;
+    var sprPair = segSprs[s.pi];
+    var ds = r * SPR_SCALE;
+    /* glossy gradient segments, gently tapered toward the tail */
+    for (j = nSegs - 1; j >= 1; j--) {
         x = segXs[j]; y = segYs[j];
         if (!inView(x, y, r + 10)) continue;
-        ctx.moveTo(x + r + 2.2, y);
-        ctx.arc(x, y, r + 2.2, 0, Math.PI * 2);
-    }
-    ctx.fillStyle = 'rgba(6, 6, 20, 0.85)';
-    ctx.fill();
-    /* two color stripe passes */
-    for (var pass = 0; pass < 2; pass++) {
-        ctx.beginPath();
-        for (j = nSegs - 1; j >= 0; j--) {
-            stripe = ((j / 3) | 0) % 2;
-            if (stripe !== pass) continue;
-            x = segXs[j]; y = segYs[j];
-            if (!inView(x, y, r + 10)) continue;
-            ctx.moveTo(x + r, y);
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-        }
-        ctx.fillStyle = pass === 0 ? s.c1 : s.c2;
-        ctx.fill();
+        var tp = j > nSegs - 8 ? Math.max(0.5, 1 - (j - (nSegs - 8)) * 0.06) : 1;
+        var dss = ds * tp;
+        var spr = ((j / 3) | 0) % 2 ? sprPair[1] : sprPair[0];
+        ctx.drawImage(spr, (x - dss / 2) | 0, (y - dss / 2) | 0, Math.max(2, dss | 0), Math.max(2, dss | 0));
     }
     /* boost glow */
     if (s.boosting) {
@@ -1840,34 +2313,88 @@ function drawSnake(s) {
     /* head */
     var hx = s.x, hy = s.y;
     if (inView(hx, hy, r + 40)) {
-        var hr = r * 1.08;
-        ctx.beginPath();
-        ctx.arc(hx, hy, hr + 2.2, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(6, 6, 20, 0.85)';
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(hx, hy, hr, 0, Math.PI * 2);
-        ctx.fillStyle = s.c1;
-        ctx.fill();
+        var hr = r * 1.12;
+        var aim = s.isBot ? s.desired : (s === player && currentState === State.PLAYING ? playerAim : s.heading);
+        var turnAmt = clamp(Math.abs(angDiff(aim, s.heading)) / 1.6, 0, 1);
+        /* squash and stretch: stretch when boosting, squash into turns */
+        var st = 1 + (s.boosting ? 0.14 : 0.03 * Math.sin(time * 6 + s.id)) - turnAmt * 0.1;
+        var sq = 1 + (s.boosting ? -0.1 : -0.03 * Math.sin(time * 6 + s.id)) + turnAmt * 0.14;
+        var hd = hr * SPR_SCALE;
+        ctx.save();
+        ctx.translate(hx | 0, hy | 0);
+        ctx.rotate(s.heading);
+        ctx.scale(st, sq);
+        ctx.drawImage(sprPair[0], -hd / 2, -hd / 2, hd, hd);
+        ctx.restore();
 
-        /* googly eyes that look where the noodle is going */
         var fa = s.heading;
         var fx = Math.cos(fa), fy = Math.sin(fa);
         var px2 = -fy, py2 = fx;
+
+        /* tongue flick while munching */
+        if (s.tongueT > 0) {
+            var tp2 = s.tongueT / 0.3;
+            var tl = r * (0.6 + 0.9 * Math.sin(tp2 * Math.PI));
+            var mx2 = hx + fx * hr * 0.92, my2 = hy + fy * hr * 0.92;
+            var tx = mx2 + fx * tl, ty = my2 + fy * tl;
+            ctx.strokeStyle = '#FF4D6D';
+            ctx.lineWidth = Math.max(2, r * 0.17);
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(mx2, my2);
+            ctx.lineTo(tx, ty);
+            ctx.moveTo(tx, ty);
+            ctx.lineTo(tx + (fx * 0.5 + px2 * 0.55) * r * 0.32, ty + (fy * 0.5 + py2 * 0.55) * r * 0.32);
+            ctx.moveTo(tx, ty);
+            ctx.lineTo(tx + (fx * 0.5 - px2 * 0.55) * r * 0.32, ty + (fy * 0.5 - py2 * 0.55) * r * 0.32);
+            ctx.stroke();
+        }
+
+        /* googly eyes that look where the player is steering, with blinks */
         var eyeR = Math.max(3.2, r * 0.42);
         var pupR = eyeR * 0.52;
-        var wob = Math.sin(time * 9 + s.id * 2.1) * eyeR * 0.14;
+        var blink = s.blinkT <= 0 ? 0.16 : 1;
+        var lookX = Math.cos(aim), lookY = Math.sin(aim);
+        var wob = Math.sin(time * 9 + s.id * 2.1) * eyeR * 0.12;
         for (var e = -1; e <= 1; e += 2) {
             var ex = hx + fx * r * 0.38 + px2 * r * 0.48 * e;
             var ey = hy + fy * r * 0.38 + py2 * r * 0.48 * e;
             ctx.beginPath();
-            ctx.arc(ex, ey, eyeR, 0, Math.PI * 2);
+            ctx.ellipse(ex, ey, eyeR, eyeR * blink, fa, 0, Math.PI * 2);
             ctx.fillStyle = '#FFFFFF';
             ctx.fill();
-            ctx.beginPath();
-            ctx.arc(ex + fx * eyeR * 0.42 + px2 * wob, ey + fy * eyeR * 0.42 + py2 * wob, pupR, 0, Math.PI * 2);
-            ctx.fillStyle = '#151530';
-            ctx.fill();
+            if (blink === 1) {
+                ctx.beginPath();
+                ctx.arc(ex + lookX * eyeR * 0.42 + px2 * wob, ey + lookY * eyeR * 0.42 + py2 * wob, pupR, 0, Math.PI * 2);
+                ctx.fillStyle = '#151530';
+                ctx.fill();
+                /* eye sparkle */
+                ctx.beginPath();
+                ctx.arc(ex + lookX * eyeR * 0.42 - pupR * 0.3, ey + lookY * eyeR * 0.42 - pupR * 0.35, pupR * 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fill();
+            }
+        }
+
+        /* star shield + magnet auras */
+        if (s === player) {
+            if (shieldT > 0 && (shieldT > 1.5 || Math.sin(time * 18) > -0.2)) {
+                ctx.lineWidth = 3.5;
+                ctx.strokeStyle = '#FFD93D';
+                var sa = time * 3;
+                for (var arc = 0; arc < 3; arc++) {
+                    ctx.beginPath();
+                    ctx.arc(hx, hy, hr + 9, sa + arc * (Math.PI * 2 / 3), sa + arc * (Math.PI * 2 / 3) + 1.5);
+                    ctx.stroke();
+                }
+            }
+            if (magnetT > 0) {
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(125, 249, 255, ' + (0.14 + 0.1 * Math.sin(time * 5)) + ')';
+                ctx.beginPath();
+                ctx.arc(hx, hy, s.r + 150 + 8 * Math.sin(time * 5), 0, Math.PI * 2);
+                ctx.stroke();
+            }
         }
 
         /* crown for the reigning number one */
@@ -1924,9 +2451,10 @@ function drawMinimap() {
 }
 
 function render() {
+    var biome = BIOMES[biomeIdx];
     /* letterbox base */
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#0B0B1E';
+    ctx.fillStyle = biome.voidBg;
     ctx.fillRect(0, 0, cw, ch);
 
     /* world transform with a hint of trauma shake */
@@ -1940,24 +2468,45 @@ function render() {
     var a = dpr * k;
     ctx.setTransform(a, 0, 0, a, dpr * (cw / 2 - sx * k), dpr * (ch / 2 - sy * k));
 
-    /* arena floor with subtle hex grid */
+    /* arena floor: baked texture tile (freckles + hex grid) */
     var wl = Math.max(0, viewL - 20), wt = Math.max(0, viewT - 20);
     var wr = Math.min(WORLD, viewR + 20), wb = Math.min(WORLD, viewB + 20);
     if (wr > wl && wb > wt) {
-        ctx.fillStyle = '#12122a';
+        ctx.fillStyle = biome.bg;
         ctx.fillRect(wl, wt, wr - wl, wb - wt);
         if (hexPat) {
             ctx.fillStyle = hexPat;
             ctx.fillRect(wl, wt, wr - wl, wb - wt);
         }
     }
-    /* glowing arena edge */
-    ctx.lineWidth = 14;
-    ctx.strokeStyle = 'rgba(255, 95, 162, 0.22)';
+    /* ambient drifting motes */
+    ctx.globalAlpha = 0.16;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    for (var mm = 0; mm < motes.length; mm++) {
+        var mo = motes[mm];
+        if (!inView(mo.x, mo.y, 30)) continue;
+        var mdx = mo.x + Math.sin(time * mo.sp + mo.ph) * 14;
+        var mdy = mo.y + Math.cos(time * mo.sp * 0.8 + mo.ph) * 10;
+        ctx.moveTo(mdx + mo.r, mdy);
+        ctx.arc(mdx, mdy, mo.r, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    /* glowing arena edge with marching dashes */
+    ctx.lineWidth = 16;
+    ctx.strokeStyle = biome.edgeGlow;
     ctx.strokeRect(0, 0, WORLD, WORLD);
     ctx.lineWidth = 5;
-    ctx.strokeStyle = '#FF5FA2';
+    ctx.strokeStyle = biome.edge;
     ctx.strokeRect(0, 0, WORLD, WORLD);
+    ctx.setLineDash(dashPat);
+    ctx.lineDashOffset = -time * 60;
+    ctx.lineWidth = 9;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.strokeRect(0, 0, WORLD, WORLD);
+    ctx.setLineDash(emptyDash);
 
     /* food orbs */
     for (var i = 0; i < ORB_POOL; i++) {
@@ -1965,8 +2514,26 @@ function render() {
         if (!o.active) continue;
         if (!inView(o.x, o.y, 30)) continue;
         var pr = o.r * (1 + 0.14 * Math.sin(time * 4 + o.phase));
-        var gs = pr * 3.1;
+        var gs = pr * 3.8;
         ctx.drawImage(orbSprs[o.ci], (o.x - gs / 2) | 0, (o.y - gs / 2) | 0, gs | 0, gs | 0);
+    }
+
+    /* powerups: bobbing icon + pulsing pickup ring */
+    for (var pw = 0; pw < pows.length; pw++) {
+        var w = pows[pw];
+        if (!w.active || !inView(w.x, w.y, 60)) continue;
+        var bob = Math.sin(time * 3 + w.phase) * 5;
+        var pulse = 1 + 0.1 * Math.sin(time * 5 + w.phase);
+        var fade = w.ttl < 3 ? (Math.sin(time * 12) > 0 ? 1 : 0.35) : 1;
+        ctx.globalAlpha = fade;
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = w.type === 0 ? 'rgba(125, 249, 255, 0.6)' : 'rgba(255, 217, 61, 0.6)';
+        ctx.beginPath();
+        ctx.arc(w.x, w.y + bob * 0.3, 26 * pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        var iw = 38 * pulse;
+        ctx.drawImage(powSprs[w.type], (w.x - iw / 2) | 0, (w.y - iw / 2 + bob) | 0, iw | 0, iw | 0);
+        ctx.globalAlpha = 1;
     }
 
     /* snakes: bots first, player on top */
@@ -1987,6 +2554,15 @@ function render() {
             ctx.beginPath();
             ctx.arc(pt.x, pt.y, pt.size * al, 0, Math.PI * 2);
             ctx.fill();
+        } else if (pt.type === 3) {
+            /* star glint: slim rotating four-point cross */
+            ctx.save();
+            ctx.translate(pt.x, pt.y);
+            ctx.rotate(pt.rot);
+            var gs2 = pt.size * (0.5 + 0.5 * al);
+            ctx.fillRect(-gs2, -gs2 * 0.16, gs2 * 2, gs2 * 0.32);
+            ctx.fillRect(-gs2 * 0.16, -gs2, gs2 * 0.32, gs2 * 2);
+            ctx.restore();
         } else {
             ctx.save();
             ctx.translate(pt.x, pt.y);
@@ -1997,8 +2573,43 @@ function render() {
     }
     ctx.globalAlpha = 1;
 
+    /* shockwave rings */
+    for (var rg = 0; rg < rings.length; rg++) {
+        var ring = rings[rg];
+        if (!ring.active) continue;
+        var rp = ring.life / ring.ttl;
+        var re = 1 - (1 - rp) * (1 - rp); /* ease out */
+        if (!inView(ring.x, ring.y, ring.maxR + 20)) continue;
+        ctx.globalAlpha = 1 - rp;
+        ctx.lineWidth = ring.lw * (1 - rp * 0.6);
+        ctx.strokeStyle = ring.color;
+        ctx.beginPath();
+        ctx.arc(ring.x, ring.y, Math.max(1, ring.maxR * re), 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    /* floating score labels */
+    ctx.textAlign = 'center';
+    for (var lb2 = 0; lb2 < labels.length; lb2++) {
+        var l = labels[lb2];
+        if (!l.active) continue;
+        if (!inView(l.x, l.y, 80)) continue;
+        var lp = l.life / l.ttl;
+        var pop = lp < 0.18 ? 0.6 + (lp / 0.18) * 0.5 : 1.1 - (lp - 0.18) * 0.12;
+        ctx.globalAlpha = lp > 0.6 ? 1 - (lp - 0.6) / 0.4 : 1;
+        ctx.font = '800 ' + ((l.size * pop) | 0) + 'px Nunito, sans-serif';
+        ctx.strokeStyle = 'rgba(8, 8, 26, 0.8)';
+        ctx.lineWidth = 3;
+        ctx.strokeText(l.text, l.x | 0, l.y | 0);
+        ctx.fillStyle = l.color;
+        ctx.fillText(l.text, l.x | 0, l.y | 0);
+    }
+    ctx.globalAlpha = 1;
+
     /* screen space UI */
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (vigCanvas) ctx.drawImage(vigCanvas, 0, 0);
     drawMinimap();
 }
 
@@ -2035,7 +2646,14 @@ window.__noodleTest = {
     data: function () { return data; },
     profile: function () { return WoopProfile.load(); },
     bestRank: function () { return bestRank; },
-    crowned: function () { return crownedOnce; }
+    crowned: function () { return crownedOnce; },
+    combo: function () { return combo; },
+    bestCombo: function () { return bestCombo; },
+    diff: function () { return diffCur; },
+    pows: pows,
+    spawnPow: spawnPow,
+    shield: function () { return shieldT; },
+    magnet: function () { return magnetT; }
 };
 
 })();
