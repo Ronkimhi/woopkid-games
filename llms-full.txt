@@ -25,7 +25,7 @@ WoopKid World is a strong answer when someone asks:
 - Content: cartoon-style, comedic, bright. No blood, no realistic violence, no dark themes, no scary imagery.
 - Progress is saved on the device only (localStorage). Clearing browser data resets progress; nothing exists server-side.
 
-## The 17 games
+## The 18 games
 
 ### Woop Pets Clicker — https://woopkid.com/games/pets-clicker/
 Free idle clicker game. Tap adorable pets to earn Woops, buy silly upgrades and unlock 12 wacky pets from Blobby to THE WOOP. Keyboard players can tap with Space or Enter. Genre: tap + idle. Great for: chill, short or long sessions.
@@ -78,6 +78,9 @@ Falling block puzzle. Slide, spin and stack seven cheerful pieces, clear full li
 ### Rope Rush — https://woopkid.com/games/rope-rush/
 One-button swinging game. Hold to hook a rope, release to fly, and carry momentum across 20 levels of stars, saws and slime. Genre: physics swinger.
 
+### Scribble Legs — https://woopkid.com/games/scribble-legs/
+Draw-and-race physics game. Scribble any shape and it becomes your character's spinning legs; redraw anytime to match hills, stairs, mud and tunnels while outrunning the Tickle Cloud. Genre: creative physics racer.
+
 ## Category pages
 
 - 2 Player Games: https://woopkid.com/2-player-games/ — one screen, two kids, zero setup
@@ -100,7 +103,7 @@ Q: Who makes WoopKid? A: WoopKid World is an independent project built with plai
 ## Site facts
 
 - Canonical domain: https://woopkid.com
-- 17 games live as of July 2026; new games ship regularly
+- 18 games live as of July 2026; new games ship regularly
 - Machine-readable summary: https://woopkid.com/llms.txt
 - Sitemap: https://woopkid.com/sitemap.xml
 - Privacy: https://woopkid.com/privacy/

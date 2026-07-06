@@ -50,7 +50,7 @@
     {
       "@type": "ItemList",
       "name": "All WoopKid games",
-      "numberOfItems": 17,
+      "numberOfItems": 18,
       "itemListElement": [
         { "@type": "ListItem", "position": 1, "name": "Woop Pets Clicker", "url": "https://woopkid.com/games/pets-clicker/" },
         { "@type": "ListItem", "position": 2, "name": "Merge Squad", "url": "https://woopkid.com/games/merge-squad/" },
@@ -68,7 +68,8 @@
         { "@type": "ListItem", "position": 14, "name": "Drift & Collect", "url": "https://woopkid.com/games/drift-collect/" },
         { "@type": "ListItem", "position": 15, "name": "Color Pop", "url": "https://woopkid.com/games/color-pop/" },
         { "@type": "ListItem", "position": 16, "name": "Block Stax", "url": "https://woopkid.com/games/block-stax/" },
-        { "@type": "ListItem", "position": 17, "name": "Rope Rush", "url": "https://woopkid.com/games/rope-rush/" }
+        { "@type": "ListItem", "position": 17, "name": "Rope Rush", "url": "https://woopkid.com/games/rope-rush/" },
+        { "@type": "ListItem", "position": 18, "name": "Scribble Legs", "url": "https://woopkid.com/games/scribble-legs/" }
       ]
     },
     {
@@ -335,6 +336,7 @@ footer{margin-top:52px;text-align:center}
     <a class="static-game" href="games/color-pop/">🎯 Color Pop — bubble shooter with wall-bounce shots and big cascades</a>
     <a class="static-game" href="games/block-stax/">🟦 Block Stax — stack falling pieces and clear perfect lines</a>
     <a class="static-game" href="games/rope-rush/">🪀 Rope Rush — hold to hook a rope, release to fly across 20 swinging levels</a>
+    <a class="static-game" href="games/scribble-legs/">✏️ Scribble Legs — draw your own wacky legs and outrun the giggling Tickle Cloud</a>
   </section>
 
   <h2 class="shelf-title">Your Sticker Album</h2>
@@ -378,6 +380,8 @@ const WoopProfile = {
 
 /* ---------- game catalog ---------- */
 const GAMES = [
+  { slug:'scribble-legs', name:'Scribble Legs', genre:'Draw & Race', cat:['action','quick'], acc:'#6B4DFF', emoji:'✏️',
+    desc:'Draw your own wacky legs and outrun the giggling Tickle Cloud.', live:true, bestLabel:'Meters' },
   { slug:'rope-rush', name:'Rope Rush', genre:'Swing & Fly', cat:['action','quick'], acc:'#8F7BFF', emoji:'🪀',
     desc:'Hold to hook, release to fly. Swing through 20 levels of stars and saws.', live:true, bestLabel:'Stars' },
   { slug:'merge-squad', name:'Merge Squad', genre:'Toy Auto-Battler', cat:['action','puzzle'], acc:'#FF8A3D', emoji:'🧸',
