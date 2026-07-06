@@ -21,7 +21,7 @@
 <meta name="twitter:title" content="WoopKid World: Free Games for Kids. No Ads, Ever.">
 <meta name="twitter:description" content="Free browser games for kids ages 5-12. No ads, no tracking, no accounts. Just tap and play.">
 <meta name="twitter:image" content="https://woopkid.com/og-image.png">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2246%22 fill=%22%23FF8A3D%22/><circle cx=%2236%22 cy=%2242%22 r=%229%22 fill=%22white%22/><circle cx=%2264%22 cy=%2242%22 r=%229%22 fill=%22white%22/><circle cx=%2238%22 cy=%2244%22 r=%224.5%22 fill=%22%232B2350%22/><circle cx=%2266%22 cy=%2244%22 r=%224.5%22 fill=%22%232B2350%22/><path d=%22M34 62 Q50 76 66 62%22 stroke=%22%232B2350%22 stroke-width=%226%22 fill=%22none%22 stroke-linecap=%22round%22/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 120 120%22><g transform=%22rotate(-8 60 62)%22><rect x=%2212%22 y=%2214%22 width=%2296%22 height=%2296%22 rx=%2226%22 fill=%22%23FFD23F%22 stroke=%22%232B2350%22 stroke-width=%226%22/></g><path d=%22M60 36 Q67 22 60 14%22 stroke=%22%232B2350%22 stroke-width=%226%22 fill=%22none%22 stroke-linecap=%22round%22/><circle cx=%2260%22 cy=%2212%22 r=%227%22 fill=%22%23FF5FA2%22 stroke=%22%232B2350%22 stroke-width=%224%22/><circle cx=%2260%22 cy=%2268%22 r=%2232%22 fill=%22%23FF8A3D%22 stroke=%22%232B2350%22 stroke-width=%226%22/><circle cx=%2248%22 cy=%2262%22 r=%2210%22 fill=%22white%22/><circle cx=%2272%22 cy=%2262%22 r=%2210%22 fill=%22white%22/><circle cx=%2250%22 cy=%2264%22 r=%224.5%22 fill=%22%232B2350%22/><circle cx=%2274%22 cy=%2264%22 r=%224.5%22 fill=%22%232B2350%22/><path d=%22M50 79 Q60 89 70 79%22 stroke=%22%232B2350%22 stroke-width=%225%22 fill=%22none%22 stroke-linecap=%22round%22/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
@@ -44,13 +44,13 @@
       "@id": "https://woopkid.com/#org",
       "name": "WoopKid",
       "url": "https://woopkid.com/",
-      "logo": "https://woopkid.com/og-image.png",
+      "logo": "https://woopkid.com/assets/logo.png",
       "description": "Independent maker of free, ad-free, tracker-free HTML5 browser games for kids."
     },
     {
       "@type": "ItemList",
       "name": "All WoopKid games",
-      "numberOfItems": 19,
+      "numberOfItems": 20,
       "itemListElement": [
         { "@type": "ListItem", "position": 1, "name": "Woop Pets Clicker", "url": "https://woopkid.com/games/pets-clicker/" },
         { "@type": "ListItem", "position": 2, "name": "Merge Squad", "url": "https://woopkid.com/games/merge-squad/" },
@@ -108,33 +108,46 @@
   --grape:#7B4DFF;
   --mint:#2EC4B6;
   --bubble:#FF5FA2;
+  --orange:#FF8A3D;
   --shadow:6px 6px 0 rgba(43,35,80,.16);
   --shadow-press:2px 2px 0 rgba(43,35,80,.16);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
 body{
-  min-height:100vh;background:var(--cream);color:var(--ink);
+  min-height:100vh;color:var(--ink);
   font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   overflow-x:hidden;
+  background:
+    radial-gradient(900px 480px at 88% -8%, #FFE3B3 0%, rgba(255,227,179,0) 62%),
+    radial-gradient(760px 460px at -8% 26%, #FFDCEE 0%, rgba(255,220,238,0) 58%),
+    radial-gradient(900px 540px at 52% 108%, #D9F2FF 0%, rgba(217,242,255,0) 58%),
+    var(--cream);
 }
-/* ---------- floating background shapes ---------- */
+/* confetti paper texture */
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%232B2350' stroke-width='3' stroke-linecap='round' opacity='.05'%3E%3Ccircle cx='24' cy='30' r='5'/%3E%3Cpath d='M118 22v16M110 30h16'/%3E%3Cpath d='M60 86l7 12H53z'/%3E%3Ccircle cx='134' cy='120' r='5'/%3E%3Cpath d='M20 128q6-8 12 0t12 0'/%3E%3Cpath d='M88 142v12M82 148h12'/%3E%3C/g%3E%3C/svg%3E");
+}
+/* ---------- floating doodles ---------- */
 .bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-.blob{position:absolute;border-radius:50%;opacity:.5;filter:blur(60px)}
-.blob.b1{width:420px;height:420px;background:#FFE3B3;top:-120px;left:-100px}
-.blob.b2{width:380px;height:380px;background:#FFD9EC;top:30%;right:-140px}
-.blob.b3{width:460px;height:460px;background:#D9F2FF;bottom:-160px;left:18%}
-.shape{position:absolute;font-size:34px;opacity:.5;animation:drift 16s ease-in-out infinite}
-.shape:nth-child(odd){animation-duration:21s}
+.doodle{position:absolute;animation:drift 17s ease-in-out infinite;opacity:.75}
+.doodle:nth-child(odd){animation-duration:23s}
+.doodle svg{display:block}
 @keyframes drift{
   0%,100%{transform:translate(0,0) rotate(-8deg)}
-  50%{transform:translate(14px,-26px) rotate(10deg)}
+  50%{transform:translate(16px,-30px) rotate(9deg)}
 }
-/* ---------- header ---------- */
-.wrap{position:relative;z-index:1;max-width:1060px;margin:0 auto;padding:20px 18px 60px}
+@media (max-width:700px){.doodle.desk{display:none}}
+/* ---------- layout ---------- */
+.wrap{position:relative;z-index:1;max-width:1060px;margin:0 auto;padding:20px 18px 0}
+/* ---------- topbar ---------- */
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.brandmini{display:flex;align-items:center;gap:8px;font-family:'Fredoka',sans-serif;font-weight:700;font-size:19px}
-.brandmini .dot{width:30px;height:30px;border-radius:50%;background:#FF8A3D;border:3px solid var(--ink);display:inline-block}
+.brandmini{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+.brandmini .mark{width:44px;height:44px;transition:transform .25s cubic-bezier(.2,1.6,.4,1)}
+.brandmini:hover .mark{transform:rotate(8deg) scale(1.1)}
+.brandmini .bname{font-family:'Fredoka',sans-serif;font-weight:700;font-size:22px;letter-spacing:-.5px}
+.brandmini .bname em{font-style:normal;color:var(--orange)}
 .pills{display:flex;gap:8px}
 .pill{
   display:flex;align-items:center;gap:6px;background:var(--paper);border:3px solid var(--ink);
@@ -142,11 +155,11 @@ body{
 }
 .pill .big{font-size:17px}
 /* ---------- hero ---------- */
-header.hero{text-align:center;padding:34px 0 10px}
+header.hero{text-align:center;padding:36px 0 6px;position:relative}
 .wordmark{font-family:'Fredoka',sans-serif;font-weight:700;font-size:clamp(46px,10.5vw,96px);line-height:.95;letter-spacing:-1px}
-.wordmark span{display:inline-block;animation:pop-in .6s cubic-bezier(.2,1.6,.4,1) both;animation-delay:calc(var(--i)*55ms)}
-.wordmark .w2 span{animation-delay:calc(.35s + var(--i)*55ms)}
-.wordmark .w2{display:block;font-size:.62em;letter-spacing:2px}
+.wordmark span{display:inline-block;animation:pop-in .6s cubic-bezier(.2,1.6,.4,1) both;animation-delay:calc(var(--i)*55ms);text-shadow:4px 4px 0 rgba(43,35,80,.1)}
+.wordmark .w2 span{animation-delay:calc(.35s + var(--i)*55ms);text-shadow:none}
+.wordmark .w2{display:block;font-size:.6em;letter-spacing:3px}
 @keyframes pop-in{
   0%{transform:translateY(26px) scale(.4) rotate(8deg);opacity:0}
   100%{transform:translateY(0) scale(1) rotate(0);opacity:1}
@@ -154,18 +167,29 @@ header.hero{text-align:center;padding:34px 0 10px}
 .wordmark span:nth-child(5n+1){color:var(--coral)}
 .wordmark span:nth-child(5n+2){color:var(--grape)}
 .wordmark span:nth-child(5n+3){color:var(--mint)}
-.wordmark span:nth-child(5n+4){color:#FF8A3D}
+.wordmark span:nth-child(5n+4){color:var(--orange)}
 .wordmark span:nth-child(5n+5){color:var(--bubble)}
 .wordmark .w2 span{color:var(--ink)}
 .tagline{
-  margin:14px auto 0;font-size:clamp(16px,3.6vw,21px);font-weight:900;opacity:.75;max-width:560px;
+  margin:16px auto 0;font-size:clamp(16px,3.6vw,21px);font-weight:900;opacity:.75;max-width:560px;
   animation:fade-up .7s .8s ease both;
 }
 @keyframes fade-up{from{opacity:0;transform:translateY(12px)}to{opacity:.75;transform:none}}
-#mascot{display:block;margin:6px auto 0;width:150px;height:120px;animation:fade-up .7s 1s ease both}
+.herobadges{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.hbadge{
+  font-family:'Fredoka',sans-serif;font-weight:600;font-size:14.5px;background:var(--paper);
+  border:3px solid var(--ink);border-radius:999px;padding:8px 15px;box-shadow:var(--shadow-press);
+  transform:rotate(var(--r,0deg));animation:pop-in .5s cubic-bezier(.2,1.6,.4,1) both;animation-delay:var(--d,1s);
+}
+.hbadge.sun{background:var(--sun)}
+.hbadge.mintbg{background:#C9F2EC}
+.hbadge.pinkbg{background:#FFE0EF}
+.stage{position:relative;width:min(340px,80vw);margin:22px auto 0;animation:fade-up .7s 1s ease both}
+.rainbow{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:74%;z-index:0}
+#mascot{position:relative;display:block;margin:0 auto;width:150px;height:120px;z-index:1}
 /* ---------- category chips ---------- */
 .chips{
-  display:flex;gap:9px;justify-content:flex-start;margin:26px 0 20px;overflow-x:auto;padding:6px 2px 12px;
+  display:flex;gap:9px;justify-content:flex-start;margin:30px 0 22px;overflow-x:auto;padding:6px 2px 12px;
   scrollbar-width:none;
 }
 .chips::-webkit-scrollbar{display:none}
@@ -178,31 +202,43 @@ header.hero{text-align:center;padding:34px 0 10px}
 .chip:active{transform:translate(2px,2px);box-shadow:none}
 .chip.on{background:var(--ink);color:#fff;transform:rotate(-2deg) scale(1.05)}
 /* ---------- game grid ---------- */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:22px}
 .card{
   position:relative;display:flex;flex-direction:column;background:var(--paper);
-  border:3.5px solid var(--ink);border-radius:26px;padding:18px 18px 16px;
+  border:3.5px solid var(--ink);border-radius:24px;overflow:hidden;
   box-shadow:var(--shadow);text-decoration:none;color:var(--ink);
   transition:transform .18s cubic-bezier(.2,1.6,.4,1),box-shadow .18s,opacity .3s;
   animation:card-in .5s cubic-bezier(.2,1.4,.4,1) both;animation-delay:calc(var(--n)*45ms);
 }
 @keyframes card-in{from{opacity:0;transform:translateY(24px) scale(.92)}to{opacity:1;transform:none}}
-.card:hover{transform:translateY(-5px) rotate(-.6deg) scale(1.02)}
+.card:hover{transform:translateY(-6px) rotate(-.6deg) scale(1.02);box-shadow:9px 10px 0 rgba(43,35,80,.16)}
 .card:active{transform:translate(3px,3px);box-shadow:var(--shadow-press)}
 .card.hidden{display:none}
-.badge{
-  position:absolute;top:-12px;right:14px;background:var(--sun);border:3px solid var(--ink);
-  border-radius:999px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:12px;padding:4px 11px;
-  transform:rotate(3deg);
+.cardtop{
+  position:relative;display:flex;align-items:center;justify-content:center;padding:20px 0 16px;
+  border-bottom:3px solid var(--ink);
+  background:#FFF3E0;
+  background:color-mix(in srgb, var(--acc) 26%, #fff);
+  background-image:radial-gradient(rgba(43,35,80,.09) 2.2px, transparent 2.6px);
+  background-size:20px 20px;
 }
 .icon-ring{
-  width:74px;height:74px;border-radius:22px;border:3px solid var(--ink);
+  width:76px;height:76px;border-radius:50%;border:3.5px solid var(--ink);
   display:flex;align-items:center;justify-content:center;font-size:40px;
-  background:var(--acc);box-shadow:inset 0 -6px 0 rgba(43,35,80,.15);
+  background:#fff;box-shadow:0 0 0 6px rgba(255,255,255,.75), inset 0 -6px 0 rgba(43,35,80,.08);
+  transform:rotate(-5deg);
 }
 .card:hover .icon-ring{animation:wiggle .5s ease}
-@keyframes wiggle{25%{transform:rotate(-7deg) scale(1.08)}75%{transform:rotate(6deg) scale(1.05)}}
-.card h2{font-family:'Fredoka',sans-serif;font-weight:700;font-size:24px;margin-top:12px}
+@keyframes wiggle{25%{transform:rotate(-11deg) scale(1.08)}75%{transform:rotate(4deg) scale(1.05)}}
+.newtag{
+  position:absolute;top:10px;right:-8px;background:var(--coral);color:#fff;
+  font-family:'Fredoka',sans-serif;font-weight:600;font-size:12.5px;letter-spacing:.5px;
+  border:3px solid var(--ink);border-radius:999px;padding:4px 14px 4px 11px;transform:rotate(6deg);
+  box-shadow:var(--shadow-press);animation:newpulse 2.2s ease-in-out infinite;
+}
+@keyframes newpulse{50%{transform:rotate(6deg) scale(1.09)}}
+.cardbody{display:flex;flex-direction:column;flex:1;padding:14px 18px 16px}
+.card h2{font-family:'Fredoka',sans-serif;font-weight:700;font-size:23px}
 .genre{font-size:13.5px;font-weight:900;margin-top:2px;color:var(--acc-text,var(--ink));opacity:.85}
 .desc{font-size:14.5px;font-weight:800;opacity:.68;line-height:1.35;margin-top:8px;flex:1}
 .cardfoot{display:flex;align-items:center;justify-content:space-between;margin-top:14px;gap:8px}
@@ -214,69 +250,86 @@ header.hero{text-align:center;padding:34px 0 10px}
   font-family:'Fredoka',sans-serif;font-weight:700;font-size:16px;letter-spacing:.5px;
   background:var(--acc);color:var(--ink);border:3px solid var(--ink);border-radius:16px;
   padding:9px 18px;box-shadow:3px 3px 0 var(--ink);white-space:nowrap;
+  transition:transform .18s cubic-bezier(.2,1.6,.4,1);
 }
-.card:hover .playbtn{transform:scale(1.06)}
-/* coming soon cards */
-.card.soon{background:#F4EEE2;cursor:default}
-.card.soon .icon-ring{background:#E5DECD;filter:grayscale(.4)}
-.card.soon .playbtn{background:#D9D2C0;box-shadow:none;color:#7a7460}
-.card.soon:hover{transform:none}
-.card.soon:active{transform:none;box-shadow:var(--shadow)}
-.lock{display:inline-block;margin-right:5px}
-.card.soon:active .lock{animation:lockwig .4s ease}
-@keyframes lockwig{25%{transform:rotate(-16deg)}75%{transform:rotate(14deg)}}
-/* ---------- sticker shelf ---------- */
-.shelf-title{font-family:'Fredoka',sans-serif;font-weight:700;font-size:26px;margin:46px 0 4px}
+.card:hover .playbtn{transform:scale(1.08) rotate(-2deg)}
+/* ---------- sticker album ---------- */
+.shelf-title{font-family:'Fredoka',sans-serif;font-weight:700;font-size:28px;margin:52px 0 4px;display:flex;align-items:center;gap:10px}
+.shelf-title .tsticker{font-size:24px;display:inline-block;transform:rotate(-8deg)}
 .shelf-sub{font-weight:800;opacity:.65;font-size:15px}
-.shelf{
-  display:flex;gap:14px;overflow-x:auto;padding:18px 4px 22px;scrollbar-width:none;
+.album{
+  margin-top:16px;background:var(--paper);border:3.5px solid var(--ink);border-radius:24px;
+  box-shadow:var(--shadow);padding:10px 14px;position:relative;
 }
+.album::before{
+  content:"";position:absolute;inset:9px;border:2.5px dashed rgba(43,35,80,.22);border-radius:16px;pointer-events:none;
+}
+.shelf{display:flex;gap:14px;overflow-x:auto;padding:16px 8px 18px;scrollbar-width:none}
 .shelf::-webkit-scrollbar{display:none}
-.sticker{
-  flex:0 0 auto;width:86px;text-align:center;text-decoration:none;color:var(--ink);
-}
+.sticker{flex:0 0 auto;width:86px;text-align:center;text-decoration:none;color:var(--ink)}
 .sticker .face{
   width:74px;height:74px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:34px;border:4px solid var(--tier);background:var(--paper);box-shadow:var(--shadow-press);
+  font-size:34px;border:4px solid var(--tier);background:#fff;box-shadow:var(--shadow-press);
   transition:transform .18s cubic-bezier(.2,1.6,.4,1);
 }
 .sticker:hover .face{transform:scale(1.12) rotate(-5deg)}
 .sticker.locked .face{border-color:#CFC7B4;background:#EFE9DB;filter:grayscale(1);opacity:.6;font-size:26px}
 .sticker .lab{font-size:11.5px;font-weight:900;margin-top:6px;opacity:.75;line-height:1.2}
-/* ---------- footer ---------- */
-footer{margin-top:52px;text-align:center}
-.promises{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+/* ---------- grown-ups info ---------- */
+.grownups{margin-top:50px}
+.grownups-card{
+  background:var(--paper);border:3.5px solid var(--ink);border-radius:24px;
+  padding:22px 24px;box-shadow:var(--shadow);max-width:780px;margin:14px auto 0;
+}
+.gq{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
+.gq:last-child{margin-bottom:0}
+.gq .tick{
+  flex:0 0 auto;width:34px;height:34px;border-radius:50%;background:var(--mint);border:3px solid var(--ink);
+  display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:var(--shadow-press);
+}
+.gq p{font-size:15px;line-height:1.55;font-weight:700}
+.gq a{color:var(--grape);font-weight:900}
+/* ---------- footer band ---------- */
+.footband{position:relative;z-index:1;margin-top:74px;background:var(--ink);color:var(--cream)}
+.footband::before{
+  content:"";position:absolute;left:0;right:0;top:-16px;height:17px;
+  background-image:radial-gradient(circle 13px at 20px 17px, var(--ink) 12.5px, transparent 13.5px);
+  background-size:40px 17px;background-repeat:repeat-x;
+}
+.footinner{max-width:1060px;margin:0 auto;padding:42px 18px 38px;text-align:center}
+.promises{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 .promise{
-  font-family:'Fredoka',sans-serif;font-weight:600;font-size:14px;background:var(--paper);
-  border:3px solid var(--ink);border-radius:999px;padding:8px 16px;box-shadow:var(--shadow-press);
+  font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;background:var(--paper);color:var(--ink);
+  border:3px solid var(--ink);border-radius:999px;padding:9px 18px;box-shadow:3px 3px 0 rgba(255,246,233,.25);
 }
-.promise.p1{transform:rotate(-2deg)}
-.promise.p3{transform:rotate(2deg)}
-.fine{margin-top:18px;font-size:13px;font-weight:800;opacity:.55}
-@media (max-width:560px){
-  .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:13px}
-  .card{padding:13px 13px 12px;border-radius:20px}
-  .icon-ring{width:56px;height:56px;font-size:30px;border-radius:16px}
-  .card h2{font-size:18px}
-  .desc{display:none}
-  .cardfoot{flex-wrap:wrap}
-  .playbtn{font-size:14px;padding:7px 14px}
-  .wrap{padding:14px 13px 48px}
-}
+.promise.p1{transform:rotate(-2deg);background:var(--sun)}
+.promise.p2{background:#C9F2EC}
+.promise.p3{transform:rotate(2deg);background:#FFE0EF}
+.footlinks{margin-top:24px;font-size:13.5px;font-weight:800;line-height:2}
+.footlinks a{color:var(--cream);text-decoration:none;border-bottom:2px solid rgba(255,246,233,.35);padding-bottom:1px}
+.footlinks a:hover{border-bottom-color:var(--sun);color:#fff}
+.footlinks .sep{opacity:.4;margin:0 7px}
+.fine{margin-top:20px;font-size:12.5px;font-weight:800;opacity:.55}
+.footmark{width:54px;height:54px;margin:0 auto 16px;display:block;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px) rotate(5deg)}}
 /* ---------- static fallback links (replaced by JS cards) ---------- */
 .static-game{
   display:block;background:var(--paper);border:3px solid var(--ink);border-radius:16px;
   padding:12px 16px;font-weight:800;color:var(--ink);text-decoration:none;box-shadow:var(--shadow-press);
 }
-/* ---------- grown-ups info ---------- */
-.grownups{margin-top:46px}
-.grownups-card{
-  background:var(--paper);border:3px solid var(--ink);border-radius:22px;
-  padding:20px 22px;box-shadow:var(--shadow);max-width:760px;margin:14px auto 0;
+@media (max-width:560px){
+  .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+  .cardtop{padding:14px 0 11px}
+  .icon-ring{width:58px;height:58px;font-size:30px}
+  .cardbody{padding:10px 13px 12px}
+  .card h2{font-size:18px}
+  .desc{display:none}
+  .cardfoot{flex-wrap:wrap}
+  .playbtn{font-size:14px;padding:7px 14px}
+  .wrap{padding:14px 13px 0}
+  .brandmini .mark{width:38px;height:38px}
+  .brandmini .bname{font-size:19px}
 }
-.grownups-card p{font-size:15px;line-height:1.55;font-weight:700;margin:0 0 12px}
-.grownups-card p:last-child{margin-bottom:0}
-.grownups-card a{color:var(--grape);font-weight:900}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
@@ -284,17 +337,47 @@ footer{margin-top:52px;text-align:center}
 </head>
 <body>
 <div class="bg" aria-hidden="true">
-  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
-  <div class="shape" style="top:12%;left:6%">⭐</div>
-  <div class="shape" style="top:22%;right:9%">🎈</div>
-  <div class="shape" style="top:58%;left:4%">🌈</div>
-  <div class="shape" style="top:72%;right:6%">✨</div>
-  <div class="shape" style="top:40%;left:48%">🍭</div>
+  <div class="doodle" style="top:11%;left:5%">
+    <svg width="40" height="40" viewBox="0 0 40 40"><path d="M20 3l4.6 9.6L35 14l-7.5 7.4L29.4 32 20 27l-9.4 5 1.9-10.6L5 14l10.4-1.4z" fill="#FFD23F" stroke="#2B2350" stroke-width="3" stroke-linejoin="round"/></svg>
+  </div>
+  <div class="doodle desk" style="top:24%;right:7%">
+    <svg width="46" height="34" viewBox="0 0 46 34"><path d="M10 26a7 7 0 0 1 1-14 10 10 0 0 1 19-3 8 8 0 0 1 6 17z" fill="#fff" stroke="#2B2350" stroke-width="3" stroke-linejoin="round"/></svg>
+  </div>
+  <div class="doodle" style="top:56%;left:3.5%">
+    <svg width="34" height="42" viewBox="0 0 34 42"><path d="M20 2L6 24h9l-3 16L28 16h-9l4-14z" fill="#4FC3F7" stroke="#2B2350" stroke-width="3" stroke-linejoin="round"/></svg>
+  </div>
+  <div class="doodle desk" style="top:70%;right:5%">
+    <svg width="40" height="38" viewBox="0 0 40 38"><path d="M20 34S4 24 4 13a8.6 8.6 0 0 1 16-4.4A8.6 8.6 0 0 1 36 13c0 11-16 21-16 21z" fill="#FF5FA2" stroke="#2B2350" stroke-width="3" stroke-linejoin="round"/></svg>
+  </div>
+  <div class="doodle desk" style="top:88%;right:15%">
+    <svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="#2EC4B6" stroke="#2B2350" stroke-width="3"/><path d="M18 4a14 14 0 0 1 0 28M18 8a10 10 0 0 0 0 20" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+  </div>
+  <div class="doodle" style="top:86%;left:12%">
+    <svg width="30" height="30" viewBox="0 0 30 30"><path d="M15 3v24M3 15h24" stroke="#FF8A3D" stroke-width="5" stroke-linecap="round"/></svg>
+  </div>
 </div>
 
 <div class="wrap">
   <nav class="topbar" aria-label="Player stats">
-    <div class="brandmini"><span class="dot"></span>WoopKid</div>
+    <a class="brandmini" href="/">
+      <svg class="mark" viewBox="0 0 120 120" aria-hidden="true">
+        <g transform="rotate(-8 60 62)">
+          <rect x="10" y="12" width="100" height="100" rx="30" fill="#FFFFFF"/>
+          <rect x="16" y="18" width="88" height="88" rx="24" fill="#FFD23F" stroke="#2B2350" stroke-width="5"/>
+        </g>
+        <path d="M60 36 Q67 22 60 12" stroke="#2B2350" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <circle cx="60" cy="10" r="6.5" fill="#FF5FA2" stroke="#2B2350" stroke-width="4"/>
+        <circle cx="60" cy="67" r="31" fill="#FF8A3D" stroke="#2B2350" stroke-width="5"/>
+        <circle cx="49" cy="61" r="9.5" fill="#FFFFFF" stroke="#2B2350" stroke-width="3.5"/>
+        <circle cx="71" cy="61" r="9.5" fill="#FFFFFF" stroke="#2B2350" stroke-width="3.5"/>
+        <circle cx="51" cy="63" r="4" fill="#2B2350"/>
+        <circle cx="73" cy="63" r="4" fill="#2B2350"/>
+        <circle cx="41" cy="74" r="4.5" fill="#FF5C5C" opacity=".5"/>
+        <circle cx="79" cy="74" r="4.5" fill="#FF5C5C" opacity=".5"/>
+        <path d="M51 78 Q60 87 69 78" stroke="#2B2350" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span class="bname">Woop<em>Kid</em></span>
+    </a>
     <div class="pills">
       <div class="pill" id="streakPill" title="Daily play streak"><span class="big">🔥</span><span id="streakNum">0</span></div>
       <div class="pill" id="stickerPill" title="Stickers earned"><span class="big">🏅</span><span id="stickerNum">0</span></div>
@@ -307,7 +390,20 @@ footer{margin-top:52px;text-align:center}
       <span class="w2"><span style="--i:0">W</span><span style="--i:1">O</span><span style="--i:2">R</span><span style="--i:3">L</span><span style="--i:4">D</span></span>
     </h1>
     <p class="tagline">Free games. No ads. No tracking. Just play.</p>
-    <canvas id="mascot" width="300" height="240" aria-hidden="true"></canvas>
+    <div class="herobadges" aria-hidden="true">
+      <span class="hbadge sun" style="--r:-3deg;--d:.9s">🎮 20 free games</span>
+      <span class="hbadge pinkbg" style="--r:2deg;--d:1.05s">🚫 zero ads</span>
+      <span class="hbadge mintbg" style="--r:-2deg;--d:1.2s">🔒 zero tracking</span>
+    </div>
+    <div class="stage">
+      <svg class="rainbow" viewBox="0 0 300 130" aria-hidden="true">
+        <path d="M30 130 a120 120 0 0 1 240 0" fill="none" stroke="#FF5C5C" stroke-width="13" stroke-linecap="round"/>
+        <path d="M48 130 a102 102 0 0 1 204 0" fill="none" stroke="#FFD23F" stroke-width="13" stroke-linecap="round"/>
+        <path d="M66 130 a84 84 0 0 1 168 0" fill="none" stroke="#2EC4B6" stroke-width="13" stroke-linecap="round"/>
+        <path d="M84 130 a66 66 0 0 1 132 0" fill="none" stroke="#4FC3F7" stroke-width="13" stroke-linecap="round"/>
+      </svg>
+      <canvas id="mascot" width="300" height="240" aria-hidden="true"></canvas>
+    </div>
   </header>
 
   <div class="chips" role="tablist" aria-label="Game categories">
@@ -343,30 +439,50 @@ footer{margin-top:52px;text-align:center}
     <a class="static-game" href="games/woop-swarm/">👾 Woop Swarm — dodge the goober swarm, evolve your toys, bop the boss</a>
   </section>
 
-  <h2 class="shelf-title">Your Sticker Album</h2>
+  <h2 class="shelf-title"><span class="tsticker">🏅</span>Your Sticker Album</h2>
   <p class="shelf-sub">Play games, hit milestones, collect them all!</p>
-  <div class="shelf" id="shelf"></div>
+  <div class="album">
+    <div class="shelf" id="shelf"></div>
+  </div>
 
   <section class="grownups" aria-label="Information for parents and teachers">
-    <h2 class="shelf-title">For Grown-Ups</h2>
+    <h2 class="shelf-title"><span class="tsticker">🧑‍🏫</span>For Grown-Ups</h2>
     <div class="grownups-card">
-      <p><strong>Is WoopKid really free and ad-free?</strong> Yes. Every game is completely free with zero advertising: no ad networks, no video ads, no in-app purchases, nothing to buy and nothing to download.</p>
-      <p><strong>Is it safe for young kids?</strong> Yes. No ads, no chat, no accounts, no data collection and no external links. Progress is saved only on your device. Content is bright and cartoon-style, made for ages 5-12.</p>
-      <p><strong>Does it work on school Chromebooks?</strong> Yes. Every game is a lightweight HTML5 game that runs in any modern browser on Chromebook, tablet, phone or computer. Teachers: see <a href="teachers/">WoopKid for Teachers</a> for indoor recess and brain breaks.</p>
+      <div class="gq"><span class="tick">✔️</span><p><strong>Is WoopKid really free and ad-free?</strong> Yes. Every game is completely free with zero advertising: no ad networks, no video ads, no in-app purchases, nothing to buy and nothing to download.</p></div>
+      <div class="gq"><span class="tick">✔️</span><p><strong>Is it safe for young kids?</strong> Yes. No ads, no chat, no accounts, no data collection and no external links. Progress is saved only on your device. Content is bright and cartoon-style, made for ages 5-12.</p></div>
+      <div class="gq"><span class="tick">✔️</span><p><strong>Does it work on school Chromebooks?</strong> Yes. Every game is a lightweight HTML5 game that runs in any modern browser on Chromebook, tablet, phone or computer. Teachers: see <a href="teachers/">WoopKid for Teachers</a> for indoor recess and brain breaks.</p></div>
     </div>
   </section>
+</div>
 
-  <footer>
+<footer class="footband">
+  <div class="footinner">
+    <svg class="footmark" viewBox="0 0 120 120" aria-hidden="true">
+      <g transform="rotate(-8 60 62)">
+        <rect x="10" y="12" width="100" height="100" rx="30" fill="#FFF6E9"/>
+        <rect x="16" y="18" width="88" height="88" rx="24" fill="#FFD23F" stroke="#2B2350" stroke-width="5"/>
+      </g>
+      <path d="M60 36 Q67 22 60 12" stroke="#FFF6E9" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <circle cx="60" cy="10" r="6.5" fill="#FF5FA2" stroke="#FFF6E9" stroke-width="4"/>
+      <circle cx="60" cy="67" r="31" fill="#FF8A3D" stroke="#2B2350" stroke-width="5"/>
+      <circle cx="49" cy="61" r="9.5" fill="#FFFFFF" stroke="#2B2350" stroke-width="3.5"/>
+      <circle cx="71" cy="61" r="9.5" fill="#FFFFFF" stroke="#2B2350" stroke-width="3.5"/>
+      <circle cx="51" cy="63" r="4" fill="#2B2350"/>
+      <circle cx="73" cy="63" r="4" fill="#2B2350"/>
+      <path d="M51 78 Q60 87 69 78" stroke="#2B2350" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    </svg>
     <div class="promises">
       <div class="promise p1">🚫 No Ads, Ever</div>
       <div class="promise p2">🕵️ No Tracking</div>
       <div class="promise p3">🆓 Free Forever</div>
     </div>
-    <p class="fine">WoopKid World. Built with pure HTML, Canvas and JavaScript. Everything stays on your device.<br>
-    <a href="privacy/" style="color:inherit;font-weight:900">Privacy</a> · <a href="teachers/" style="color:inherit;font-weight:900">For Teachers</a> · <a href="2-player-games/" style="color:inherit;font-weight:900">2 Player Games</a> · <a href="puzzle-games/" style="color:inherit;font-weight:900">Puzzle Games</a> · <a href="action-games/" style="color:inherit;font-weight:900">Action Games</a> · <a href="quick-games/" style="color:inherit;font-weight:900">Quick Games</a><br>
-    <a href="free-games-for-kids-no-ads/" style="color:inherit;font-weight:900">Free Games with No Ads</a> · <a href="chromebook-games-for-school/" style="color:inherit;font-weight:900">Chromebook Games for School</a> · <a href="games-for-5-year-olds/" style="color:inherit;font-weight:900">Games for 5 Year Olds</a> · <a href="ad-free-alternatives/" style="color:inherit;font-weight:900">Ad-Free Alternatives</a></p>
-  </footer>
-</div>
+    <p class="footlinks">
+      <a href="privacy/">Privacy</a><span class="sep">·</span><a href="teachers/">For Teachers</a><span class="sep">·</span><a href="2-player-games/">2 Player Games</a><span class="sep">·</span><a href="puzzle-games/">Puzzle Games</a><span class="sep">·</span><a href="action-games/">Action Games</a><span class="sep">·</span><a href="quick-games/">Quick Games</a><br>
+      <a href="free-games-for-kids-no-ads/">Free Games with No Ads</a><span class="sep">·</span><a href="chromebook-games-for-school/">Chromebook Games for School</a><span class="sep">·</span><a href="games-for-5-year-olds/">Games for 5 Year Olds</a><span class="sep">·</span><a href="ad-free-alternatives/">Ad-Free Alternatives</a>
+    </p>
+    <p class="fine">WoopKid World. Built with pure HTML, Canvas and JavaScript. Everything stays on your device.</p>
+  </div>
+</footer>
 
 <script>
 'use strict';
@@ -385,9 +501,9 @@ const WoopProfile = {
 
 /* ---------- game catalog ---------- */
 const GAMES = [
-  { slug:'woop-beasts', name:'WoopBeasts', genre:'Creature Fusion Battler', cat:['action','chill'], acc:'#B388FF', emoji:'🐲',
+  { slug:'woop-beasts', name:'WoopBeasts', genre:'Creature Fusion Battler', cat:['action','chill'], acc:'#B388FF', emoji:'🐲', isNew:true,
     desc:'Hatch hero beasts, fuse two into species nobody has ever seen, merge to evolve, battle!', live:true, bestLabel:'Beasts' },
-  { slug:'woop-swarm', name:'Woop Swarm', genre:'Bullet Heaven', cat:['action'], acc:'#B25CFF', emoji:'👾',
+  { slug:'woop-swarm', name:'Woop Swarm', genre:'Bullet Heaven', cat:['action'], acc:'#B25CFF', emoji:'👾', isNew:true,
     desc:'Dodge the goober swarm. Level up, evolve your toys, bop the boss.', live:true, bestLabel:'Bops' },
   { slug:'scribble-legs', name:'Scribble Legs', genre:'Draw & Race', cat:['action','quick'], acc:'#6B4DFF', emoji:'✏️',
     desc:'Draw your own wacky legs and outrun the giggling Tickle Cloud.', live:true, bestLabel:'Meters' },
@@ -434,21 +550,15 @@ const grid = document.getElementById('grid');
 grid.innerHTML = GAMES.map((g, n) => {
   const best = profile.games[g.slug] ? profile.games[g.slug].best : 0;
   const bestChip = g.live ? `<span class="best">Best: ${best > 0 ? fmt(best) : 'play!'}</span>` : '';
-  if (g.live) {
-    return `<a class="card" href="games/${g.slug}/" style="--acc:${g.acc};--n:${n}" data-cat="${g.cat.join(' ')}">
-      <div class="icon-ring">${g.emoji}</div>
+  const newTag = g.isNew ? `<span class="newtag">NEW!</span>` : '';
+  return `<a class="card" href="games/${g.slug}/" style="--acc:${g.acc};--n:${n}" data-cat="${g.cat.join(' ')}">
+    <div class="cardtop">${newTag}<div class="icon-ring">${g.emoji}</div></div>
+    <div class="cardbody">
       <h2>${g.name}</h2><div class="genre">${g.genre}</div>
       <p class="desc">${g.desc}</p>
       <div class="cardfoot">${bestChip}<span class="playbtn">PLAY ▶</span></div>
-    </a>`;
-  }
-  return `<div class="card soon" style="--acc:${g.acc};--n:${n}" data-cat="${g.cat.join(' ')}">
-    <span class="badge">SOON</span>
-    <div class="icon-ring">${g.emoji}</div>
-    <h2>${g.name}</h2><div class="genre">${g.genre}</div>
-    <p class="desc">${g.desc}</p>
-    <div class="cardfoot"><span class="playbtn"><span class="lock">🔒</span>COMING</span></div>
-  </div>`;
+    </div>
+  </a>`;
 }).join('');
 
 function fmt(n) {

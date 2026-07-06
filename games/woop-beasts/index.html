@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>WoopBeasts - WoopKid</title>
-<meta name="description" content="Play WoopBeasts free online! Hatch hero beasts, fuse two into brand-new species nobody has ever seen, merge three to evolve, and battle up the ladder. No ads, kid-safe.">
+<meta name="description" content="Play WoopBeasts free online! Collect beast cards, merge two into brand-new species you name yourself, and battle. No ads, kid-safe.">
 <link rel="canonical" href="https://woopkid.com/games/woop-beasts">
 <meta property="og:title" content="WoopBeasts - WoopKid">
-<meta property="og:description" content="Hatch, fuse and merge hero beasts with future tech widgets, then battle! Free, no ads, kid-safe.">
+<meta property="og:description" content="Collect beast cards, merge them into new species, battle! Free, no ads, kid-safe.">
 <meta property="og:url" content="https://woopkid.com/games/woop-beasts">
 <meta property="og:type" content="website">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -21,7 +21,7 @@
   "@context": "https://schema.org",
   "@type": "VideoGame",
   "name": "WoopBeasts",
-  "description": "Hatch hero beasts, fuse two into brand-new species, merge three to evolve, and battle up the ladder. Infinite creature creation, free and kid-safe.",
+  "description": "Collect beast cards, merge two into brand-new species you name yourself, and battle your deck up the ranks. Infinite creature creation, free and kid-safe.",
   "url": "https://woopkid.com/games/woop-beasts",
   "genre": "Casual",
   "gamePlatform": ["Web Browser", "Mobile Web"],
@@ -33,284 +33,187 @@
 }
 </script>
 <style>
-/* ============ WoopBeasts, design: docs/research/woopbeasts/ ============ */
 :root{
-  --cream:#FFF6E9; --ink:#2B2350; --orange:#FF8A3D; --panel:#FFE9C9;
+  --cream:#FFF6E9; --ink:#2B2350; --orange:#FF8A3D;
   --ember:#FF5757; --tide:#4CC9F0; --bloom:#6FDB6F; --spark:#FFD93D;
   --frost:#9BD5FF; --stone:#C9A87C; --gloom:#8B7FD4; --gleam:#FFC2E2;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overscroll-behavior:none;}
 body{
-  font-family:'Nunito',system-ui,sans-serif;font-weight:700;color:var(--ink);
-  background:linear-gradient(180deg,#FFFBF2,#FFF1DC);
+  font-family:'Nunito',system-ui,sans-serif;font-weight:800;color:var(--ink);
+  background:
+    radial-gradient(circle at 20% 10%, #FFE9C9 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, #E6D9FF 0%, transparent 45%),
+    linear-gradient(180deg,#FFFBF2,#FFEEDA);
   height:100dvh;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation;
 }
 #app{height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden;
-  padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);}
+  padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);max-width:560px;margin:0 auto;}
 button{font:inherit;color:inherit;cursor:pointer;}
+
 /* top bar */
-#topbar{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--ink);color:#fff;
-  font-size:13px;font-weight:800;flex:0 0 auto;z-index:5;}
-#topbar .chip{background:rgba(255,255,255,.14);border-radius:999px;padding:3px 9px;white-space:nowrap;}
-#topbar .chip.dex{margin-left:auto;background:var(--orange);color:var(--ink);cursor:pointer;}
-#backbtn{width:34px;height:34px;border-radius:10px;border:none;background:rgba(255,255,255,.14);
-  color:#fff;font-size:17px;font-weight:800;flex:0 0 auto;}
-#mutebtn{width:34px;height:34px;border-radius:10px;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:15px;}
-#hintbar{text-align:center;font-size:12.5px;padding:7px 12px;background:var(--panel);
-  border-bottom:3px solid var(--ink);font-weight:800;flex:0 0 auto;min-height:32px;z-index:4;}
-/* screens */
-.screen{flex:1;overflow:hidden auto;display:none;flex-direction:column;position:relative;}
-.screen.on{display:flex;}
-/* dock */
-#dock{display:flex;gap:6px;padding:8px;background:var(--panel);border-top:3px solid var(--ink);flex:0 0 auto;z-index:5;}
-.dockbtn{flex:1;border:3px solid var(--ink);border-radius:14px;background:#fff;font-weight:800;
-  font-size:12px;padding:9px 2px;box-shadow:0 3px 0 var(--ink);transition:transform .08s;line-height:1.25;}
-.dockbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink);}
-.dockbtn.on{background:var(--orange);color:#fff;}
-.dockbtn.pulse{animation:pulse 1.1s infinite;}
-.dockbtn .di{display:block;font-size:17px;}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-/* ranch grid */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));gap:9px;padding:11px;align-content:start;}
-.slot{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:6px 3px 5px;
-  display:flex;flex-direction:column;align-items:center;position:relative;cursor:pointer;
-  box-shadow:0 3px 0 rgba(43,35,80,.25);transition:transform .1s;}
-.slot:active{transform:scale(.95);}
-.slot .nm{font-size:10.5px;font-weight:800;margin-top:1px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.slot .el{font-size:9.5px;opacity:.85;}
-.slot.mergeready{outline:4px solid var(--bloom);outline-offset:-2px;animation:pulse 1.1s infinite;}
-.slot.empty{opacity:.35;border-style:dashed;box-shadow:none;cursor:default;}
-.bsvg{width:66px;height:66px;pointer-events:none;}
-.slot .bsvg{animation:bob 2.6s ease-in-out infinite;}
-@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-/* hatchery */
-.eggrow{display:flex;flex-direction:column;gap:10px;padding:12px;}
-.eggcard{display:flex;align-items:center;gap:12px;background:#fff;border:3px solid var(--ink);
-  border-radius:18px;padding:10px 14px;box-shadow:0 3px 0 rgba(43,35,80,.25);}
-.eggcard.locked{opacity:.55;background:#F4EBDD;}
-.eggface{font-size:40px;line-height:1;flex:0 0 auto;transition:transform .1s;}
-.eggface.crack1{transform:rotate(-8deg) scale(1.05);}
-.eggface.crack2{transform:rotate(8deg) scale(1.12);}
-.egginfo{flex:1;min-width:0;}
-.egginfo .t{font-weight:800;font-size:15px;}
-.egginfo .d{font-size:11px;opacity:.75;}
-.eggbtn{border:3px solid var(--ink);border-radius:12px;background:var(--bloom);font-weight:800;
-  font-size:13px;padding:9px 13px;box-shadow:0 3px 0 var(--ink);white-space:nowrap;}
-.eggbtn.buy{background:var(--spark);}
-.eggbtn:disabled{opacity:.45;box-shadow:none;}
-.eggbtn:not(:disabled):active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink);}
-/* lab */
-#lab{padding:10px;gap:8px;}
-.pods{display:flex;align-items:center;justify-content:center;gap:8px;}
-.podcol{display:flex;flex-direction:column;gap:8px;align-items:center;}
-.pod{width:104px;height:104px;border:3px dashed var(--ink);border-radius:18px;background:#fff;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;}
-.pod.filled{border-style:solid;box-shadow:0 3px 0 rgba(43,35,80,.25);}
-.pod.picking{outline:4px solid var(--orange);outline-offset:-1px;}
-.pod .lbl{position:absolute;top:-11px;background:var(--ink);color:#fff;font-size:9.5px;font-weight:800;border-radius:999px;padding:2px 9px;}
-.pod .bsvg{width:64px;height:64px;}
-.pod .pnm{font-size:9.5px;font-weight:800;}
-#swapbtn{border:3px solid var(--ink);background:#fff;border-radius:999px;width:44px;height:44px;font-size:19px;box-shadow:0 3px 0 var(--ink);}
-.preview{border:3px solid var(--ink);border-radius:18px;background:#fff;padding:9px;flex:1;
-  display:flex;gap:10px;align-items:center;min-height:126px;}
-.preview .bsvg{width:92px;height:92px;flex:0 0 auto;}
-.silh{filter:brightness(0) opacity(.72);}
-.stats{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;}
-.stat{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;}
-.stat .bar{flex:1;height:9px;background:#EFE6D8;border-radius:99px;border:2px solid var(--ink);overflow:hidden;}
-.stat .fill{height:100%;background:var(--orange);border-radius:99px;transition:width .4s cubic-bezier(.34,1.56,.64,1);}
-#fusebtn{border:3px solid var(--ink);border-radius:16px;background:var(--gloom);color:#fff;font-weight:800;
-  font-size:17px;padding:12px;box-shadow:0 4px 0 var(--ink);}
-#fusebtn:disabled{opacity:.4;}
-#fusebtn:not(:disabled):active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);}
-.shelf{display:flex;gap:7px;overflow-x:auto;padding:6px 2px;flex:0 0 auto;}
-.shelf .slot{flex:0 0 82px;}
-.shelf .bsvg{width:52px;height:52px;animation:none;}
-/* battle */
-#battle{overflow:hidden;}
-#arena{flex:1;position:relative;overflow:hidden;
-  background:linear-gradient(180deg,#CDEFFF 0%,#E8FFE0 68%,#D8C9A8 69%,#E8DCC0 100%);}
-#banner{position:absolute;top:8px;left:0;right:0;text-align:center;font-weight:800;font-size:14px;z-index:10;}
-.vs{position:absolute;top:44%;left:50%;transform:translate(-50%,-50%);font-size:32px;font-weight:800;opacity:.22;}
-.fighter{position:absolute;display:flex;flex-direction:column;align-items:center;width:86px;margin-left:-43px;
-  transition:transform .16s cubic-bezier(.34,1.56,.64,1);}
-.fighter .bsvg{width:72px;height:72px;}
-.fighter.enemy .bsvg{transform:scaleX(-1);}
-.fighter.ko{opacity:.22;filter:grayscale(1);}
-.hpbar{width:66px;height:8px;border:2px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden;margin-top:1px;}
-.hpfill{height:100%;background:var(--bloom);border-radius:99px;transition:width .2s,background .2s;}
-.abring{width:66px;height:4px;border-radius:99px;background:#fff;border:1.5px solid var(--ink);overflow:hidden;margin-top:2px;}
-.abfill{height:100%;background:var(--gloom);width:0%;}
-.fnm{font-size:8.5px;font-weight:800;background:#fff;border:2px solid var(--ink);border-radius:99px;padding:0 6px;margin-top:2px;white-space:nowrap;max-width:84px;overflow:hidden;text-overflow:ellipsis;}
-.dmg{position:absolute;font-weight:800;color:var(--ember);text-shadow:0 2px 0 #fff;z-index:20;
-  animation:rise .9s ease-out forwards;pointer-events:none;}
-.dmg.pow{color:#fff;-webkit-text-stroke:1.5px var(--ink);}
-.dmg.heal{color:#2f9e44;}
-@keyframes rise{from{transform:translateY(0) scale(1);opacity:1}to{transform:translateY(-44px) scale(1.25);opacity:0}}
-#battlectl{padding:8px 10px;display:flex;gap:8px;background:var(--panel);border-top:3px solid var(--ink);flex:0 0 auto;align-items:stretch;}
-#fightbtn{flex:1;border:3px solid var(--ink);border-radius:14px;background:var(--ember);color:#fff;
-  font-weight:800;font-size:16px;padding:11px;box-shadow:0 3px 0 var(--ink);}
-#fightbtn:disabled{opacity:.45;}
-#speedbtn{border:3px solid var(--ink);border-radius:14px;background:#fff;font-weight:800;font-size:13px;padding:0 13px;box-shadow:0 3px 0 var(--ink);}
-#speedbtn.on{background:var(--spark);}
-#squadrow{display:flex;gap:7px;padding:8px 10px;background:#FFF3DE;border-top:3px solid var(--ink);flex:0 0 auto;overflow-x:auto;}
-#squadrow .sq{flex:0 0 76px;background:#fff;border:3px solid var(--ink);border-radius:13px;padding:4px 2px;
-  display:flex;flex-direction:column;align-items:center;cursor:pointer;}
-#squadrow .sq .bsvg{width:44px;height:44px;animation:none;}
-#squadrow .sq .fn{font-size:8.5px;font-weight:800;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-#squadrow .sq.empty{opacity:.4;border-style:dashed;justify-content:center;font-size:20px;min-height:66px;}
-#squadrow .lblv{flex:0 0 auto;display:flex;align-items:center;font-size:10px;font-weight:800;opacity:.7;writing-mode:vertical-rl;transform:rotate(180deg);}
-/* dex */
-#dex .grid{grid-template-columns:repeat(auto-fill,minmax(94px,1fr));}
-.dexslot{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:6px 3px;display:flex;flex-direction:column;align-items:center;}
-.dexslot.unknown{opacity:.5;background:#F4EBDD;}
-.dexslot .bsvg{width:56px;height:56px;animation:none;}
-.dexslot .nm{font-size:9.5px;font-weight:800;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.dexslot .ct{font-size:8.5px;opacity:.7;}
-/* overlays */
+#topbar{display:flex;align-items:center;gap:6px;padding:9px 10px;flex:0 0 auto;}
+.chip{background:var(--ink);color:#fff;border-radius:999px;padding:5px 12px;font-size:13.5px;white-space:nowrap;
+  box-shadow:0 2px 0 rgba(43,35,80,.3);}
+#backbtn,#mutebtn{width:36px;height:36px;border-radius:12px;border:none;background:var(--ink);color:#fff;font-size:16px;}
+#mutebtn{margin-left:auto;}
+
+/* hint */
+#hint{text-align:center;font-size:14px;min-height:24px;padding:2px 14px;color:var(--ink);}
+#hint b{color:#C2451E;}
+
+/* board */
+#board{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 12px;
+  align-content:center;justify-items:center;min-height:0;}
+.cslot{width:100%;max-width:128px;aspect-ratio:3/4.1;border-radius:16px;position:relative;}
+.cslot.empty{border:3px dashed rgba(43,35,80,.25);}
+
+/* THE CARD */
+.wcard{
+  position:absolute;inset:0;border-radius:16px;cursor:pointer;
+  padding:5px;display:flex;flex-direction:column;
+  border:3px solid var(--ink);
+  box-shadow:0 5px 0 rgba(43,35,80,.32), inset 0 0 0 2px rgba(255,255,255,.55);
+  transition:transform .16s cubic-bezier(.34,1.56,.64,1), box-shadow .16s;
+  overflow:hidden;
+}
+.wcard .face{flex:1;background:radial-gradient(circle at 50% 30%, #FFFFFF 0%, #FFF4E2 90%);
+  border-radius:10px;border:2px solid rgba(43,35,80,.5);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
+.wcard .face svg{width:92%;height:92%;}
+.wcard .nm{
+  text-align:center;font-size:11px;line-height:1.15;padding:3px 2px 1px;color:#fff;
+  text-shadow:0 1.5px 0 rgba(43,35,80,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wcard .stats{display:flex;justify-content:space-between;padding:0 3px 2px;font-size:11.5px;color:#fff;
+  text-shadow:0 1.5px 0 rgba(43,35,80,.8);}
+.wcard .stars{position:absolute;top:7px;left:0;right:0;text-align:center;font-size:10px;letter-spacing:-1px;
+  filter:drop-shadow(0 1px 0 rgba(43,35,80,.6));z-index:3;}
+.wcard .ebadge{position:absolute;top:6px;right:6px;font-size:13px;z-index:3;
+  filter:drop-shadow(0 1px 0 #fff);}
+.wcard .fxtag{position:absolute;top:6px;left:6px;font-size:11px;z-index:3;}
+/* element frames */
+.f-ember{background:linear-gradient(160deg,#FF8A5C,#E63946);}
+.f-tide{background:linear-gradient(160deg,#7FDBFF,#2196C9);}
+.f-bloom{background:linear-gradient(160deg,#9BE86F,#3E9E4F);}
+.f-spark{background:linear-gradient(160deg,#FFE277,#E9A800);}
+.f-frost{background:linear-gradient(160deg,#C9E9FF,#5FA8D9);}
+.f-stone{background:linear-gradient(160deg,#E0C494,#9C7A4E);}
+.f-gloom{background:linear-gradient(160deg,#B0A6EE,#5F4FB8);}
+.f-gleam{background:linear-gradient(160deg,#FFD9EC,#E77FB2);}
+/* level shine */
+.wcard.lv3 .face::after,.wcard.lv4 .face::after,.wcard.lv5 .face::after{
+  content:'';position:absolute;top:-60%;left:-60%;width:60%;height:220%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.75),transparent);
+  transform:rotate(18deg);animation:shine 3s ease-in-out infinite;}
+@keyframes shine{0%,60%,100%{left:-60%}30%{left:120%}}
+.wcard.lv5{box-shadow:0 5px 0 rgba(43,35,80,.32), 0 0 14px 3px rgba(255,200,60,.65), inset 0 0 0 2px rgba(255,255,255,.55);}
+/* selection */
+.wcard.sel{transform:translateY(-10px) scale(1.06) rotate(-2deg);
+  box-shadow:0 12px 0 rgba(43,35,80,.28), 0 0 0 4px var(--orange), 0 0 18px 4px rgba(255,138,61,.55);z-index:5;}
+.wcard.dealt{animation:dealin .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes dealin{from{transform:translateY(60px) rotate(8deg) scale(.4);opacity:0}to{transform:none;opacity:1}}
+.wcard.mergeflash{animation:mflash .55s cubic-bezier(.34,1.56,.64,1);}
+@keyframes mflash{0%{transform:scale(.4);filter:brightness(3)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+
+/* bottom buttons */
+#ctl{display:flex;gap:10px;padding:10px 14px calc(12px + env(safe-area-inset-bottom));flex:0 0 auto;}
+.bigbtn{flex:1;border:3px solid var(--ink);border-radius:18px;font-size:16.5px;font-weight:800;padding:14px 6px;
+  box-shadow:0 5px 0 var(--ink);transition:transform .08s;line-height:1.2;}
+.bigbtn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);}
+.bigbtn:disabled{opacity:.45;box-shadow:0 5px 0 var(--ink);transform:none;}
+#dealbtn{background:linear-gradient(160deg,#FFE277,#FFB13D);}
+#fightbtn{background:linear-gradient(160deg,#FF8A5C,#E63946);color:#fff;text-shadow:0 1.5px 0 rgba(43,35,80,.6);}
+.bigbtn.pulse{animation:pulse 1.1s infinite;}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+
+/* battle overlay */
+#battleOv{position:absolute;inset:0;display:none;flex-direction:column;z-index:30;
+  background:
+    radial-gradient(circle at 50% 0%, #FFD9A8 0%, transparent 55%),
+    linear-gradient(180deg,#CDEFFF 0%,#E8FFE0 62%,#D8C9A8 63%,#E8DCC0 100%);}
+#battleOv.on{display:flex;}
+#bbanner{text-align:center;font-size:17px;padding:12px 10px 2px;min-height:34px;}
+#brow-e,#brow-p{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 10px;}
+.bcard{width:104px;aspect-ratio:3/4.1;position:relative;flex:0 0 auto;transition:transform .18s cubic-bezier(.34,1.56,.64,1), opacity .3s, filter .3s;}
+.bcard .wcard{cursor:default;}
+.bcard.ko{opacity:.3;filter:grayscale(1);transform:scale(.85) rotate(6deg);}
+.bcard .hpb{position:absolute;left:6px;right:6px;bottom:-11px;height:8px;border:2px solid var(--ink);
+  border-radius:99px;background:#fff;overflow:hidden;z-index:4;}
+.bcard .hpf{height:100%;background:#6FDB6F;transition:width .2s, background .2s;border-radius:99px;}
+#vsflash{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);font-size:44px;opacity:.18;pointer-events:none;}
+.dmg{position:absolute;font-weight:800;color:#E63946;text-shadow:0 2px 0 #fff;z-index:40;
+  animation:rise .85s ease-out forwards;pointer-events:none;font-size:17px;}
+.dmg.pow{color:#fff;-webkit-text-stroke:1.5px var(--ink);font-size:24px;}
+@keyframes rise{from{transform:translateY(0)}to{transform:translateY(-52px) scale(1.3);opacity:0}}
+.bump-d{transform:translateY(16px) scale(1.07);}
+.bump-u{transform:translateY(-16px) scale(1.07);}
+
+/* generic overlay + card reveal */
 .overlay{position:absolute;inset:0;background:rgba(43,35,80,.88);display:none;flex-direction:column;
-  align-items:center;justify-content:center;gap:10px;z-index:40;color:#fff;text-align:center;padding:16px;}
+  align-items:center;justify-content:center;gap:12px;z-index:50;color:#fff;text-align:center;padding:18px;}
 .overlay.on{display:flex;}
-.card{background:var(--cream);color:var(--ink);border:4px solid var(--ink);border-radius:22px;
-  padding:16px 18px;display:flex;flex-direction:column;align-items:center;gap:7px;max-width:340px;width:100%;
-  animation:popin .45s cubic-bezier(.34,1.56,.64,1);max-height:82dvh;overflow:auto;}
+.ocard{background:var(--cream);color:var(--ink);border:4px solid var(--ink);border-radius:22px;
+  padding:16px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;max-width:330px;width:100%;
+  animation:popin .45s cubic-bezier(.34,1.56,.64,1);}
 @keyframes popin{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
-.bigtitle{font-weight:800;font-size:19px;color:var(--orange);letter-spacing:.5px;}
-.card .bsvg{width:130px;height:130px;}
+.bigtitle{font-size:20px;color:#FFD93D;text-shadow:0 2px 0 rgba(43,35,80,.8);letter-spacing:.5px;}
+#revealslot{width:150px;aspect-ratio:3/4.1;position:relative;}
 .namechips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
-.namechip{border:3px solid var(--ink);background:#fff;border-radius:999px;padding:6px 12px;font-weight:800;font-size:12.5px;}
+.namechip{border:3px solid var(--ink);background:#fff;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:800;}
 .namechip.sel{background:var(--orange);color:#fff;}
-#nameinput{border:3px solid var(--ink);border-radius:12px;padding:8px 10px;font:inherit;font-weight:800;
-  font-size:13px;width:100%;text-align:center;background:#fff;color:var(--ink);}
-.okbtn{border:3px solid var(--ink);background:var(--bloom);border-radius:14px;font-weight:800;
-  font-size:15px;padding:10px 26px;box-shadow:0 3px 0 var(--ink);}
-.okbtn.alt{background:#fff;}
-.okbtn.warn{background:var(--ember);color:#fff;}
-.btnrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
-.subtxt{font-size:12px;opacity:.8;}
-.statline{font-size:12px;font-weight:800;}
-/* fx */
+.okbtn{border:3px solid var(--ink);background:var(--bloom);border-radius:15px;font-size:16px;font-weight:800;
+  padding:11px 30px;box-shadow:0 4px 0 var(--ink);}
+.okbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);}
+.subtxt{font-size:12.5px;opacity:.85;}
 .shakeit{animation:shake .12s linear infinite;}
-@keyframes shake{0%{transform:translate(1px,-1px)}25%{transform:translate(-2px,1px)}50%{transform:translate(2px,2px)}75%{transform:translate(-1px,-2px)}100%{transform:translate(1px,1px)}}
-.confetti{position:absolute;width:9px;height:9px;border-radius:2px;z-index:60;pointer-events:none;}
-@keyframes confall{from{transform:translateY(-8px) rotate(0);opacity:1}to{transform:translateY(140px) rotate(540deg);opacity:0}}
-.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:86px;background:var(--ink);color:#fff;
-  border-radius:999px;padding:8px 16px;font-size:12.5px;font-weight:800;z-index:70;animation:toastin 2.4s ease forwards;pointer-events:none;white-space:nowrap;}
-@keyframes toastin{0%{opacity:0;transform:translate(-50%,10px)}10%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-8px)}}
-@media (prefers-reduced-motion: reduce){
-  .slot .bsvg,.dockbtn.pulse,.slot.mergeready{animation:none;}
+@keyframes shake{0%{transform:translate(1px,-1px)}50%{transform:translate(2px,2px)}100%{transform:translate(-1px,1px)}}
+.confetti{position:absolute;width:9px;height:9px;border-radius:2px;z-index:80;pointer-events:none;}
+@keyframes confall{from{transform:translateY(-8px) rotate(0);opacity:1}to{transform:translateY(150px) rotate(540deg);opacity:0}}
+@media (prefers-reduced-motion:reduce){
+  .wcard.lv3 .face::after,.wcard.lv4 .face::after,.wcard.lv5 .face::after{animation:none;}
   .shakeit{animation:none;}
 }
-@media (orientation:landscape) and (max-height:520px){
-  .grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));}
-  #dock .dockbtn{padding:5px 2px;}
+@media (orientation:landscape) and (max-height:500px){
+  #board{grid-template-columns:repeat(5,1fr);}
+  #app{max-width:900px;}
 }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="topbar">
-    <button id="backbtn" aria-label="Back to WoopKid">←</button>
-    <span class="chip">🪙 <span id="hudWoops">0</span></span>
-    <span class="chip">🥚 <span id="hudEggs">0</span></span>
-    <span class="chip">💠 <span id="hudCores">0</span></span>
-    <span class="chip dex" id="hudDex">📖 0</span>
+    <button id="backbtn" aria-label="Back">←</button>
+    <span class="chip">🪙 <span id="hudCoins">0</span></span>
+    <span class="chip">🏆 <span id="hudWins">0</span></span>
+    <span class="chip" style="background:var(--orange)">📖 <span id="hudDex">0</span></span>
     <button id="mutebtn" aria-label="Mute">🔊</button>
   </div>
-  <div id="hintbar">Welcome to the Beast Ranch!</div>
+  <div id="hint">Tap two cards to merge them!</div>
+  <div id="board"></div>
+  <div id="ctl">
+    <button class="bigbtn" id="dealbtn">🃏 NEW CARD<br><span style="font-size:12px">25 🪙</span></button>
+    <button class="bigbtn" id="fightbtn">⚔️ BATTLE!</button>
+  </div>
 
-  <div class="screen on" id="ranch"><div class="grid" id="ranchgrid"></div></div>
-  <div class="screen" id="hatchery"><div class="eggrow" id="eggrow"></div></div>
-  <div class="screen" id="lab">
-    <div style="display:flex;flex-direction:column;gap:8px;padding:10px;flex:1;min-height:0;">
-      <div class="pods">
-        <div class="podcol">
-          <div class="pod" id="podH"><span class="lbl">HEAD</span><span id="podHc" style="font-size:24px">➕</span></div>
-          <div class="pod" id="podB"><span class="lbl">BODY</span><span id="podBc" style="font-size:24px">➕</span></div>
-        </div>
-        <button id="swapbtn" aria-label="Swap head and body">⇅</button>
-        <div class="preview"><div id="prevsvg" class="silh"></div><div class="stats" id="prevstats"></div></div>
-      </div>
-      <button id="fusebtn" disabled>FUSE&nbsp;&nbsp;💠1</button>
-      <div class="shelf" id="labshelf"></div>
+  <!-- battle -->
+  <div id="battleOv">
+    <div id="bbanner"></div>
+    <div id="brow-e"></div>
+    <div id="vsflash">⚔️</div>
+    <div id="brow-p"></div>
+    <div style="padding:10px 14px calc(12px + env(safe-area-inset-bottom));">
+      <button class="bigbtn" id="bdone" style="width:100%;background:linear-gradient(160deg,#9BE86F,#3E9E4F);display:none;">CONTINUE ▶</button>
     </div>
   </div>
-  <div class="screen" id="battle">
-    <div id="arena"><div id="banner"></div><div class="vs">VS</div></div>
-    <div id="squadrow"></div>
-    <div id="battlectl">
-      <button id="fightbtn">⚔️ FIGHT</button>
-      <button id="speedbtn" style="display:none">2×</button>
-    </div>
-  </div>
-  <div class="screen" id="dex"><div class="grid" id="dexgrid"></div></div>
 
-  <div id="dock">
-    <button class="dockbtn on" data-scr="ranch"><span class="di">🏡</span>Ranch</button>
-    <button class="dockbtn" data-scr="hatchery"><span class="di">🥚</span>Hatch</button>
-    <button class="dockbtn" data-scr="lab"><span class="di">🧪</span>Fuse</button>
-    <button class="dockbtn" data-scr="battle"><span class="di">⚔️</span>Fight</button>
-    <button class="dockbtn" data-scr="dex"><span class="di">📖</span>Dex</button>
-  </div>
-
-  <!-- overlays -->
+  <!-- fusion reveal -->
   <div class="overlay" id="revealOv">
-    <div class="bigtitle" id="revealTitle">✨ NEW SPECIES DISCOVERED! ✨</div>
-    <div class="card">
-      <div id="revealsvg"></div>
-      <div class="statline" id="revealel"></div>
-      <div id="nameblock" style="display:flex;flex-direction:column;gap:7px;align-items:center;width:100%;">
-        <div class="subtxt">Name your beast:</div>
-        <div class="namechips" id="namechips"></div>
-        <input id="nameinput" maxlength="12" placeholder="…or type a name" autocomplete="off">
-      </div>
+    <div class="bigtitle" id="revealTitle">✨ NEW BEAST CREATED! ✨</div>
+    <div class="ocard">
+      <div id="revealslot"></div>
+      <div class="subtxt" id="revealSub">Pick a name:</div>
+      <div class="namechips" id="namechips"></div>
       <button class="okbtn" id="revealOk">KEEP IT!</button>
-    </div>
-  </div>
-
-  <div class="overlay" id="detailOv">
-    <div class="card">
-      <div id="detailsvg"></div>
-      <div class="statline" id="detailname"></div>
-      <div class="stats" id="detailstats" style="width:100%;"></div>
-      <div class="subtxt" id="detailxp"></div>
-      <div class="btnrow">
-        <button class="okbtn alt" id="snackBtn">🍎 Snack (10🪙)</button>
-        <button class="okbtn alt" id="unfuseBtn" style="display:none">↩️ Unfuse</button>
-        <button class="okbtn warn" id="releaseBtn">👋 Release</button>
-      </div>
-      <button class="okbtn" id="detailClose">DONE</button>
-    </div>
-  </div>
-
-  <div class="overlay" id="chestOv">
-    <div class="card">
-      <div style="font-size:52px" id="chestIcon">🎁</div>
-      <div class="bigtitle" id="chestTitle">Welcome back!</div>
-      <div class="statline" id="chestBody"></div>
-      <button class="okbtn" id="chestOk">COLLECT!</button>
-    </div>
-  </div>
-
-  <div class="overlay" id="resultsOv">
-    <div class="card">
-      <div class="bigtitle" id="resTitle">🎉 VICTORY!</div>
-      <div class="statline" id="resLoot"></div>
-      <div class="subtxt" id="resXp"></div>
-      <div class="subtxt" id="resNext"></div>
-      <div class="btnrow">
-        <button class="okbtn" id="resAgain">NEXT BATTLE ▶</button>
-        <button class="okbtn alt" id="resRanch">RANCH</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="overlay" id="pickOv">
-    <div class="card" style="max-width:380px;">
-      <div class="statline">Pick a beast</div>
-      <div class="grid" id="pickgrid" style="padding:4px;width:100%;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));"></div>
-      <button class="okbtn alt" id="pickClose">CANCEL</button>
     </div>
   </div>
 </div>
@@ -318,1007 +221,426 @@ button{font:inherit;color:inherit;cursor:pointer;}
 <script>
 'use strict';
 /* =====================================================================
-   WoopBeasts v1. Design source of truth: docs/research/woopbeasts/
-   Build notes:
-   - DOM screens + inline-SVG creatures + pooled DOM FX (same hybrid
-     pattern as pets-clicker). Battle sim runs in the shared rAF loop,
-     delta-time clamped per standards.
-   - CreatureFactory here is the procedural backend from doc 06.
-     requestArt/getArt are v1 no-ops per doc 09 ship order (offline pure).
+   WoopBeasts v2 "CARDS": one screen. Tap two cards to merge.
+   Same card = level up. Different cards = brand-new fused species.
+   Then BATTLE. Design: docs/research/woopbeasts/ (simplified per Ron).
    ===================================================================== */
-
-/* ---------- helpers ---------- */
-function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
-const fmt=n=>{n=Math.floor(n);return n<1000?String(n):n<1e6?(Math.floor(n/100)/10)+'K':(Math.floor(n/1e5)/10)+'M';};
 const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const INK='#2B2350';
 
-/* ---------- WoopProfile shared module (contract, copied verbatim) ---------- */
-const WoopProfile = {
-  KEY: 'woopkid_profile',
-  load() {
-    try { return JSON.parse(localStorage.getItem(this.KEY)) || this._blank(); }
-    catch { return this._blank(); }
-  },
-  _blank() {
-    return { totalPlays: 0, games: {}, stickers: [], streak: { current: 0, best: 0, lastDay: null } };
-  },
-  save(p) { try { localStorage.setItem(this.KEY, JSON.stringify(p)); } catch {} },
-  reportRun(slug, score, thresholds) {
-    const p = this.load();
-    p.totalPlays++;
-    const g = p.games[slug] || (p.games[slug] = { best: 0, plays: 0, lastPlayed: null });
-    g.plays++;
-    g.lastPlayed = new Date().toISOString().slice(0, 10);
-    if (score > g.best) g.best = score;
-    const earned = [];
-    for (const tier of ['bronze', 'silver', 'gold']) {
-      const id = slug + '-' + tier;
-      if (score >= thresholds[tier] && !p.stickers.includes(id)) { p.stickers.push(id); earned.push(tier); }
-    }
-    const today = new Date().toISOString().slice(0, 10);
-    if (p.streak.lastDay !== today) {
-      const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-      p.streak.current = (p.streak.lastDay === y) ? p.streak.current + 1 : 1;
-      if (p.streak.current > p.streak.best) p.streak.best = p.streak.current;
-      p.streak.lastDay = today;
-    }
-    this.save(p);
-    return earned;
+/* ---------- WoopProfile (shared contract, verbatim) ---------- */
+const WoopProfile={
+  KEY:'woopkid_profile',
+  load(){try{return JSON.parse(localStorage.getItem(this.KEY))||this._blank();}catch{return this._blank();}},
+  _blank(){return {totalPlays:0,games:{},stickers:[],streak:{current:0,best:0,lastDay:null}};},
+  save(p){try{localStorage.setItem(this.KEY,JSON.stringify(p));}catch{}},
+  reportRun(slug,score,th){
+    const p=this.load();p.totalPlays++;
+    const g=p.games[slug]||(p.games[slug]={best:0,plays:0,lastPlayed:null});
+    g.plays++;g.lastPlayed=new Date().toISOString().slice(0,10);
+    if(score>g.best)g.best=score;
+    const earned=[];
+    for(const t of ['bronze','silver','gold']){const id=slug+'-'+t;
+      if(score>=th[t]&&!p.stickers.includes(id)){p.stickers.push(id);earned.push(t);}}
+    const today=new Date().toISOString().slice(0,10);
+    if(p.streak.lastDay!==today){const y=new Date(Date.now()-864e5).toISOString().slice(0,10);
+      p.streak.current=(p.streak.lastDay===y)?p.streak.current+1:1;
+      if(p.streak.current>p.streak.best)p.streak.best=p.streak.current;p.streak.lastDay=today;}
+    this.save(p);return earned;
   }
 };
-const SLUG='woop-beasts';
-const STICKERS={bronze:10, silver:30, gold:75}; // score = Woopdex count (doc 07)
 
-/* ---------- data: elements, chart, abilities (docs 05 + 10) ---------- */
+/* ---------- data ---------- */
 const EL={
-  ember:{c:'#FF5757',i:'🔥',n:'Ember'}, tide:{c:'#4CC9F0',i:'🌊',n:'Tide'},
-  bloom:{c:'#6FDB6F',i:'🌿',n:'Bloom'}, spark:{c:'#FFD93D',i:'⚡',n:'Spark'},
-  frost:{c:'#9BD5FF',i:'❄️',n:'Frost'}, stone:{c:'#C9A87C',i:'🪨',n:'Stone'},
-  gloom:{c:'#8B7FD4',i:'🌑',n:'Gloom'}, gleam:{c:'#FFC2E2',i:'✨',n:'Gleam'}
+  ember:{c:'#FF5757',i:'🔥'},tide:{c:'#4CC9F0',i:'🌊'},bloom:{c:'#6FDB6F',i:'🌿'},spark:{c:'#FFD93D',i:'⚡'},
+  frost:{c:'#9BD5FF',i:'❄️'},stone:{c:'#C9A87C',i:'🪨'},gloom:{c:'#8B7FD4',i:'🌑'},gleam:{c:'#FFC2E2',i:'✨'}
 };
-const CHART={ // attacker → {defender: mult}; blank = 1 (doc 05 canonical matrix)
-  ember:{bloom:2,frost:2,tide:.5,stone:.5},
-  tide:{ember:2,stone:2,bloom:.5,spark:.5},
-  bloom:{tide:2,stone:2,ember:.5,frost:.5},
-  spark:{tide:2,gleam:2,stone:.5,gloom:.5},
-  frost:{bloom:2,gloom:2,ember:.5,gleam:.5},
-  stone:{ember:2,spark:2,tide:.5,bloom:.5},
-  gloom:{spark:2,gleam:2,frost:.5},
-  gleam:{gloom:2,frost:2,spark:.5}
-};
-const ABIL={ // per primary element (doc 05)
-  ember:{n:'Flame Burst',d:'hits ALL enemies'},
-  tide:{n:'Healing Wave',d:'heals weakest ally'},
-  bloom:{n:'Vine Wrap',d:'slows a foe'},
-  spark:{n:'Overcharge',d:'attacks faster'},
-  frost:{n:'Ice Block',d:'shields an ally'},
-  stone:{n:'Boulder Slam',d:'huge hit + stun'},
-  gloom:{n:'Spook',d:'weakens a foe'},
-  gleam:{n:'Rally',d:'team attack up'}
-};
-/* 24 starter species (doc 10). s=[HP,ATK,DEF,SPD,SPC] */
-const SPECIES={
-  emberling:{n:'Emberling',e:'ember',p:'bruiser',hg:'horn',eye:'angry',cw:'seams',aw:'fists',lg:'power',tl:'plasma',s:[38,52,28,34,28]},
-  charbit:{n:'Charbit',e:'ember',p:'sprinter',hg:'mohawk',eye:'hero',bw:'jet',lg:'hover',tl:'plasma',s:[32,40,24,54,26]},
-  pyrogon:{n:'Pyrogon',e:'ember',p:'tank',hg:'horn',eye:'hero',cw:'armor',bw:'fins',lg:'power',tl:'stub',s:[42,38,50,22,28]},
-  tidepup:{n:'Tidepup',e:'tide',p:'tank',hg:'ears',eye:'hero',cw:'core',lg:'power',tl:'cable',s:[60,30,32,30,28]},
-  bubbin:{n:'Bubbin',e:'tide',p:'sprinter',hg:'antenna',eye:'hero',cw:'core',lg:'hover',tl:'cable',s:[40,26,26,32,52]},
-  waverex:{n:'Waverex',e:'tide',p:'bruiser',hg:'mohawk',eye:'angry',cw:'seams',bw:'fins',aw:'fists',lg:'raptor',tl:'blade',s:[36,50,30,36,26]},
-  sproutle:{n:'Sproutle',e:'bloom',p:'tank',hg:'horn',eye:'hero',cw:'armor',lg:'power',tl:'stub',s:[40,28,52,24,32]},
-  petalpuff:{n:'Petalpuff',e:'bloom',p:'sprinter',hg:'antenna',eye:'star',cw:'seams',bw:'wings',lg:'hover',s:[38,24,30,32,54]},
-  thornick:{n:'Thornick',e:'bloom',p:'bruiser',hg:'mohawk',eye:'angry',bw:'fins',aw:'blades',lg:'raptor',tl:'blade',s:[34,52,32,34,24]},
-  zapling:{n:'Zapling',e:'spark',p:'sprinter',hg:'antenna',eye:'hero',cw:'seams',bw:'jet',lg:'hover',tl:'cable',s:[30,38,22,60,28]},
-  voltibit:{n:'Voltibit',e:'spark',p:'sprinter',eye:'cyber',cw:'core',aw:'mech',lg:'hover',tl:'cable',s:[34,28,24,40,52]},
-  staticub:{n:'Staticub',e:'spark',p:'tank',hg:'ears',eye:'hero',cw:'core',bw:'cannon',lg:'power',tl:'stub',s:[56,32,30,36,24]},
-  frostfin:{n:'Frostfin',e:'frost',p:'tank',eye:'visor',cw:'armor',bw:'fins',lg:'power',tl:'blade',s:[38,26,54,26,32]},
-  chillit:{n:'Chillit',e:'frost',p:'sprinter',hg:'ears',eye:'hero',bw:'jet',lg:'hover',tl:'stub',s:[32,36,26,54,28]},
-  glacigon:{n:'Glacigon',e:'frost',p:'tank',hg:'horn',eye:'hero',cw:'armor',bw:'fins',aw:'fists',lg:'power',s:[58,30,38,22,28]},
-  pebblit:{n:'Pebblit',e:'stone',p:'tank',eye:'hero',cw:'armor',lg:'power',tl:'stub',s:[40,28,58,18,30]},
-  boulderox:{n:'Boulderox',e:'stone',p:'bruiser',hg:'horn',eye:'angry',cw:'armor',aw:'fists',lg:'power',s:[44,54,40,18,20]},
-  cragpup:{n:'Cragpup',e:'stone',p:'tank',hg:'ears',eye:'hero',cw:'armor',bw:'cannon',lg:'power',tl:'stub',s:[62,32,38,24,20]},
-  shadewisp:{n:'Shadewisp',e:'gloom',p:'sprinter',eye:'shades',cw:'seams',bw:'wings',lg:'hover',tl:'cable',s:[34,26,22,38,56]},
-  grimble:{n:'Grimble',e:'gloom',p:'bruiser',hg:'horn',eye:'angry',aw:'blades',lg:'raptor',tl:'blade',s:[32,54,26,40,24]},
-  mothra:{n:'Mothra',e:'gloom',p:'sprinter',hg:'antenna',eye:'star',bw:'wings',lg:'raptor',s:[30,34,22,58,32]},
-  lumibit:{n:'Lumibit',e:'gleam',p:'sprinter',hg:'antenna',eye:'star',cw:'core',bw:'wings',lg:'hover',s:[36,24,28,34,56]},
-  shinepaw:{n:'Shinepaw',e:'gleam',p:'bruiser',hg:'ears',eye:'hero',cw:'seams',aw:'fists',lg:'raptor',tl:'stub',s:[34,50,30,38,26]},
-  radiglow:{n:'Radiglow',e:'gleam',p:'tank',eye:'visor',cw:'core',bw:'wings',aw:'mech',lg:'power',s:[58,28,34,28,30]}
-};
-const EGGS={ // egg type → {pool, unlockRung}
-  basic:{n:'Basic Egg',i:'🥚',pool:['emberling','tidepup','sproutle'],rung:0,d:'A friendly starter beast'},
-  ember:{n:'Ember Egg',i:'🔥',pool:['emberling','charbit','pyrogon'],rung:5,d:'Fiery fighters'},
-  tide:{n:'Tide Egg',i:'🌊',pool:['tidepup','bubbin','waverex'],rung:10,d:'Unstoppable waves'},
-  bloom:{n:'Bloom Egg',i:'🌿',pool:['sproutle','petalpuff','thornick'],rung:15,d:'Wiry and grounded'},
-  spark:{n:'Spark Egg',i:'⚡',pool:['zapling','voltibit','staticub'],rung:20,d:'Overclocked zippers'},
-  frost:{n:'Frost Egg',i:'❄️',pool:['frostfin','chillit','glacigon'],rung:25,d:'Cool crystal tanks'},
-  stone:{n:'Stone Egg',i:'🪨',pool:['pebblit','boulderox','cragpup'],rung:30,d:'Sturdy chunks'},
-  gloom:{n:'Gloom Egg',i:'🌑',pool:['shadewisp','grimble','mothra'],rung:40,d:'Sneaky exotics'},
-  gleam:{n:'Gleam Egg',i:'✨',pool:['lumibit','shinepaw','radiglow'],rung:50,d:'Radiant legends'}
-};
+const CHART={ember:{bloom:2,frost:2,tide:.5,stone:.5},tide:{ember:2,stone:2,bloom:.5,spark:.5},
+  bloom:{tide:2,stone:2,ember:.5,frost:.5},spark:{tide:2,gleam:2,stone:.5,gloom:.5},
+  frost:{bloom:2,gloom:2,ember:.5,gleam:.5},stone:{ember:2,spark:2,tide:.5,bloom:.5},
+  gloom:{spark:2,gleam:2,frost:.5},gleam:{gloom:2,frost:2,spark:.5}};
+/* species: [key, name, element, visual kit, atk, hp]. Unlock order = array order. */
+const ROSTER=[
+  ['emberling','Emberling','ember',{p:'bruiser',hg:'horn',eye:'angry',cw:'seams',aw:'fists',lg:'power',tl:'plasma'},14,42],
+  ['tidepup','Tidepup','tide',{p:'tank',hg:'ears',eye:'hero',cw:'core',lg:'power',tl:'cable'},10,58],
+  ['sproutle','Sproutle','bloom',{p:'tank',hg:'horn',eye:'hero',cw:'armor',lg:'power',tl:'stub'},9,62],
+  ['zapling','Zapling','spark',{p:'sprinter',hg:'antenna',eye:'hero',cw:'seams',bw:'jet',lg:'hover',tl:'cable'},16,36],
+  ['frostfin','Frostfin','frost',{p:'tank',eye:'visor',cw:'armor',bw:'fins',lg:'power',tl:'blade'},11,56],
+  ['boulderox','Boulderox','stone',{p:'bruiser',hg:'horn',eye:'angry',cw:'armor',aw:'fists',lg:'power'},17,44],
+  ['shadewisp','Shadewisp','gloom',{p:'sprinter',eye:'shades',cw:'seams',bw:'wings',lg:'hover',tl:'cable'},18,34],
+  ['voltibit','Voltibit','spark',{p:'sprinter',eye:'cyber',cw:'core',aw:'mech',lg:'hover',tl:'cable'},15,40],
+  ['petalpuff','Petalpuff','bloom',{p:'sprinter',hg:'antenna',eye:'star',cw:'seams',bw:'wings',lg:'hover'},12,48],
+  ['charbit','Charbit','ember',{p:'sprinter',hg:'mohawk',eye:'hero',bw:'jet',lg:'hover',tl:'plasma'},15,38],
+  ['glacigon','Glacigon','frost',{p:'tank',hg:'horn',eye:'hero',cw:'armor',bw:'fins',aw:'fists',lg:'power'},12,54],
+  ['lumibit','Lumibit','gleam',{p:'sprinter',hg:'antenna',eye:'star',cw:'core',bw:'wings',lg:'hover'},13,46]
+];
+const SP={}; ROSTER.forEach(r=>SP[r[0]]={key:r[0],n:r[1],e:r[2],kit:r[3],atk:r[4],hp:r[5]});
 const PREFIX={ember:['Char','Pyro','Blaze'],tide:['Aqua','Bub','Wave'],bloom:['Sprout','Fern','Petal'],
   spark:['Zap','Volt','Jolt'],frost:['Chill','Glaci','Snow'],stone:['Peb','Crag','Rock'],
   gloom:['Shade','Grim','Spook'],gleam:['Lumi','Shine','Glow']};
 const SUFFIX=['ox','ling','bit','gon','pup','wisp','rex','tron','bot'];
 
-/* ---------- persistent state (schema per doc 09) ---------- */
-const STORAGE_KEY='woopkid_woop-beasts';
-function defaultState(){
-  return {
-    v:1, woops:60, cores:1, rung:1, wins:0, eggsBought:0,
-    ranch:[], squad:[], dex:{}, nextId:1,
-    eggInv:{basic:4}, // first-session rig: 4 free eggs (doc 02)
-    rig:['emberling','tidepup','emberling','emberling'],
-    unlocked:['basic'],
-    muted:false, speed2x:false, spd2Unlocked:false,
-    lastSeen:null, lastChestDay:null
-  };
-}
+/* ---------- save ---------- */
+const KEY='woopkid_woop-beasts';
+function fresh(){return {v:2,coins:40,wins:0,board:[],dex:{},nextId:1,muted:false,dealt:0,lastSeen:null};}
 let S;
-function load(){
-  try{ S=JSON.parse(localStorage.getItem(STORAGE_KEY)); }catch{ S=null; }
-  if(!S || S.v!==1) S=defaultState();
-}
-function save(){ S.lastSeen=Date.now(); try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(S)); }catch{} }
+try{S=JSON.parse(localStorage.getItem(KEY));}catch{S=null;}
+if(!S||S.v!==2) S=fresh();
+function save(){S.lastSeen=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S));}catch{}}
 
-/* ---------- audio: procedural Web Audio (standards §6) ---------- */
-let AC=null, voices=0;
-function ac(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch{} }
-  if(AC && AC.state==='suspended') AC.resume(); return AC; }
-function note(freq,delay,dur,type,vol){
-  if(S.muted||!ac()||voices>5) return;
-  try{
-    voices++;
-    const t=AC.currentTime+delay, o=AC.createOscillator(), g=AC.createGain();
-    o.type=type||'sine'; o.frequency.value=freq*(0.95+Math.random()*0.1); // ±5% pitch variance
-    g.gain.setValueAtTime(0.0001,t);
-    g.gain.linearRampToValueAtTime(vol||0.16,t+0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    o.connect(g); g.connect(AC.destination);
-    o.start(t); o.stop(t+dur+0.02);
-    o.onended=()=>{voices--;};
-  }catch{ voices--; }
+/* ---------- audio ---------- */
+let AC=null,voices=0;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch{}}
+  if(AC&&AC.state==='suspended')AC.resume();return AC;}
+function note(f,d,dur,type,vol){
+  if(S.muted||!ac()||voices>5)return;
+  try{voices++;const t=AC.currentTime+d,o=AC.createOscillator(),g=AC.createGain();
+  o.type=type||'sine';o.frequency.value=f*(0.95+Math.random()*0.1);
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol||0.15,t+0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+dur+0.02);o.onended=()=>{voices--;};}catch{voices--;}
 }
 const sfx={
-  click:()=>note(660,0,0.07,'square',0.06),
-  crack:n=>note(300+n*140,0,0.09,'triangle',0.14),
-  hatch:()=>{[523,659,784,1047].forEach((f,i)=>note(f,i*0.07,0.18,'triangle',0.15));},
-  merge:t=>{note(180,0,0.22,'sawtooth',0.16); [392,523,659].forEach((f,i)=>note(f*(1+t*0.12),0.08+i*0.06,0.16,'triangle',0.13));},
-  fuseBuild:()=>{for(let i=0;i<6;i++)note(160+i*70,i*0.16,0.15,'sawtooth',0.08);},
-  discover:()=>{[523,659,784,1047,1319].forEach((f,i)=>note(f,i*0.09,0.24,'triangle',0.16)); note(2093,0.5,0.35,'sine',0.1);},
-  hit:el=>{const w=el==='spark'?'square':el==='tide'?'sine':'triangle'; note(200+Math.random()*80,0,0.07,w,0.09);},
-  pow:()=>{note(150,0,0.12,'sawtooth',0.14); note(600,0.04,0.1,'square',0.1);},
-  abil:()=>{[440,660].forEach((f,i)=>note(f,i*0.06,0.13,'square',0.1));},
+  tap:()=>note(660,0,0.06,'square',0.06),
+  deal:()=>{[440,660].forEach((f,i)=>note(f,i*0.06,0.12,'triangle',0.12));},
+  levelup:t=>{[523,659,784].forEach((f,i)=>note(f*(1+t*0.08),i*0.07,0.16,'triangle',0.14));},
+  discover:()=>{[523,659,784,1047,1319].forEach((f,i)=>note(f,i*0.09,0.22,'triangle',0.16));},
+  hit:()=>note(220+Math.random()*60,0,0.07,'triangle',0.09),
+  pow:()=>{note(150,0,0.12,'sawtooth',0.13);note(620,0.04,0.1,'square',0.09);},
   win:()=>{[523,659,784,1047,784,1047].forEach((f,i)=>note(f,i*0.09,0.2,'triangle',0.15));},
-  lose:()=>{[392,349,311,262].forEach((f,i)=>note(f,i*0.16,0.25,'triangle',0.12));}, // sad trombone-ish
-  coin:()=>note(1200+Math.random()*200,0,0.08,'square',0.07),
-  lvl:()=>{[440,554,659,880].forEach((f,i)=>note(f,i*0.06,0.14,'triangle',0.13));},
-  sticker:()=>{[784,988,1175].forEach((f,i)=>note(f,i*0.08,0.2,'triangle',0.15));}
+  lose:()=>{[392,330,262].forEach((f,i)=>note(f,i*0.15,0.24,'triangle',0.11));},
+  no:()=>note(180,0,0.12,'sawtooth',0.09)
 };
 
-/* ---------- CreatureFactory: procedural backend (doc 06) ---------- */
-const CreatureFactory={
-  getArt(){ return null; },                 // v1: no AI cache (doc 09 ship order)
-  async requestArt(){ return {ok:false}; }, // v1: no-op; AI service plugs in here later
-  buildPrompt(spec){
-    const t=['','rookie','kid','hero','mega','mythic'][spec.tier||1];
-    return `kids cartoon monster hero, chunky rounded shapes, thick dark-navy outlines, `+
-      `${spec.p} build, elements ${spec.el.join('+')}, tier ${spec.tier} ${t}, `+
-      `widgets: ${['cw','bw','aw','lg','tl'].map(k=>spec[k]).filter(Boolean).join(', ')}, `+
-      `single creature, heroic stance, transparent background, friendly, ages 6-11`;
-  },
-  svg(spec,size){ return beastSVG(spec,size); }
-};
-function beastSVG(spec,cls){
-  const seed=spec.seed||1, r=mulberry32(seed);
-  const P=EL[spec.el[0]].c, G=spec.el[1]?EL[spec.el[1]].c:'#FFD93D';
-  const STEEL='#98A2B8', DARK='#5C6678';
-  const st=spec.s, hp=st[0],atk=st[1],def=st[2],spd=st[3],spc=st[4];
-  // percentile-ish sculpting: normalize vs tier scale so high tiers don't blow up proportions
-  const tsc=Math.pow(1.8,(spec.tier||1)-1);
-  const mus=clamp(0.8+(atk/tsc)/90,0.8,1.32), fr=clamp(0.85+(hp/tsc)/280,0.85,1.15);
-  const PH={tank:{sh:25,wa:16,th:28,leg:10,arm:7,hd:12},
-            sprinter:{sh:20,wa:11,th:24,leg:17,arm:5.5,hd:11},
-            bruiser:{sh:22,wa:14,th:24,leg:10,arm:9,hd:11}}[spec.p]||{sh:23,wa:14,th:26,leg:12,arm:7,hd:11};
-  const sh=PH.sh*fr, wa=PH.wa*fr, th=PH.th, leg=PH.leg+clamp((spd/tsc),0,80)/12, arm=PH.arm*mus, hd=PH.hd;
-  const TY=34, BY=TY+th, HY=TY-hd+3, FY=BY+leg;
-  const limb=(x1,y1,x2,y2,w,col)=>
-    `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${INK}" stroke-width="${w+3.5}" stroke-linecap="round"/>`+
-    `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
+/* ---------- creature SVG (procedural CreatureFactory, compact) ---------- */
+function beastSVG(c){
+  const seed=c.seed||1,r=mulberry32(seed);
+  const P=EL[c.e].c, G=c.e2?EL[c.e2].c:'#FFD93D', STEEL='#98A2B8', DARK='#5C6678';
+  const k=c.kit||{};
+  const mus=clamp(0.85+c.lv*0.09,0.85,1.3), fr=clamp(0.9+(c.hp0||45)/300,0.9,1.12);
+  const PH={tank:{sh:25,wa:16,th:28,leg:11,arm:7,hd:12},sprinter:{sh:20,wa:11,th:24,leg:17,arm:5.5,hd:11},
+    bruiser:{sh:22,wa:14,th:24,leg:11,arm:9,hd:11}}[k.p]||{sh:23,wa:14,th:26,leg:12,arm:7,hd:11};
+  const sh=PH.sh*fr,wa=PH.wa*fr,th=PH.th,leg=PH.leg,arm=PH.arm*mus,hd=PH.hd;
+  const TY=34,BY=TY+th,HY=TY-hd+3,FY=BY+leg;
+  const limb=(x1,y1,x2,y2,w,col)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${INK}" stroke-width="${w+3.5}" stroke-linecap="round"/><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
   let s='';
-  if((spec.tier||1)>=2) s+=`<circle cx="50" cy="50" r="45" fill="${G}" opacity="0.13"/>
-    <circle cx="50" cy="50" r="45" fill="none" stroke="${G}" stroke-width="2.5" opacity="0.55" stroke-dasharray="7 6"/>`;
-  if((spec.tier||1)>=4) s+=`<circle cx="50" cy="50" r="48" fill="none" stroke="${P}" stroke-width="1.6" opacity="0.5" stroke-dasharray="3 7"/>`;
+  if(c.lv>=3) s+=`<circle cx="50" cy="50" r="45" fill="${G}" opacity="0.13"/><circle cx="50" cy="50" r="45" fill="none" stroke="${G}" stroke-width="2.5" opacity="0.5" stroke-dasharray="7 6"/>`;
   s+=`<ellipse cx="50" cy="${FY+7}" rx="${sh+6}" ry="3.5" fill="${INK}" opacity="0.12"/>`;
-  // back widgets
-  if(spec.bw==='jet') s+=`<rect x="${50-sh-4}" y="${TY+3}" width="9" height="17" rx="4.5" fill="${STEEL}" stroke="${INK}" stroke-width="3"/>
-    <rect x="${50+sh-5}" y="${TY+3}" width="9" height="17" rx="4.5" fill="${STEEL}" stroke="${INK}" stroke-width="3"/>
-    <path d="M ${50-sh+0.5} ${TY+21} l -3.5 8 l 3.5 -2.5 l 3.5 2.5 z" fill="#FF8A3D"/>
-    <path d="M ${50+sh-0.5} ${TY+21} l -3.5 8 l 3.5 -2.5 l 3.5 2.5 z" fill="#FF8A3D"/>`;
-  if(spec.bw==='wings') s+=`<path d="M ${50-sh+2} ${TY+6} q -24 -14 -28 8 q 15 -3 28 7 z" fill="${G}" opacity="0.38" stroke="${G}" stroke-width="2"/>
-    <path d="M ${50+sh-2} ${TY+6} q 24 -14 28 8 q -15 -3 -28 7 z" fill="${G}" opacity="0.38" stroke="${G}" stroke-width="2"/>`;
-  if(spec.bw==='cannon') s+=`<rect x="${50+sh-8}" y="${TY-14}" width="10" height="15" rx="3.5" fill="${STEEL}" stroke="${INK}" stroke-width="3"/>
-    <rect x="${50+sh-6.5}" y="${TY-18}" width="7" height="6" rx="2" fill="${DARK}" stroke="${INK}" stroke-width="2.5"/>`;
-  if(spec.bw==='fins'){ for(let i=-1;i<=1;i++) s+=`<path d="M ${50+i*sh*0.55} ${TY-1} l -4 -8 l 8 0 z" fill="${G}" stroke="${INK}" stroke-width="2.5"/>`; }
-  // tail
-  const tx=50+wa*0.9, tyy=BY-3;
-  if(spec.tl==='plasma') s+=`<path d="M ${tx} ${tyy} q 14 -2 12 -14 q 3 7 8 5 q -2 12 -14 14 z" fill="#FF8A3D" stroke="${INK}" stroke-width="3"/>`;
-  if(spec.tl==='cable'){ for(let i=0;i<3;i++) s+=`<circle cx="${tx+6+i*6.5}" cy="${tyy-i*4}" r="${5-i*1.1}" fill="${STEEL}" stroke="${INK}" stroke-width="2.5"/>`;
-    s+=`<circle cx="${tx+19}" cy="${tyy-8}" r="1.6" fill="${G}"/>`; }
-  if(spec.tl==='blade') s+=`<path d="M ${tx} ${tyy} l 13 -4 l -2 -7 l 8 6 l -4 9 z" fill="${STEEL}" stroke="${INK}" stroke-width="2.5"/>`;
-  if(spec.tl==='stub') s+=`<circle cx="${tx+4}" cy="${tyy}" r="4.5" fill="${P}" stroke="${INK}" stroke-width="3"/>`;
-  // legs
+  if(k.bw==='jet') s+=`<rect x="${50-sh-4}" y="${TY+3}" width="9" height="17" rx="4.5" fill="${STEEL}" stroke="${INK}" stroke-width="3"/><rect x="${50+sh-5}" y="${TY+3}" width="9" height="17" rx="4.5" fill="${STEEL}" stroke="${INK}" stroke-width="3"/><path d="M ${50-sh+0.5} ${TY+21} l -3.5 8 l 3.5 -2.5 l 3.5 2.5 z" fill="#FF8A3D"/><path d="M ${50+sh-0.5} ${TY+21} l -3.5 8 l 3.5 -2.5 l 3.5 2.5 z" fill="#FF8A3D"/>`;
+  if(k.bw==='wings') s+=`<path d="M ${50-sh+2} ${TY+6} q -24 -14 -28 8 q 15 -3 28 7 z" fill="${G}" opacity="0.38" stroke="${G}" stroke-width="2"/><path d="M ${50+sh-2} ${TY+6} q 24 -14 28 8 q -15 -3 -28 7 z" fill="${G}" opacity="0.38" stroke="${G}" stroke-width="2"/>`;
+  if(k.bw==='fins'){for(let i=-1;i<=1;i++)s+=`<path d="M ${50+i*sh*0.55} ${TY-1} l -4 -8 l 8 0 z" fill="${G}" stroke="${INK}" stroke-width="2.5"/>`;}
+  const tx=50+wa*0.9,tyy=BY-3;
+  if(k.tl==='plasma') s+=`<path d="M ${tx} ${tyy} q 14 -2 12 -14 q 3 7 8 5 q -2 12 -14 14 z" fill="#FF8A3D" stroke="${INK}" stroke-width="3"/>`;
+  if(k.tl==='cable'){for(let i=0;i<3;i++)s+=`<circle cx="${tx+6+i*6.5}" cy="${tyy-i*4}" r="${5-i*1.1}" fill="${STEEL}" stroke="${INK}" stroke-width="2.5"/>`;s+=`<circle cx="${tx+19}" cy="${tyy-8}" r="1.6" fill="${G}"/>`;}
+  if(k.tl==='blade') s+=`<path d="M ${tx} ${tyy} l 13 -4 l -2 -7 l 8 6 l -4 9 z" fill="${STEEL}" stroke="${INK}" stroke-width="2.5"/>`;
+  if(k.tl==='stub') s+=`<circle cx="${tx+4}" cy="${tyy}" r="4.5" fill="${P}" stroke="${INK}" stroke-width="3"/>`;
   for(const d of [-1,1]){
-    const hx=50+d*wa*0.55, fx=hx+d*2;
-    if(spec.lg==='raptor'){
-      const kx=hx+d*6, ky=BY+leg*0.45;
-      s+=limb(hx,BY-2,kx,ky,6.5*fr,P)+limb(kx,ky,fx-d*3,FY,5.5*fr,P);
-      s+=`<path d="M ${fx-d*3} ${FY} l ${d*7} 0 l ${-d*2} -4 z" fill="${P}" stroke="${INK}" stroke-width="2.5"/>`;
-    } else {
-      s+=limb(hx,BY-2,fx,FY-2,7.5*fr,P);
-      if(spec.lg==='hover'){
-        s+=`<rect x="${fx-6.5}" y="${FY-6}" width="13" height="7" rx="3.5" fill="${STEEL}" stroke="${INK}" stroke-width="2.5"/>
-            <path d="M ${fx} ${FY+2} l -3 7 l 3 -2 l 3 2 z" fill="#FFD93D"/>`;
-      } else {
-        s+=`<rect x="${fx-7}" y="${FY-5}" width="14" height="8" rx="3.5" fill="${DARK}" stroke="${INK}" stroke-width="2.5"/>
-            <line x1="${fx-3}" y1="${FY-5}" x2="${fx-3}" y2="${FY+3}" stroke="${INK}" stroke-width="1.5" opacity="0.5"/>`;
-      }
-    }
+    const hx=50+d*wa*0.55,fx=hx+d*2;
+    s+=limb(hx,BY-2,fx,FY-2,7.5*fr,P);
+    if(k.lg==='hover'){s+=`<rect x="${fx-6.5}" y="${FY-6}" width="13" height="7" rx="3.5" fill="${STEEL}" stroke="${INK}" stroke-width="2.5"/><path d="M ${fx} ${FY+2} l -3 7 l 3 -2 l 3 2 z" fill="#FFD93D"/>`;}
+    else{s+=`<rect x="${fx-7}" y="${FY-5}" width="14" height="8" rx="3.5" fill="${DARK}" stroke="${INK}" stroke-width="2.5"/>`;}
   }
-  // torso
-  s+=`<path d="M ${50-sh} ${TY} Q ${50-sh-3} ${TY+th*0.55} ${50-wa} ${BY} L ${50+wa} ${BY} Q ${50+sh+3} ${TY+th*0.55} ${50+sh} ${TY} Q 50 ${TY-7} ${50-sh} ${TY} Z"
-     fill="${P}" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/>`;
+  s+=`<path d="M ${50-sh} ${TY} Q ${50-sh-3} ${TY+th*0.55} ${50-wa} ${BY} L ${50+wa} ${BY} Q ${50+sh+3} ${TY+th*0.55} ${50+sh} ${TY} Q 50 ${TY-7} ${50-sh} ${TY} Z" fill="${P}" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/>`;
   const pd=5+mus*3;
-  s+=`<path d="M ${50-sh*0.72} ${TY+6} q ${sh*0.36} ${pd} ${sh*0.68} 0" fill="none" stroke="${INK}" stroke-width="2.5" opacity="0.5" stroke-linecap="round"/>
-      <path d="M ${50+sh*0.04} ${TY+6} q ${sh*0.36} ${pd} ${sh*0.68} 0" fill="none" stroke="${INK}" stroke-width="2.5" opacity="0.5" stroke-linecap="round"/>
-      <line x1="50" y1="${TY+th*0.55}" x2="50" y2="${BY-3}" stroke="${INK}" stroke-width="2" opacity="0.35"/>
-      <line x1="${50-wa*0.4}" y1="${TY+th*0.72}" x2="${50+wa*0.4}" y2="${TY+th*0.72}" stroke="${INK}" stroke-width="2" opacity="0.35"/>`;
-  // arms
+  s+=`<path d="M ${50-sh*0.72} ${TY+6} q ${sh*0.36} ${pd} ${sh*0.68} 0" fill="none" stroke="${INK}" stroke-width="2.5" opacity="0.5" stroke-linecap="round"/><path d="M ${50+sh*0.04} ${TY+6} q ${sh*0.36} ${pd} ${sh*0.68} 0" fill="none" stroke="${INK}" stroke-width="2.5" opacity="0.5" stroke-linecap="round"/>`;
   for(const d of [-1,1]){
-    const mech = spec.aw==='mech' && d===1;
-    const col = mech? STEEL : P;
-    const sx=50+d*(sh-2), sy=TY+4, ey=TY+15;
-    const elx=50+d*(sh+arm*1.05);
-    const fxx=50+d*Math.min(44-arm*0.9, sh+arm*1.25), fy=TY+1;
+    const mech=k.aw==='mech'&&d===1, col=mech?STEEL:P;
+    const sx=50+d*(sh-2),sy=TY+4,ey=TY+15,elx=50+d*(sh+arm*1.05);
+    const fxx=50+d*Math.min(44-arm*0.9,sh+arm*1.25),fy=TY+1;
     s+=limb(sx,sy,elx,ey,arm*1.5,col);
     s+=`<ellipse cx="${(sx+elx)/2}" cy="${sy+5}" rx="${arm*0.95}" ry="${arm*0.8}" fill="${col}" stroke="${INK}" stroke-width="3"/>`;
     s+=limb(elx,ey,fxx,fy,arm*1.15,col);
-    const fRad=spec.aw==='fists'?arm*1.12:arm*0.85;
-    s+=`<circle cx="${fxx}" cy="${fy}" r="${fRad}" fill="${col}" stroke="${INK}" stroke-width="3.5"/>`;
-    if(spec.aw==='fists') s+=`<circle cx="${fxx}" cy="${fy}" r="${fRad+2.2}" fill="none" stroke="${G}" stroke-width="2" opacity="0.85"/>`;
-    if(mech) s+=`<circle cx="${elx}" cy="${ey}" r="${arm*0.5}" fill="${DARK}" stroke="${INK}" stroke-width="2"/><circle cx="${fxx}" cy="${fy}" r="${arm*0.4}" fill="${G}"/>`;
-    if(spec.aw==='blades') s+=`<path d="M ${fxx} ${fy-2} l ${d*10} -8 l ${-d*3} 9 z" fill="${STEEL}" stroke="${INK}" stroke-width="2.5"/>`;
+    const fR=k.aw==='fists'?arm*1.12:arm*0.85;
+    s+=`<circle cx="${fxx}" cy="${fy}" r="${fR}" fill="${col}" stroke="${INK}" stroke-width="3.5"/>`;
+    if(k.aw==='fists')s+=`<circle cx="${fxx}" cy="${fy}" r="${fR+2.2}" fill="none" stroke="${G}" stroke-width="2" opacity="0.85"/>`;
+    if(mech)s+=`<circle cx="${elx}" cy="${ey}" r="${arm*0.5}" fill="${DARK}" stroke="${INK}" stroke-width="2"/><circle cx="${fxx}" cy="${fy}" r="${arm*0.4}" fill="${G}"/>`;
   }
-  // chest widgets (armor grows with DEF, core with SPC: doc 06)
   const cy2=TY+12;
-  if(spec.cw==='core'){
-    const cr=4+clamp(spc/tsc,0,120)/13;
-    s+=`<circle cx="50" cy="${cy2}" r="${cr+3}" fill="${G}" opacity="0.3"/>
-        <circle cx="50" cy="${cy2}" r="${cr}" fill="${G}" stroke="${INK}" stroke-width="3"/>
-        <circle cx="50" cy="${cy2}" r="${cr*0.42}" fill="#fff" opacity="0.95"/>`;
-  }
-  if(spec.cw==='armor'){
-    s+=`<rect x="${50-wa*0.95}" y="${TY+5}" width="${wa*1.9}" height="${th*0.48}" rx="5" fill="${STEEL}" stroke="${INK}" stroke-width="3"/>`;
-    for(const rx of [-0.6,0,0.6]) s+=`<circle cx="${50+rx*wa*0.8}" cy="${TY+5+th*0.24}" r="1.7" fill="${INK}" opacity="0.6"/>`;
-    if(def/tsc>45) for(const d of [-1,1]) s+=`<circle cx="${50+d*sh*0.95}" cy="${TY+1}" r="6" fill="${STEEL}" stroke="${INK}" stroke-width="3"/>`;
-  }
-  if(spec.cw==='seams') s+=`<path d="M ${50-wa*0.55} ${TY+5} L 50 ${TY+15} L ${50+wa*0.55} ${TY+5}" fill="none" stroke="${G}" stroke-width="2.6" opacity="0.95" stroke-linecap="round"/>
-    <circle cx="50" cy="${TY+15}" r="2.2" fill="${G}"/>`;
-  // head
+  if(k.cw==='core'){const cr=5+c.lv;s+=`<circle cx="50" cy="${cy2}" r="${cr+3}" fill="${G}" opacity="0.3"/><circle cx="50" cy="${cy2}" r="${cr}" fill="${G}" stroke="${INK}" stroke-width="3"/><circle cx="50" cy="${cy2}" r="${cr*0.42}" fill="#fff" opacity="0.95"/>`;}
+  if(k.cw==='armor'){s+=`<rect x="${50-wa*0.95}" y="${TY+5}" width="${wa*1.9}" height="${th*0.48}" rx="5" fill="${STEEL}" stroke="${INK}" stroke-width="3"/>`;for(const rx of [-0.6,0,0.6])s+=`<circle cx="${50+rx*wa*0.8}" cy="${TY+5+th*0.24}" r="1.7" fill="${INK}" opacity="0.6"/>`;}
+  if(k.cw==='seams')s+=`<path d="M ${50-wa*0.55} ${TY+5} L 50 ${TY+15} L ${50+wa*0.55} ${TY+5}" fill="none" stroke="${G}" stroke-width="2.6" opacity="0.95" stroke-linecap="round"/><circle cx="50" cy="${TY+15}" r="2.2" fill="${G}"/>`;
   s+=`<circle cx="50" cy="${HY}" r="${hd}" fill="${P}" stroke="${INK}" stroke-width="4"/>`;
-  if(spec.hg==='horn') s+=`<path d="M ${50-hd*0.55} ${HY-hd*0.55} L ${50-hd} ${HY-hd*1.45} L ${50-hd*0.2} ${HY-hd*0.85} Z" fill="${G}" stroke="${INK}" stroke-width="3"/>
-    <path d="M ${50+hd*0.55} ${HY-hd*0.55} L ${50+hd} ${HY-hd*1.45} L ${50+hd*0.2} ${HY-hd*0.85} Z" fill="${G}" stroke="${INK}" stroke-width="3"/>`;
-  if(spec.hg==='antenna') for(const d of [-0.5,0.5]) s+=`<line x1="${50+d*hd}" y1="${HY-hd*0.8}" x2="${50+d*hd*1.4}" y2="${HY-hd*1.7}" stroke="${INK}" stroke-width="2.5"/>
-    <circle cx="${50+d*hd*1.4}" cy="${HY-hd*1.7}" r="3" fill="${G}" stroke="${INK}" stroke-width="2.5"/>`;
-  if(spec.hg==='ears') for(const d of [-1,1]) s+=`<ellipse cx="${50+d*hd*0.62}" cy="${HY-hd*0.95}" rx="4.5" ry="8.5" fill="${P}" stroke="${INK}" stroke-width="3"/>`;
-  if(spec.hg==='mohawk') s+=`<path d="M ${50-hd*0.55} ${HY-hd*0.7} q ${hd*0.55} ${-hd*1.1} ${hd*1.1} 0 z" fill="${G}" stroke="${INK}" stroke-width="3"/>`;
-  const exo=hd*0.42, eyo=HY-1;
-  if(spec.eye==='visor'){
-    s+=`<rect x="${50-hd*0.78}" y="${eyo-4.5}" width="${hd*1.56}" height="9" rx="4.5" fill="${G}" stroke="${INK}" stroke-width="3"/>
-        <rect x="${50-hd*0.45}" y="${eyo-2}" width="6" height="3.5" rx="1.5" fill="#fff" opacity="0.95"/>
-        <rect x="${50+hd*0.12}" y="${eyo-2}" width="6" height="3.5" rx="1.5" fill="#fff" opacity="0.95"/>`;
-  } else if(spec.eye==='shades'){
-    s+=`<rect x="${50-hd*0.8}" y="${eyo-4}" width="${hd*1.6}" height="8" rx="4" fill="${INK}"/>
-        <line x1="${50-hd*0.5}" y1="${eyo-2}" x2="${50-hd*0.15}" y2="${eyo-2}" stroke="${G}" stroke-width="2"/>`;
-  } else if(spec.eye==='cyber'){
-    s+=`<ellipse cx="${50-exo}" cy="${eyo}" rx="3.6" ry="4.6" fill="${INK}"/><circle cx="${50-exo+1.2}" cy="${eyo-1.4}" r="1.4" fill="#fff"/>
-        <rect x="${50+exo-5}" y="${eyo-4.5}" width="10" height="8.5" rx="2.5" fill="${G}" stroke="${INK}" stroke-width="2.5"/>
-        <circle cx="${50+exo}" cy="${eyo-0.5}" r="2" fill="#fff"/>`;
-  } else if(spec.eye==='star'){
-    for(const d of [-1,1]) s+=`<path d="M ${50+d*exo} ${eyo-4.5} l 1.4 3 l 3.2 .4 l -2.3 2.2 l .6 3.2 l -2.9 -1.6 l -2.9 1.6 l .6 -3.2 l -2.3 -2.2 l 3.2 -.4 z" fill="${INK}"/>`;
-  } else {
-    s+=`<ellipse cx="${50-exo}" cy="${eyo}" rx="3.6" ry="4.6" fill="${INK}"/><ellipse cx="${50+exo}" cy="${eyo}" rx="3.6" ry="4.6" fill="${INK}"/>
-        <circle cx="${50-exo+1.2}" cy="${eyo-1.4}" r="1.4" fill="#fff"/><circle cx="${50+exo+1.2}" cy="${eyo-1.4}" r="1.4" fill="#fff"/>`;
-    if(spec.eye==='angry') s+=`<line x1="${50-exo-4}" y1="${eyo-6.5}" x2="${50-exo+3}" y2="${eyo-4.5}" stroke="${INK}" stroke-width="2.8" stroke-linecap="round"/>
-      <line x1="${50+exo+4}" y1="${eyo-6.5}" x2="${50+exo-3}" y2="${eyo-4.5}" stroke="${INK}" stroke-width="2.8" stroke-linecap="round"/>`;
-    else s+=`<line x1="${50-exo-3.5}" y1="${eyo-6.5}" x2="${50-exo+3}" y2="${eyo-6.8}" stroke="${INK}" stroke-width="2.4" stroke-linecap="round" opacity="0.7"/>
-      <line x1="${50+exo+3.5}" y1="${eyo-6.5}" x2="${50+exo-3}" y2="${eyo-6.8}" stroke="${INK}" stroke-width="2.4" stroke-linecap="round" opacity="0.7"/>`;
-  }
+  if(k.hg==='horn')s+=`<path d="M ${50-hd*0.55} ${HY-hd*0.55} L ${50-hd} ${HY-hd*1.45} L ${50-hd*0.2} ${HY-hd*0.85} Z" fill="${G}" stroke="${INK}" stroke-width="3"/><path d="M ${50+hd*0.55} ${HY-hd*0.55} L ${50+hd} ${HY-hd*1.45} L ${50+hd*0.2} ${HY-hd*0.85} Z" fill="${G}" stroke="${INK}" stroke-width="3"/>`;
+  if(k.hg==='antenna')for(const d of [-0.5,0.5])s+=`<line x1="${50+d*hd}" y1="${HY-hd*0.8}" x2="${50+d*hd*1.4}" y2="${HY-hd*1.7}" stroke="${INK}" stroke-width="2.5"/><circle cx="${50+d*hd*1.4}" cy="${HY-hd*1.7}" r="3" fill="${G}" stroke="${INK}" stroke-width="2.5"/>`;
+  if(k.hg==='ears')for(const d of [-1,1])s+=`<ellipse cx="${50+d*hd*0.62}" cy="${HY-hd*0.95}" rx="4.5" ry="8.5" fill="${P}" stroke="${INK}" stroke-width="3"/>`;
+  if(k.hg==='mohawk')s+=`<path d="M ${50-hd*0.55} ${HY-hd*0.7} q ${hd*0.55} ${-hd*1.1} ${hd*1.1} 0 z" fill="${G}" stroke="${INK}" stroke-width="3"/>`;
+  const exo=hd*0.42,eyo=HY-1;
+  if(k.eye==='visor'){s+=`<rect x="${50-hd*0.78}" y="${eyo-4.5}" width="${hd*1.56}" height="9" rx="4.5" fill="${G}" stroke="${INK}" stroke-width="3"/><rect x="${50-hd*0.45}" y="${eyo-2}" width="6" height="3.5" rx="1.5" fill="#fff"/><rect x="${50+hd*0.12}" y="${eyo-2}" width="6" height="3.5" rx="1.5" fill="#fff"/>`;}
+  else if(k.eye==='shades'){s+=`<rect x="${50-hd*0.8}" y="${eyo-4}" width="${hd*1.6}" height="8" rx="4" fill="${INK}"/><line x1="${50-hd*0.5}" y1="${eyo-2}" x2="${50-hd*0.15}" y2="${eyo-2}" stroke="${G}" stroke-width="2"/>`;}
+  else if(k.eye==='cyber'){s+=`<ellipse cx="${50-exo}" cy="${eyo}" rx="3.6" ry="4.6" fill="${INK}"/><circle cx="${50-exo+1.2}" cy="${eyo-1.4}" r="1.4" fill="#fff"/><rect x="${50+exo-5}" y="${eyo-4.5}" width="10" height="8.5" rx="2.5" fill="${G}" stroke="${INK}" stroke-width="2.5"/><circle cx="${50+exo}" cy="${eyo-0.5}" r="2" fill="#fff"/>`;}
+  else if(k.eye==='star'){for(const d of [-1,1])s+=`<path d="M ${50+d*exo} ${eyo-4.5} l 1.4 3 l 3.2 .4 l -2.3 2.2 l .6 3.2 l -2.9 -1.6 l -2.9 1.6 l .6 -3.2 l -2.3 -2.2 l 3.2 -.4 z" fill="${INK}"/>`;}
+  else{s+=`<ellipse cx="${50-exo}" cy="${eyo}" rx="3.6" ry="4.6" fill="${INK}"/><ellipse cx="${50+exo}" cy="${eyo}" rx="3.6" ry="4.6" fill="${INK}"/><circle cx="${50-exo+1.2}" cy="${eyo-1.4}" r="1.4" fill="#fff"/><circle cx="${50+exo+1.2}" cy="${eyo-1.4}" r="1.4" fill="#fff"/>`;
+    if(k.eye==='angry')s+=`<line x1="${50-exo-4}" y1="${eyo-6.5}" x2="${50-exo+3}" y2="${eyo-4.5}" stroke="${INK}" stroke-width="2.8" stroke-linecap="round"/><line x1="${50+exo+4}" y1="${eyo-6.5}" x2="${50+exo-3}" y2="${eyo-4.5}" stroke="${INK}" stroke-width="2.8" stroke-linecap="round"/>`;}
   s+=`<path d="M ${50-3} ${HY+6.5} q 4 3.2 7.5 0.5" fill="none" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/>`;
-  const scl=1+0.07*((spec.tier||1)-1);
-  // seed jitter: whole-figure micro variation
-  const rot=(r()-0.5)*3;
-  return `<svg class="${cls||'bsvg'}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g transform="translate(50,52) scale(${scl}) rotate(${rot.toFixed(1)}) translate(-50,-52)">${s}</g></svg>`;
+  const scl=1+0.05*(c.lv-1);
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g transform="translate(50,52) scale(${scl}) translate(-50,-52)">${s}</g></svg>`;
 }
 
-/* ---------- beast ops (docs 03 + 04) ---------- */
-function makeBeast(spKey){
-  const sp=SPECIES[spKey], seed=(Math.random()*1e9)|0, r=mulberry32(seed);
-  const stats=sp.s.map(v=>Math.round(v*(0.9+0.2*r()))); // ±10% hatch jitter
-  return { id:'b'+(S.nextId++), name:sp.n, species:spKey, el:[sp.e],
-    tier:1, level:1, xp:0, s:stats, p:sp.p,
-    hg:sp.hg||null, eye:sp.eye||'hero', cw:sp.cw||null, bw:sp.bw||null,
-    aw:sp.aw||null, lg:sp.lg||'power', tl:sp.tl||null,
-    seed, gen:0, lineage:null };
+/* ---------- cards ---------- */
+const BOARD_SIZE=9;
+function newCard(spKey){
+  const sp=SP[spKey];
+  return {id:S.nextId++, sp:spKey, name:sp.n, e:sp.e, e2:null, lv:1,
+    atk:sp.atk, hp:sp.hp, hp0:sp.hp, kit:sp.kit, seed:(Math.random()*1e9)|0, fused:false};
 }
-function fuseBeasts(h,b){
-  const st=[ // body biases physical, head biases HP/SPC, ×1.10 (doc 04 canonical)
-    Math.round((0.6*h.s[0]+0.4*b.s[0])*1.1),
-    Math.round((0.6*b.s[1]+0.4*h.s[1])*1.1),
-    Math.round((0.6*b.s[2]+0.4*h.s[2])*1.1),
-    Math.round((0.6*b.s[3]+0.4*h.s[3])*1.1),
-    Math.round((0.6*h.s[4]+0.4*b.s[4])*1.1)
-  ].map(v=>clamp(v,1,999));
-  const el=[h.el[0]];
-  const second = b.el[0]!==h.el[0]? b.el[0] : (b.el[1]&&b.el[1]!==h.el[0]? b.el[1] : null);
-  if(second) el.push(second);
-  return { id:'b'+(S.nextId++),
-    name:'???', species:'fx_'+h.species+'__'+b.species,
-    el, tier:Math.max(h.tier,b.tier), level:Math.max(1,Math.round((h.level+b.level)/2)), xp:0,
-    s:st, p:b.p, hg:h.hg, eye:h.eye, cw:b.cw, bw:b.bw, aw:b.aw, lg:b.lg, tl:b.tl,
-    seed:(h.seed^b.seed)>>>0 || 7, gen:Math.max(h.gen,b.gen)+1,
-    lineage:{head:JSON.parse(JSON.stringify(h)), body:JSON.parse(JSON.stringify(b))} };
-}
-function xpNext(L){ return Math.round(20*Math.pow(L,1.5)); }
-function grantXp(bst,amt){
-  if(bst.level>=10) return false;
-  bst.xp+=amt; let up=false;
-  while(bst.level<10 && bst.xp>=xpNext(bst.level)){
-    bst.xp-=xpNext(bst.level); bst.level++;
-    bst.s=bst.s.map(v=>clamp(Math.round(v*1.04),1,999)); up=true;
-  }
-  return up;
-}
-const power=b=>b.s.reduce((a,v)=>a+v,0);
-const dexCount=()=>Object.keys(S.dex).length;
-
-function registerDex(bst,customName){
-  const k=bst.species;
-  if(!S.dex[k]){
-    S.dex[k]={name:customName||bst.name, first:Date.now(), count:1,
-      el:bst.el.slice(), snap:{p:bst.p,hg:bst.hg,eye:bst.eye,cw:bst.cw,bw:bst.bw,aw:bst.aw,lg:bst.lg,tl:bst.tl,s:bst.s.slice(),el:bst.el.slice(),tier:1,seed:bst.seed}};
-    return true; // NEW SPECIES
-  }
-  S.dex[k].count++;
-  if(S.dex[k].name && bst.species.startsWith('fx_')) bst.name=S.dex[k].name;
+function poolSize(){ return clamp(4+Math.floor(S.wins/2),4,ROSTER.length); }
+function dealCost(){ return 25+Math.floor(S.dealt/4)*10; }
+function cardPower(c){ return c.atk*2+c.hp; }
+function registerDex(c,name){
+  const k=c.fused?('fx_'+c.sp):c.sp;
+  if(!S.dex[k]){ S.dex[k]=name||c.name; return true; }
   return false;
 }
+function dexCount(){ return Object.keys(S.dex).length; }
 
-/* ---------- FX ---------- */
-const app=$('app');
-function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
-  app.appendChild(t); setTimeout(()=>t.remove(),2450); }
-function confetti(n,x,y){
-  const CONF=['#FF8A3D','#FFD93D','#6FDB6F','#4CC9F0','#FF5FA2','#B388FF'];
-  for(let i=0;i<Math.min(n,26);i++){
-    const c=document.createElement('div'); c.className='confetti';
-    c.style.background=CONF[i%6];
-    c.style.left=(x??(20+Math.random()*60))+'%';
-    c.style.top=(y??30)+'%';
-    c.style.animation=`confall ${0.8+Math.random()*0.6}s ease-in ${Math.random()*0.3}s forwards`;
-    app.appendChild(c); setTimeout(()=>c.remove(),1800);
-  }
+/* card HTML */
+function cardHTML(c,extra){
+  const stars='⭐'.repeat(c.lv);
+  return `<div class="wcard f-${c.e} lv${c.lv} ${extra||''}" data-cid="${c.id}">
+    <div class="stars">${stars}</div>
+    ${c.fused?'<div class="fxtag">🧬</div>':''}
+    <div class="ebadge">${EL[c.e].i}${c.e2?EL[c.e2].i:''}</div>
+    <div class="face">${beastSVG(c)}</div>
+    <div class="nm">${c.name}</div>
+    <div class="stats"><span>⚔️${c.atk}</span><span>❤️${c.hp}</span></div>
+  </div>`;
 }
-function shake(ms){ app.classList.add('shakeit'); setTimeout(()=>app.classList.remove('shakeit'),ms||220); }
 
-/* ---------- HUD + hint ("one glowing thing", doc 08) ---------- */
-function eggCost(){ return Math.round(30*Math.pow(1.15,Math.floor(S.eggsBought/5))); }
-function totalEggs(){ return Object.values(S.eggInv).reduce((a,v)=>a+v,0); }
-function hud(){
-  $('hudWoops').textContent=fmt(S.woops);
-  $('hudEggs').textContent=totalEggs();
-  $('hudCores').textContent=S.cores;
-  $('hudDex').textContent='📖 '+dexCount();
+/* ---------- board render + merge interaction ---------- */
+let selId=null;
+function renderBoard(dealtId){
+  const b=$('board');
+  let html='';
+  for(let i=0;i<BOARD_SIZE;i++){
+    const c=S.board[i];
+    html+=`<div class="cslot ${c?'':'empty'}">${c?cardHTML(c,(c.id===dealtId?'dealt ':'')+(c.id===selId?'sel':'')):''}</div>`;
+  }
+  b.innerHTML=html;
+  b.querySelectorAll('.wcard').forEach(el=>el.addEventListener('click',()=>tapCard(+el.dataset.cid)));
+  $('hudCoins').textContent=S.coins;
+  $('hudWins').textContent=S.wins;
+  $('hudDex').textContent=dexCount();
   $('mutebtn').textContent=S.muted?'🔇':'🔊';
-  // one glowing thing: merge > hatchable egg > fusable > fight
-  document.querySelectorAll('.dockbtn').forEach(b=>b.classList.remove('pulse'));
-  const glow=scr=>{const b=document.querySelector(`.dockbtn[data-scr="${scr}"]`); if(b&&!b.classList.contains('on')) b.classList.add('pulse');};
-  if(findTrios().length) glow('ranch');
-  else if(totalEggs()>0 && S.ranch.length<20) glow('hatchery');
-  else if(S.cores>0 && S.ranch.length>=2) glow('lab');
-  else glow('battle');
+  const full=S.board.length>=BOARD_SIZE;
+  $('dealbtn').disabled=full||S.coins<dealCost();
+  $('dealbtn').innerHTML=`🃏 NEW CARD<br><span style="font-size:12px">${full?'BOARD FULL':dealCost()+' 🪙'}</span>`;
+  $('fightbtn').disabled=S.board.length===0;
+  $('dealbtn').classList.remove('pulse');$('fightbtn').classList.remove('pulse');
+  if(!full&&S.coins>=dealCost()&&S.board.length<3) $('dealbtn').classList.add('pulse');
+  else if(S.board.length) $('fightbtn').classList.add('pulse');
 }
-function hint(msg){ $('hintbar').textContent=msg; }
-
-/* ---------- screens ---------- */
-let scr='ranch';
-function show(name){
-  scr=name;
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
-  $(name).classList.add('on');
-  document.querySelectorAll('.dockbtn').forEach(b=>b.classList.toggle('on',b.dataset.scr===name));
-  if(name==='ranch') renderRanch();
-  if(name==='hatchery') renderHatchery();
-  if(name==='lab') renderLab();
-  if(name==='battle') renderBattlePre();
-  if(name==='dex') renderDex();
-  hud();
+function hint(t){$('hint').innerHTML=t;}
+function tapCard(id){
+  sfx.tap();
+  const c=S.board.find(x=>x.id===id);
+  if(!c) return;
+  if(selId===null){ selId=id; renderBoard(); hint('Now tap a <b>second card</b>: same = LEVEL UP, different = NEW BEAST! 🧬'); return; }
+  if(selId===id){ selId=null; renderBoard(); hint('Tap two cards to merge them!'); return; }
+  const a=S.board.find(x=>x.id===selId);
+  selId=null;
+  mergeCards(a,c);
 }
-document.querySelectorAll('.dockbtn').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();sfx.click();show(b.dataset.scr);}));
-$('backbtn').addEventListener('click',()=>{ save(); location.href='../../index.html'; });
-$('mutebtn').addEventListener('click',()=>{ S.muted=!S.muted; save(); hud(); });
-$('hudDex').addEventListener('click',()=>show('dex'));
-
-/* ---------- Ranch ---------- */
-function findTrios(){
-  const g={};
-  S.ranch.forEach((b,i)=>{const k=b.species+'_'+b.tier;(g[k]=g[k]||[]).push(i);});
-  return Object.values(g).filter(x=>x.length>=3);
-}
-function renderRanch(){
-  const grid=$('ranchgrid');
-  const trios=findTrios();
-  const trioIdx=new Set(); trios.forEach(t=>t.slice(0,Math.min(t.length>=5?5:3,t.length)).forEach(i=>trioIdx.add(i)));
-  let html=S.ranch.map((b,i)=>{
-    const mr=trioIdx.has(i)?' mergeready':'';
-    const tc=b.tier>1?`⭐T${b.tier} `:'';
-    return `<div class="slot${mr}" data-i="${i}">${beastSVG(b)}<span class="nm">${b.name}</span><span class="el">${tc}${b.el.map(e=>EL[e].i).join('')} Lv.${b.level}</span></div>`;
-  }).join('');
-  for(let i=S.ranch.length;i<20;i++) html+='<div class="slot empty">&nbsp;<div style="font-size:22px;opacity:.5">·</div>&nbsp;</div>';
-  grid.innerHTML=html;
-  grid.querySelectorAll('.slot[data-i]').forEach(el=>{
-    el.addEventListener('pointerdown',e=>{
-      e.preventDefault();
-      const i=+el.dataset.i;
-      if(el.classList.contains('mergeready')) doMerge(S.ranch[i]);
-      else openDetail(i);
-    });
-  });
-  if(trios.length) hint('3 of a kind! Tap a glowing beast to MERGE! 💥');
-  else if(S.ranch.length===0) hint('Hatch your first beast! 🥚');
-  else hint(`Your Ranch: ${S.ranch.length}/20 beasts. Tap one for details.`);
-}
-function doMerge(sample){
-  const idx=S.ranch.map((b,i)=>({b,i})).filter(x=>x.b.species===sample.species&&x.b.tier===sample.tier).map(x=>x.i);
-  if(idx.length<3) return;
-  const five=idx.length>=5; // merge-5 bonus: 5 → TWO results (doc 04)
-  const take=five?idx.slice(0,5):idx.slice(0,3);
-  const src=take.map(i=>S.ranch[i]);
-  const maxLvl=Math.max(...src.map(b=>b.level));
-  const results=[];
-  for(let k=0;k<(five?2:1);k++){
-    const base=src[k];
-    const nb=JSON.parse(JSON.stringify(base));
-    nb.id='b'+(S.nextId++); nb.tier=base.tier+1; nb.level=maxLvl;
-    nb.s=base.s.map(v=>clamp(Math.round(v*1.8),1,999));
-    results.push(nb);
-  }
-  take.sort((a,b)=>b-a).forEach(i=>S.ranch.splice(i,1));
-  results.forEach(nb=>S.ranch.push(nb));
-  // squad ids may have vanished
-  S.squad=S.squad.filter(id=>S.ranch.some(b=>b.id===id));
-  sfx.merge(results[0].tier); shake(200); confetti(20);
-  save(); renderRanch(); hud();
-  hint(`💥 MERGE${five?'-5! TWO':'!'} ${results[0].name} evolved to T${results[0].tier}!`);
-}
-/* detail card */
-let detailIdx=-1;
-function openDetail(i){
-  detailIdx=i; const b=S.ranch[i]; if(!b) return;
-  $('detailsvg').innerHTML=beastSVG(b,'bsvg').replace('class="bsvg"','class="bsvg" style="width:120px;height:120px"');
-  $('detailname').textContent=`${b.name}  ${b.tier>1?'⭐T'+b.tier:''} ${b.el.map(e=>EL[e].i).join('')} Lv.${b.level}`;
-  const SN=['HP','ATK','DEF','SPD','SPC'];
-  $('detailstats').innerHTML=b.s.map((v,k)=>`<div class="stat"><span style="width:30px">${SN[k]}</span><div class="bar"><div class="fill" style="width:${Math.min(100,v/6)}%"></div></div><span>${v}</span></div>`).join('');
-  $('detailxp').textContent=b.level>=10?`MAX LEVEL! Merge 3 to evolve. Ability: ${ABIL[b.el[0]].n}`:`XP ${b.xp}/${xpNext(b.level)} · Ability: ${ABIL[b.el[0]].n} (${ABIL[b.el[0]].d})`;
-  $('unfuseBtn').style.display=b.lineage?'':'none';
-  $('detailOv').classList.add('on');
-}
-$('detailClose').addEventListener('click',()=>$('detailOv').classList.remove('on'));
-$('snackBtn').addEventListener('click',()=>{
-  const b=S.ranch[detailIdx]; if(!b) return;
-  if(S.woops<10){ toast('Win battles to earn Woops! ⚔️'); return; }
-  if(b.level>=10){ toast('Max level! Merge 3 to evolve 💥'); return; }
-  S.woops-=10; sfx.coin();
-  if(grantXp(b,15)){ sfx.lvl(); confetti(12); toast(`${b.name} leveled up! Lv.${b.level}`); }
-  save(); openDetail(detailIdx); hud();
-});
-$('unfuseBtn').addEventListener('click',()=>{
-  const b=S.ranch[detailIdx]; if(!b||!b.lineage) return;
-  if(S.ranch.length+1>20){ toast('Ranch full! Make room first 🏡'); return; }
-  const h=b.lineage.head, bd=b.lineage.body;
-  h.id='b'+(S.nextId++); bd.id='b'+(S.nextId++);
-  S.ranch.splice(detailIdx,1); S.ranch.push(h,bd);
-  S.squad=S.squad.filter(id=>id!==b.id);
-  $('detailOv').classList.remove('on');
-  toast(`Unfused! ${h.name} and ${bd.name} are back`);
-  save(); renderRanch(); hud();
-});
-$('releaseBtn').addEventListener('click',()=>{
-  const b=S.ranch[detailIdx]; if(!b) return;
-  const refund=10+b.tier*10;
-  S.ranch.splice(detailIdx,1);
-  S.squad=S.squad.filter(id=>id!==b.id);
-  S.woops+=refund; sfx.coin();
-  $('detailOv').classList.remove('on');
-  toast(`👋 ${b.name} released! +${refund} 🪙`);
-  save(); renderRanch(); hud();
-});
-
-/* ---------- Hatchery ---------- */
-let crackState={}; // type → taps
-function renderHatchery(){
-  const row=$('eggrow');
-  row.innerHTML=Object.entries(EGGS).map(([k,e])=>{
-    const unlocked=S.unlocked.includes(k);
-    const owned=S.eggInv[k]||0;
-    const cost=k==='basic'?eggCost():Math.round(eggCost()*1.5);
-    if(!unlocked) return `<div class="eggcard locked"><div class="eggface">❔</div>
-      <div class="egginfo"><div class="t">${e.n}</div><div class="d">Unlocks at battle ${e.rung} ⚔️</div></div></div>`;
-    const taps=crackState[k]||0;
-    const face=taps===0?e.i==='🥚'?'🥚':e.i:taps<3?'🥚':'🐣';
-    return `<div class="eggcard" data-k="${k}">
-      <div class="eggface ${taps===1?'crack1':taps===2?'crack2':''}" data-egg="${k}">${owned>0?(taps<2?'🥚':'🐣'):e.i}</div>
-      <div class="egginfo"><div class="t">${e.n} ${owned>0?'×'+owned:''}</div><div class="d">${e.d}</div></div>
-      ${owned>0? `<button class="eggbtn" data-hatch="${k}">TAP 3× ${taps>0?'('+taps+'/3)':''}</button>`
-               : `<button class="eggbtn buy" data-buy="${k}" ${S.woops<cost?'disabled':''}>BUY ${cost} 🪙</button>`}
-    </div>`;
-  }).join('');
-  row.querySelectorAll('[data-buy]').forEach(b=>b.addEventListener('pointerdown',e=>{
-    e.preventDefault();
-    const k=b.dataset.buy, cost=k==='basic'?eggCost():Math.round(eggCost()*1.5);
-    if(S.woops<cost) return;
-    S.woops-=cost; S.eggsBought++; S.eggInv[k]=(S.eggInv[k]||0)+1;
-    sfx.coin(); save(); renderHatchery(); hud();
-  }));
-  const tapH=k=>{
-    if(S.ranch.length>=20){ toast('Ranch full! Merge or fuse to make room 🏡'); return; }
-    crackState[k]=(crackState[k]||0)+1;
-    sfx.crack(crackState[k]);
-    if(crackState[k]>=3){
-      crackState[k]=0; S.eggInv[k]--;
-      hatch(k);
-    }
-    renderHatchery();
-  };
-  row.querySelectorAll('[data-hatch]').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();tapH(b.dataset.hatch);}));
-  row.querySelectorAll('.eggface[data-egg]').forEach(f=>f.addEventListener('pointerdown',e=>{
-    e.preventDefault(); const k=f.dataset.egg; if((S.eggInv[k]||0)>0) tapH(k);
-  }));
-  hint(totalEggs()>0?'Tap an egg 3 times to hatch! 🐣':'Buy eggs with Woops from battles! 🪙');
-}
-function hatch(type){
-  let spKey;
-  if(S.rig && S.rig.length){ spKey=S.rig.shift(); if(!S.rig.length) S.rig=null; }
-  else {
-    const pool=EGGS[type].pool;
-    // pity weighting (README open q5): 45% prefer species owned 1-2 of
-    const near=pool.filter(k=>{const c=S.ranch.filter(b=>b.species===k&&b.tier===1).length;return c===1||c===2;});
-    spKey=(near.length&&Math.random()<0.45)?near[(Math.random()*near.length)|0]:pool[(Math.random()*pool.length)|0];
-  }
-  const b=makeBeast(spKey);
-  S.ranch.push(b);
-  const isNew=registerDex(b);
-  sfx.hatch(); confetti(18); shake(150);
-  const cnt=S.ranch.filter(x=>x.species===b.species&&x.tier===1).length;
-  if(isNew){ stickerCheck(); toast(`🎉 NEW! ${b.name} joined the Woopdex!`); }
-  save(); hud();
-  if(cnt>=3) show('ranch');
-  hint(`🎉 ${b.name} hatched! ${cnt>=3?'MERGE READY! Tap a glowing beast! 💥':cnt===2?'2/3 for a merge!':''}`);
-}
-
-/* ---------- Fusion Lab ---------- */
-let podH=null,podB=null,picking=null;
-function renderLab(){
-  const pods=[[podH,'podHc','podH'],[podB,'podBc','podB']];
-  pods.forEach(([b,cid,pid])=>{
-    $(cid).innerHTML=b?beastSVG(b)+`<span class="pnm">${b.name}</span>`:'➕';
-    $(pid).classList.toggle('filled',!!b);
-    $(pid).classList.toggle('picking',picking===pid);
-  });
-  const f=(podH&&podB&&podH.id!==podB.id)?fuseBeasts(podH,podB):null;
-  if(f){ S.nextId--; } // preview shouldn't consume ids
-  const SN=['HP','ATK','DEF','SPD','SPC'];
-  if(f){
-    $('prevsvg').innerHTML=beastSVG(f);
-    $('prevstats').innerHTML=f.s.map((v,k)=>`<div class="stat"><span style="width:30px">${SN[k]}</span><div class="bar"><div class="fill" style="width:${Math.min(100,v/6)}%"></div></div><span>${v}</span></div>`).join('')
-      +`<div style="font-size:12px">${f.el.map(e=>EL[e].i).join(' ')} <b style="font-size:10.5px">mystery beast…</b></div>`;
-    const blocked=Math.max(podH.gen,podB.gen)>=3;
-    $('fusebtn').disabled=S.cores<1||blocked;
-    hint(blocked?'Chimera limit! Gen-3 beasts are maxed out 🧬':S.cores<1?'Win battles to find Fusion Cores 💠':'SWAP flips head & body. Smash FUSE!');
+function mergeCards(a,b){
+  const sameSpecies=a.sp===b.sp&&a.fused===b.fused;
+  if(sameSpecies){
+    if(a.lv!==b.lv){ hint('Match the <b>star levels</b> to level up! (Different beasts always fuse)'); sfx.no(); renderBoard(); return; }
+    if(a.lv>=5){ hint('MAX LEVEL! Merge it with a <b>different</b> beast to fuse 🧬'); sfx.no(); renderBoard(); return; }
+    const nc={...a, id:S.nextId++, lv:a.lv+1,
+      atk:Math.round(a.atk*1.5), hp:Math.round(a.hp*1.5), hp0:Math.round(a.hp*1.5)};
+    S.board=S.board.filter(x=>x.id!==a.id&&x.id!==b.id);
+    S.board.push(nc);
+    sfx.levelup(nc.lv); confetti(16); shake(160);
+    save(); renderBoard();
+    const el=document.querySelector(`.wcard[data-cid="${nc.id}"]`);
+    if(el) el.classList.add('mergeflash');
+    hint(`⭐ ${nc.name} is now <b>Level ${nc.lv}</b>! Stronger and shinier!`);
   } else {
-    $('prevsvg').innerHTML='';
-    $('prevstats').innerHTML='<div style="font-size:11.5px;opacity:.55">Pick a HEAD and a BODY beast to preview the fusion…</div>';
-    $('fusebtn').disabled=true;
-    hint('Tap a pod, then pick a beast 👇');
-  }
-  $('labshelf').innerHTML=S.ranch.map((b,i)=>
-    `<div class="slot" data-i="${i}">${beastSVG(b)}<span class="nm">${b.name}</span><span class="el">${b.tier>1?'⭐T'+b.tier+' ':''}${b.el.map(e=>EL[e].i).join('')}</span></div>`).join('');
-  $('labshelf').querySelectorAll('.slot').forEach(el=>el.addEventListener('pointerdown',e=>{
-    e.preventDefault(); sfx.click();
-    const b=S.ranch[+el.dataset.i];
-    if(picking==='podB'){ if(podH&&b.id===podH.id) podH=null; podB=b; picking='podH'; }
-    else { if(podB&&b.id===podB.id) podB=null; podH=b; picking='podB'; }
-    renderLab();
-  }));
-}
-$('podH').addEventListener('pointerdown',e=>{e.preventDefault();picking='podH';renderLab();});
-$('podB').addEventListener('pointerdown',e=>{e.preventDefault();picking='podB';renderLab();});
-$('swapbtn').addEventListener('pointerdown',e=>{e.preventDefault();sfx.click();const t=podH;podH=podB;podB=t;renderLab();});
-
-let pendingFusion=null, chosenName='';
-$('fusebtn').addEventListener('pointerdown',e=>{
-  e.preventDefault();
-  if(!podH||!podB||S.cores<1) return;
-  S.cores--;
-  sfx.fuseBuild(); shake(1000);
-  $('fusebtn').textContent='FUSING…'; $('fusebtn').disabled=true;
-  const h=podH,b=podB;
-  setTimeout(()=>{
-    $('fusebtn').textContent='FUSE  💠1';
-    const f=fuseBeasts(h,b);
-    // remove parents from ranch + squad
-    S.ranch=S.ranch.filter(x=>x.id!==h.id&&x.id!==b.id);
-    S.squad=S.squad.filter(id=>id!==h.id&&id!==b.id);
-    pendingFusion=f;
-    const isNew=!S.dex[f.species];
-    $('revealTitle').textContent=isNew?'✨ NEW SPECIES DISCOVERED! ✨':'🧬 FUSED!';
-    $('revealsvg').innerHTML=beastSVG(f).replace('class="bsvg"','class="bsvg" style="width:130px;height:130px"');
-    $('revealel').textContent=f.el.map(e=>EL[e].i+' '+EL[e].n.toUpperCase()).join(' + ');
-    $('nameblock').style.display=isNew?'flex':'none';
+    /* FUSION: first tap = head (face + element), second = body (build + widgets) */
+    const key=a.sp+'__'+b.sp;
+    const ak=a.kit||{}, bk=b.kit||{};
+    const kit={p:bk.p, hg:ak.hg, eye:ak.eye, cw:bk.cw, bw:bk.bw, aw:bk.aw, lg:bk.lg, tl:bk.tl};
+    const nc={id:S.nextId++, sp:key, name:'???', e:a.e, e2:b.e!==a.e?b.e:(b.e2&&b.e2!==a.e?b.e2:null),
+      lv:Math.max(a.lv,b.lv),
+      atk:Math.round((a.atk+b.atk)*0.65), hp:Math.round((a.hp+b.hp)*0.65), hp0:Math.round((a.hp+b.hp)*0.65),
+      kit, seed:(a.seed^b.seed)>>>0||7, fused:true};
+    S.board=S.board.filter(x=>x.id!==a.id&&x.id!==b.id);
+    const dexKey='fx_'+key;
+    const isNew=!S.dex[dexKey];
+    if(!isNew) nc.name=S.dex[dexKey];
+    pendingCard=nc;
     if(isNew){
-      const r=mulberry32(f.s[0]+f.s[1]);
-      const port=h.name.slice(0,Math.ceil(h.name.length/2))+b.name.slice(Math.floor(b.name.length/2)).toLowerCase();
+      const r=mulberry32(nc.atk+nc.hp);
+      const port=(a.name.slice(0,Math.ceil(a.name.length/2))+b.name.slice(Math.floor(b.name.length/2)).toLowerCase()).slice(0,12);
       const ideas=[port,
-        PREFIX[f.el[0]][(r()*3)|0]+SUFFIX[(r()*SUFFIX.length)|0],
-        PREFIX[f.el[1]||f.el[0]][(r()*3)|0]+SUFFIX[(r()*SUFFIX.length)|0]];
-      chosenName=ideas[0];
-      $('nameinput').value='';
+        PREFIX[nc.e][(r()*3)|0]+SUFFIX[(r()*SUFFIX.length)|0],
+        PREFIX[nc.e2||nc.e][(r()*3)|0]+SUFFIX[(r()*SUFFIX.length)|0]];
+      nc.name=ideas[0];
+      $('revealTitle').textContent='✨ NEW BEAST CREATED! ✨';
+      $('revealSub').textContent='Pick a name:';
+      $('namechips').style.display='flex';
       $('namechips').innerHTML=ideas.map((n,i)=>`<button class="namechip${i===0?' sel':''}">${n}</button>`).join('');
       $('namechips').querySelectorAll('.namechip').forEach(ch=>ch.addEventListener('click',()=>{
         $('namechips').querySelectorAll('.namechip').forEach(x=>x.classList.remove('sel'));
-        ch.classList.add('sel'); chosenName=ch.textContent; $('nameinput').value='';
+        ch.classList.add('sel'); pendingCard.name=ch.textContent;
+        $('revealslot').innerHTML=cardHTML(pendingCard);
       }));
-      sfx.discover(); confetti(26);
-    } else { f.name=S.dex[f.species].name; sfx.hatch(); }
+      sfx.discover();
+    } else {
+      $('revealTitle').textContent='🧬 FUSED!';
+      $('revealSub').textContent='';
+      $('namechips').style.display='none';
+      sfx.levelup(3);
+    }
+    $('revealslot').innerHTML=cardHTML(nc,'mergeflash');
+    confetti(24); shake(220);
     $('revealOv').classList.add('on');
-    save();
-  },1100);
-});
+    save(); renderBoard();
+  }
+}
+let pendingCard=null;
 $('revealOk').addEventListener('click',()=>{
-  const f=pendingFusion; if(!f) return;
-  const typed=$('nameinput').value.trim().slice(0,12);
-  const nm=(typed||chosenName||f.name).replace(/[<>&"]/g,'');
-  const isNew=!S.dex[f.species];
-  if(isNew){ f.name=nm||'Mystery'; }
-  registerDex(f, f.name);
-  S.ranch.push(f);
-  pendingFusion=null; podH=null; podB=null; picking=null;
+  if(!pendingCard) return;
+  const isNew=registerDex(pendingCard,pendingCard.name);
+  S.board.push(pendingCard);
+  pendingCard=null;
   $('revealOv').classList.remove('on');
-  if(isNew){ stickerCheck(); }
-  hint(`${f.name} joined your Ranch! Now go FIGHT ⚔️`);
-  save(); renderLab(); hud();
+  if(isNew) stickerCheck();
+  save(); renderBoard();
+  hint('Your new beast is on the board! <b>BATTLE</b> time? ⚔️');
 });
 
-/* ---------- stickers (WoopProfile) ---------- */
-function stickerCheck(){
-  const earned=WoopProfile.reportRun(SLUG,dexCount(),STICKERS);
-  earned.forEach((t,i)=>setTimeout(()=>{ sfx.sticker(); confetti(22); toast(`🏅 ${t.toUpperCase()} sticker earned!`); },i*900));
-}
+/* ---------- deal ---------- */
+$('dealbtn').addEventListener('click',()=>{
+  if(S.board.length>=BOARD_SIZE||S.coins<dealCost()) return;
+  S.coins-=dealCost(); S.dealt++;
+  /* pity: 55% deal a species already on board so pairs keep forming */
+  const pool=ROSTER.slice(0,poolSize()).map(r=>r[0]);
+  const owned=[...new Set(S.board.filter(c=>!c.fused).map(c=>c.sp))].filter(k=>pool.includes(k));
+  const key=(owned.length&&Math.random()<0.55)?owned[(Math.random()*owned.length)|0]:pool[(Math.random()*pool.length)|0];
+  const c=newCard(key);
+  S.board.push(c);
+  if(registerDex(c)) stickerCheck();
+  sfx.deal();
+  save(); renderBoard(c.id);
+  const same=S.board.filter(x=>x.sp===c.sp&&!x.fused&&x.lv===c.lv).length;
+  hint(same>=2?`${c.name}! You have a pair: <b>tap both to LEVEL UP!</b> ⭐`:`${c.name} joined! Merge two <b>different</b> cards to invent a new beast 🧬`);
+});
 
-/* ---------- Battle (doc 05) ---------- */
-const UNLOCK_LADDER=[[5,'ember'],[10,'tide'],[15,'bloom'],[20,'spark'],[25,'frost'],[30,'stone'],[40,'gloom'],[50,'gleam']];
-function nextUnlock(){ for(const [r,k] of UNLOCK_LADDER) if(!S.unlocked.includes(k)) return {r,k}; return null; }
-function rungMult(r){ return r<=1?0.6:r===2?0.75:r===3?0.9:Math.min(1.35,0.95+0.05*(r-4)); }
-function autoSquad(){
-  S.squad=S.squad.filter(id=>S.ranch.some(b=>b.id===id));
-  const inSquad=new Set(S.squad);
-  const rest=S.ranch.filter(b=>!inSquad.has(b.id)).sort((a,b)=>power(b)-power(a));
-  while(S.squad.length<4&&rest.length) S.squad.push(rest.shift().id);
-}
-let foes=[]; // generated per rung
-function genFoes(){
-  const squad=S.squad.map(id=>S.ranch.find(b=>b.id===id)).filter(Boolean);
-  const pp=squad.reduce((a,b)=>a+power(b),0)||400;
-  const isBoss=S.rung%5===0;
-  const target=pp*rungMult(S.rung);
-  const keys=Object.keys(SPECIES);
-  foes=[];
-  const n=isBoss?1:4;
-  for(let i=0;i<n;i++){
-    let k=keys[(Math.random()*keys.length)|0];
-    if(S.rung<8){ // early: avoid hard counters vs player's primary elements
-      const mine=squad.map(b=>b.el[0]);
-      for(let t=0;t<6;t++){ const bad=mine.some(m=>(CHART[SPECIES[k].e]||{})[m]===2); if(!bad) break; k=keys[(Math.random()*keys.length)|0]; }
-    }
-    const sp=SPECIES[k];
-    const shape=sp.s, shapeSum=shape.reduce((a,v)=>a+v,0);
-    const budget=(target/n)*(isBoss?1:0.9+Math.random()*0.2);
-    const st=shape.map(v=>clamp(Math.round(v/shapeSum*budget),1,999));
-    if(isBoss) st[0]=clamp(Math.round(st[0]*3),1,999); // boss: 3x HP wall
-    foes.push({ id:'e'+i, name:isBoss?'BOSS '+sp.n:sp.n, species:k, el:[sp.e],
-      tier:isBoss?Math.min(5,1+Math.floor(S.rung/10)):1, level:S.rung, s:st, p:sp.p,
-      hg:sp.hg||null, eye:sp.eye||'hero', cw:sp.cw||null, bw:sp.bw||null, aw:sp.aw||null, lg:sp.lg||'power', tl:sp.tl||null,
-      seed:1000+S.rung*7+i, gen:0 });
+/* ---------- battle ---------- */
+let bstate=null;
+$('fightbtn').addEventListener('click',()=>{
+  if(!S.board.length||bstate) return;
+  sfx.tap();
+  const team=[...S.board].sort((x,y)=>cardPower(y)-cardPower(x)).slice(0,3)
+    .map(c=>({c,hp:c.hp,max:c.hp}));
+  /* enemy squad tuned to a fair share of my power; battle 1 is a warm-up */
+  const target=team.reduce((s,f)=>s+cardPower(f.c),0)*(S.wins===0?0.55:clamp(0.8+S.wins*0.03,0.8,1.15));
+  const per=target/3;
+  const pool=ROSTER.slice(0,poolSize());
+  const foes=[];
+  for(let i=0;i<3;i++){
+    const r=pool[(Math.random()*pool.length)|0];
+    const base=SP[r[0]], ratio=Math.max(0.4,per/(base.atk*2+base.hp));
+    const c={id:9000+i, sp:r[0], name:base.n, e:base.e, e2:null,
+      lv:clamp(Math.round(ratio),1,5),
+      atk:Math.max(4,Math.round(base.atk*ratio)), hp:Math.max(12,Math.round(base.hp*ratio)),
+      hp0:base.hp, kit:base.kit, seed:777+S.wins*13+i, fused:false};
+    foes.push({c,hp:c.hp,max:c.hp});
   }
-}
-function renderBattlePre(){
-  autoSquad(); genFoes();
-  const arena=$('arena');
-  arena.querySelectorAll('.fighter').forEach(f=>f.remove());
-  $('banner').textContent=(S.rung%5===0?'👑 BOSS BATTLE ':'⚔️ Battle ')+S.rung;
-  // enemy preview: silhouettes + element badges (doc 08)
-  foes.forEach((f,i)=>{
+  bstate={team,foes,turn:0,over:false};
+  $('brow-p').innerHTML=team.map(f=>`<div class="bcard" data-b="p${f.c.id}">${cardHTML(f.c)}<div class="hpb"><div class="hpf" style="width:100%"></div></div></div>`).join('');
+  $('brow-e').innerHTML=foes.map(f=>`<div class="bcard" data-b="e${f.c.id}">${cardHTML(f.c)}<div class="hpb"><div class="hpf" style="width:100%"></div></div></div>`).join('');
+  $('bbanner').textContent='⚔️ Battle '+(S.wins+1);
+  $('bdone').style.display='none';
+  $('battleOv').classList.add('on');
+  setTimeout(battleStep,600);
+});
+function bEl(side,id){ return document.querySelector(`.bcard[data-b="${side}${id}"]`); }
+function battleStep(){
+  if(!bstate||bstate.over) return;
+  const alive=arr=>arr.filter(f=>f.hp>0);
+  const T=alive(bstate.team), F=alive(bstate.foes);
+  if(!T.length||!F.length){ battleEnd(T.length>0); return; }
+  const myTurn=bstate.turn%2===0;
+  const att=(myTurn?T:F)[0], def=(myTurn?F:T)[0];
+  const m=(CHART[att.c.e]||{})[def.c.e]||1;
+  const dmg=Math.max(Math.ceil(att.c.atk*0.5), Math.round(att.c.atk*m - def.c.atk*0.15));
+  def.hp-=dmg;
+  const ae=bEl(myTurn?'p':'e',att.c.id), de=bEl(myTurn?'e':'p',def.c.id);
+  if(ae){ ae.classList.add(myTurn?'bump-u':'bump-d'); setTimeout(()=>ae.classList.remove('bump-u','bump-d'),200); }
+  if(de){
+    const pct=Math.max(0,def.hp/def.max);
+    de.querySelector('.hpf').style.width=(pct*100)+'%';
+    de.querySelector('.hpf').style.background=pct>0.5?'#6FDB6F':pct>0.25?'#FFD93D':'#FF5757';
     const d=document.createElement('div');
-    d.className='fighter enemy';
-    d.style.left=(66+(i%2)*18)+'%'; d.style.top=(6+i*13)+'%';
-    d.innerHTML=`<span class="silh">${beastSVG(f)}</span><div class="fnm">${f.el.map(e=>EL[e].i).join('')} ???</div>`;
-    if(foes.length===1){ d.style.left='62%'; d.style.top='16%'; d.querySelector('.bsvg').style.cssText='width:130px;height:130px'; }
-    arena.appendChild(d);
-  });
-  renderSquadRow();
-  $('speedbtn').style.display=S.spd2Unlocked?'':'none';
-  $('speedbtn').classList.toggle('on',S.speed2x);
-  $('fightbtn').disabled=S.squad.length===0;
-  const counters=S.squad.map(id=>S.ranch.find(b=>b.id===id)).filter(Boolean)
-    .some(b=>foes.some(f=>(CHART[b.el[0]]||{})[f.el[0]]===2||(b.el[1]&&(CHART[b.el[1]]||{})[f.el[0]]===2)));
-  hint(S.squad.length?counters?'Your squad has POW! advantage ⚡ FIGHT!':'Tap FIGHT when ready! ⚔️':'Hatch a beast first! 🥚');
-}
-function renderSquadRow(){
-  const row=$('squadrow');
-  let html='<div class="lblv">SQUAD</div>';
-  for(let i=0;i<4;i++){
-    const b=S.ranch.find(x=>x.id===S.squad[i]);
-    html+=b?`<div class="sq" data-si="${i}">${beastSVG(b)}<span class="fn">${b.name}</span></div>`
-           :`<div class="sq empty" data-si="${i}">➕</div>`;
+    d.className='dmg'+(m>=2?' pow':''); d.textContent=(m>=2?'POW! ':'')+dmg;
+    const r=de.getBoundingClientRect(), ar=$('battleOv').getBoundingClientRect();
+    d.style.left=(r.left-ar.left+r.width*0.3)+'px'; d.style.top=(r.top-ar.top+8)+'px';
+    $('battleOv').appendChild(d); setTimeout(()=>d.remove(),880);
+    if(def.hp<=0) de.classList.add('ko');
   }
-  row.innerHTML=html;
-  row.querySelectorAll('.sq').forEach(el=>el.addEventListener('pointerdown',e=>{
-    e.preventDefault(); if(bat.active) return; openPick(+el.dataset.si);
-  }));
+  if(m>=2) sfx.pow(); else sfx.hit();
+  bstate.turn++;
+  setTimeout(battleStep, def.hp<=0?520:420);
 }
-function openPick(slot){
-  const pg=$('pickgrid');
-  pg.innerHTML=S.ranch.map((b,i)=>{
-    const inS=S.squad.includes(b.id);
-    return `<div class="slot" data-i="${i}" style="${inS?'opacity:.45':''}">${beastSVG(b)}<span class="nm">${b.name}</span><span class="el">${b.tier>1?'⭐T'+b.tier+' ':''}P:${power(b)}</span></div>`;
-  }).join('');
-  pg.querySelectorAll('.slot').forEach(el=>el.addEventListener('pointerdown',e=>{
-    e.preventDefault(); sfx.click();
-    const b=S.ranch[+el.dataset.i];
-    const old=S.squad.indexOf(b.id);
-    if(old>=0) S.squad[old]=S.squad[slot]; // swap if already in squad
-    S.squad[slot]=b.id;
-    S.squad=S.squad.filter(Boolean);
-    $('pickOv').classList.remove('on');
-    save(); renderBattlePre();
-  }));
-  $('pickOv').classList.add('on');
-}
-$('pickClose').addEventListener('click',()=>$('pickOv').classList.remove('on'));
-$('speedbtn').addEventListener('click',()=>{ S.speed2x=!S.speed2x; $('speedbtn').classList.toggle('on',S.speed2x); save(); });
-
-/* battle sim */
-const bat={active:false,f:[],t:0,ramp:1};
-function startBattle(){
-  if(bat.active||!S.squad.length) return;
-  genFoes();
-  const arena=$('arena');
-  arena.querySelectorAll('.fighter').forEach(f=>f.remove());
-  bat.f=[]; bat.t=0; bat.ramp=1; bat.active=true;
-  $('fightbtn').disabled=true;
-  $('banner').textContent='FIGHT!';
-  const mkF=(b,enemy,i,solo)=>{
-    const d=document.createElement('div');
-    d.className='fighter'+(enemy?' enemy':'');
-    if(solo){ d.style.left='68%'; d.style.top='18%'; }
-    else { d.style.left=(enemy?66+(i%2)*18:16+(i%2)*18)+'%'; d.style.top=(enemy?6+i*13:42+i*12)+'%'; }
-    const maxhp=60+b.s[0]*2;
-    d.innerHTML=`${beastSVG(b)}<div class="hpbar"><div class="hpfill" style="width:100%"></div></div><div class="abring"><div class="abfill"></div></div><div class="fnm">${b.name}</div>`;
-    if(solo) d.querySelector('.bsvg').style.cssText='width:120px;height:120px';
-    arena.appendChild(d);
-    bat.f.push({el:d,b,enemy,hp:maxhp,maxhp,cd:Math.random()*0.8,ab:Math.random()*30,
-      slow:0,haste:0,stun:0,weak:0,rally:0,shield:0,combo:0,lastT:null});
-  };
-  S.squad.map(id=>S.ranch.find(b=>b.id===id)).filter(Boolean).forEach((b,i)=>mkF(b,false,i));
-  foes.forEach((f,i)=>mkF(f,true,i,foes.length===1));
-}
-$('fightbtn').addEventListener('pointerdown',e=>{e.preventDefault();sfx.click();startBattle();});
-function dmgFloat(t,txt,cls){
-  const d=document.createElement('div');
-  d.className='dmg'+(cls?' '+cls:''); d.textContent=txt;
-  d.style.left=t.el.style.left; d.style.top=t.el.style.top;
-  d.style.fontSize=cls==='pow'?'21px':'14px';
-  $('arena').appendChild(d); setTimeout(()=>d.remove(),900);
-}
-function typeMult(att,def){
-  let m=1;
-  for(const de of def.b.el){ m*=((CHART[att.b.el[0]]||{})[de])||1; }
-  return clamp(m,0.25,4);
-}
-function battleTick(dt){
-  bat.t+=dt;
-  if(bat.t>45) bat.ramp=1.5*Math.pow(1.5,Math.floor((bat.t-45)/5)); // Sudden Woop (doc 05)
-  if(bat.t>45&&Math.floor(bat.t*2)%8===0) $('banner').textContent='⚡ SUDDEN WOOP! ⚡';
-  const alive=en=>bat.f.filter(x=>x.hp>0&&x.enemy===en);
-  const mine=alive(false), theirs=alive(true);
-  if(!mine.length||!theirs.length){ endBattle(!!mine.length); return; }
-  for(const f of bat.f){
-    if(f.hp<=0){ f.el.classList.add('ko'); continue; }
-    // status timers
-    for(const k of ['slow','haste','stun','weak','rally']) if(f[k]>0) f[k]-=dt;
-    if(f.stun>0) continue;
-    // ability charge: (4 + SPC/999*8)%/s, dual-element 15% faster (doc 05)
-    const abRate=(4+(f.b.s[4]/999)*8)*(f.b.el.length>1?1.15:1);
-    f.ab=Math.min(100,f.ab+abRate*dt);
-    f.el.querySelector('.abfill').style.width=f.ab+'%';
-    // attack timer
-    let iv=2.2-(f.b.s[3]/999)*1.4;
-    if(f.slow>0) iv*=1.5;
-    if(f.haste>0) iv*=0.6;
-    f.cd-=dt;
-    if(f.ab>=100){ f.ab=0; castAbility(f,mine,theirs); continue; }
-    if(f.cd<=0){
-      f.cd=iv;
-      const targets=f.enemy?mine:theirs;
-      if(!targets.length) continue;
-      const t=targets.reduce((a,b)=>a.hp<b.hp?a:b); // finish-him focus
-      f.combo=(f.lastT===t)?Math.min(5,f.combo+1):0; f.lastT=t;
-      const tm=typeMult(f,t);
-      const comboMult=1+0.1*f.combo;
-      let atk=f.b.s[1]*(f.rally>0?1.2:1)*(f.weak>0?0.7:1);
-      let dmg=Math.max(Math.ceil(atk*0.08),Math.round((atk*tm*comboMult-t.b.s[2]*0.5)*bat.ramp)); // chip floor
-      if(t.shield>0){ const ab=Math.min(t.shield,dmg); t.shield-=ab; dmg-=ab; if(dmg<=0){ dmgFloat(t,'🛡️'); continue; } }
-      t.hp-=dmg;
-      const pct=Math.max(0,t.hp/t.maxhp);
-      t.el.querySelector('.hpfill').style.width=(pct*100)+'%';
-      t.el.querySelector('.hpfill').style.background=pct>0.5?'#6FDB6F':pct>0.25?'#FFD93D':'#FF5757';
-      f.el.style.transform=`translateX(${f.enemy?-13:13}px)`;
-      setTimeout(()=>{f.el.style.transform='';},140);
-      if(tm>=2){ dmgFloat(t,'POW! '+dmg,'pow'); sfx.pow(); }
-      else { dmgFloat(t,tm<1?dmg+' meh':String(dmg)); sfx.hit(f.b.el[0]); }
-    }
-  }
-}
-function castAbility(f,mine,theirs){
-  const allies=f.enemy?theirs:mine, foesA=f.enemy?mine:theirs;
-  if(!foesA.length) return;
-  const e=f.b.el[0];
-  sfx.abil();
-  $('banner').textContent=`${f.b.name}: ${ABIL[e].n}!`;
-  f.el.style.transform='scale(1.25)'; setTimeout(()=>{f.el.style.transform='';},220);
-  const hitOne=(t,mult)=>{
-    const dmg=Math.max(1,Math.round(f.b.s[1]*mult*bat.ramp));
-    if(t.shield>0){ const ab=Math.min(t.shield,dmg); t.shield-=ab; if(dmg-ab<=0){dmgFloat(t,'🛡️');return;} t.hp-=dmg-ab; }
-    else t.hp-=dmg;
-    const pct=Math.max(0,t.hp/t.maxhp);
-    t.el.querySelector('.hpfill').style.width=(pct*100)+'%';
-    dmgFloat(t,'✦'+dmg,'pow');
-  };
-  if(e==='ember') foesA.forEach(t=>hitOne(t,0.6));
-  if(e==='tide'){ const t=allies.reduce((a,b)=>a.hp/a.maxhp<b.hp/b.maxhp?a:b); t.hp=Math.min(t.maxhp,t.hp+t.maxhp*0.25);
-    t.el.querySelector('.hpfill').style.width=(t.hp/t.maxhp*100)+'%'; dmgFloat(t,'+'+Math.round(t.maxhp*0.25),'heal'); }
-  if(e==='bloom'){ const t=foesA[0]; t.slow=4; dmgFloat(t,'🌿slow'); }
-  if(e==='spark'){ f.haste=4; dmgFloat(f,'⚡fast!','heal'); }
-  if(e==='frost'){ const t=allies.reduce((a,b)=>a.hp/a.maxhp<b.hp/b.maxhp?a:b); t.shield=Math.round(f.b.s[4]*0.8); dmgFloat(t,'🛡️+'+t.shield,'heal'); }
-  if(e==='stone'){ const t=foesA.reduce((a,b)=>a.hp<b.hp?a:b); hitOne(t,2.2); t.stun=1.5; }
-  if(e==='gloom'){ const t=foesA.reduce((a,b)=>a.b.s[1]>b.b.s[1]?a:b); t.weak=4; dmgFloat(t,'🌑weak'); }
-  if(e==='gleam'){ allies.forEach(a=>{a.rally=4;}); dmgFloat(f,'✨RALLY!','heal'); }
-}
-function endBattle(won){
-  bat.active=false;
-  $('fightbtn').disabled=false;
-  const isBoss=S.rung%5===0;
-  const base=20+8*S.rung;
-  const coins=won?base:Math.round(base*0.4);
-  S.woops+=coins;
-  let lootTxt=`+${coins} 🪙`;
-  let eggDrop=null, coreDrop=false;
-  if(won){
-    sfx.win(); confetti(26); shake(180);
-    if(isBoss||Math.random()<0.35){
-      const opts=S.unlocked; eggDrop=opts[(Math.random()*opts.length)|0];
-      S.eggInv[eggDrop]=(S.eggInv[eggDrop]||0)+1;
-      lootTxt+=`  +1 ${EGGS[eggDrop].i}${EGGS[eggDrop].n}`;
-    }
-    if(isBoss||Math.random()<0.4){ S.cores++; coreDrop=true; lootTxt+='  +1 💠'; }
-    S.wins++; S.rung++;
-    if(!S.spd2Unlocked&&S.rung>=8){ S.spd2Unlocked=true; toast('⚡ 2× battle speed unlocked!'); }
-    // egg-type unlocks
-    for(const [r,k] of UNLOCK_LADDER){
-      if(S.rung>=r&&!S.unlocked.includes(k)){ S.unlocked.push(k); confetti(20); toast(`🎉 ${EGGS[k].n}s unlocked!`); }
-    }
-  } else { sfx.lose(); }
-  // XP
-  const xpAmt=won?25+5*(S.rung-1):10+2*S.rung;
-  let ups=[];
-  S.squad.map(id=>S.ranch.find(b=>b.id===id)).filter(Boolean).forEach(b=>{
-    if(grantXp(b,xpAmt)) ups.push(b.name+' Lv.'+b.level);
-  });
-  if(ups.length){ sfx.lvl(); }
-  $('resTitle').textContent=won?(isBoss?'👑 BOSS DOWN!':'🎉 VICTORY!'):nearMiss()?'😮 SO CLOSE!':'💪 GOOD TRY!';
-  $('resLoot').textContent=lootTxt;
-  $('resXp').textContent=`+${xpAmt} XP each${ups.length?' · LEVEL UP: '+ups.join(', ')+'!':''}`;
-  const nu=nextUnlock();
-  $('resNext').textContent=won?(nu?`${nu.r-S.rung<=0?'':nu.r-S.rung+' more wins → '+EGGS[nu.k].n+'s '+EGGS[nu.k].i}`:''):tipVsFoes();
-  $('resultsOv').classList.add('on');
+function battleEnd(won){
+  bstate.over=true;
+  const before=poolSize();
+  const reward=won?30+10*S.wins:12;
+  S.coins+=reward;
+  if(won){ S.wins++; sfx.win(); confetti(26); }
+  else sfx.lose();
+  const unlockedNew=won&&poolSize()>before;
+  $('bbanner').innerHTML=won
+    ?`🎉 VICTORY! +${reward} 🪙${unlockedNew?' · <b>NEW beast joined the deck!</b>':''}`
+    :`💪 SO CLOSE! +${reward} 🪙 · Level up your cards!`;
+  $('bdone').style.display='block';
   stickerCheck();
-  save(); hud();
+  save();
 }
-function nearMiss(){ const t=bat.f.filter(x=>x.enemy); const left=t.reduce((a,x)=>a+Math.max(0,x.hp),0), max=t.reduce((a,x)=>a+x.maxhp,0); return left/max<0.2; }
-function tipVsFoes(){
-  const fe=foes[0]?foes[0].el[0]:null; if(!fe) return '';
-  const counter=Object.keys(CHART).find(k=>(CHART[k]||{})[fe]===2);
-  return counter?`Tip: ${EL[counter].i} ${EL[counter].n} beasts hit POW! against ${EL[fe].i} ${EL[fe].n}`:'';
-}
-$('resAgain').addEventListener('click',()=>{ $('resultsOv').classList.remove('on'); renderBattlePre(); });
-$('resRanch').addEventListener('click',()=>{ $('resultsOv').classList.remove('on'); show('ranch'); });
+$('bdone').addEventListener('click',()=>{
+  $('battleOv').classList.remove('on');
+  bstate=null;
+  renderBoard();
+  hint(S.coins>=dealCost()&&S.board.length<BOARD_SIZE?'Grab a <b>NEW CARD</b> and keep merging! 🃏':'Merge your cards, then battle again! ⚔️');
+});
 
-/* ---------- Woopdex ---------- */
-function renderDex(){
-  const g=$('dexgrid');
-  const baseKeys=Object.keys(SPECIES);
-  let html='';
-  for(const k of baseKeys){
-    const d=S.dex[k];
-    if(d) html+=`<div class="dexslot">${beastSVG(d.snap)}<span class="nm">${d.name}</span><span class="ct">×${d.count} ${d.el.map(e=>EL[e].i).join('')}</span></div>`;
-    else html+=`<div class="dexslot unknown"><div style="font-size:34px;padding:11px 0">❔</div><span class="nm">???</span><span class="ct">${EL[SPECIES[k].e].i}</span></div>`;
-  }
-  for(const k of Object.keys(S.dex)) if(k.startsWith('fx_')){
-    const d=S.dex[k];
-    html+=`<div class="dexslot" style="outline:3px solid ${EL[d.el[0]].c}66">${beastSVG(d.snap)}<span class="nm">${d.name}</span><span class="ct">🧬×${d.count} ${d.el.map(e=>EL[e].i).join('')}</span></div>`;
-  }
-  html+=`<div class="dexslot unknown"><div style="font-size:34px;padding:11px 0">∞</div><span class="nm">Fuse more!</span><span class="ct">endless species</span></div>`;
-  g.innerHTML=html;
-  hint(`Woopdex: ${dexCount()} species discovered! Stickers at 10 / 30 / 75 🏅`);
+/* ---------- stickers (WoopProfile; score = beasts discovered) ---------- */
+function stickerCheck(){
+  const earned=WoopProfile.reportRun('woop-beasts',dexCount(),{bronze:10,silver:30,gold:75});
+  earned.forEach((t,i)=>setTimeout(()=>{ confetti(20); hint(`🏅 <b>${t.toUpperCase()} sticker</b> earned! ${dexCount()} beasts discovered!`); },i*900));
 }
 
-/* ---------- daily chest + idle return (doc 07) ---------- */
-function welcome(){
-  const today=new Date().toISOString().slice(0,10);
-  let body=[], icon='🎁', title='Daily Streak Chest!';
-  let any=false;
-  if(S.lastChestDay!==today && S.wins>0){
-    S.lastChestDay=today;
-    S.woops+=40; S.cores++; S.eggInv.basic=(S.eggInv.basic||0)+1;
-    body.push('+40 🪙  +1 🥚  +1 💠'); any=true;
-  }
-  if(S.lastSeen){
-    const hrs=(Date.now()-S.lastSeen)/36e5;
-    if(hrs>0.5){
-      const idle=Math.round(Math.min(hrs,12)*(5+S.rung));
-      S.woops+=idle;
-      body.push(`Your beasts trained hard: +${idle} 🪙`);
-      title='Welcome back!'; icon='💪'; any=true;
-    }
-  }
-  if(any){
-    $('chestIcon').textContent=icon; $('chestTitle').textContent=title;
-    $('chestBody').innerHTML=body.join('<br>');
-    $('chestOv').classList.add('on');
-    save();
+/* ---------- fx ---------- */
+function confetti(n){
+  const C=['#FF8A3D','#FFD93D','#6FDB6F','#4CC9F0','#FF5FA2','#B388FF'];
+  for(let i=0;i<Math.min(n,26);i++){
+    const c=document.createElement('div');c.className='confetti';
+    c.style.background=C[i%6];c.style.left=(15+Math.random()*70)+'%';c.style.top=(20+Math.random()*30)+'%';
+    c.style.animation=`confall ${0.8+Math.random()*0.6}s ease-in ${Math.random()*0.25}s forwards`;
+    $('app').appendChild(c);setTimeout(()=>c.remove(),1800);
   }
 }
-$('chestOk').addEventListener('click',()=>{ $('chestOv').classList.remove('on'); sfx.coin(); confetti(18); hud(); });
+function shake(ms){$('app').classList.add('shakeit');setTimeout(()=>$('app').classList.remove('shakeit'),ms||200);}
 
-/* ---------- main loop (standards §5) ---------- */
-let last=performance.now();
-function loop(now){
-  const dt=Math.min(0.05,(now-last)/1000);
-  last=now;
-  if(bat.active) battleTick(dt*(S.speed2x?2:1));
-  requestAnimationFrame(loop);
-}
-
-/* ---------- boot ---------- */
-load();
-window.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
+/* ---------- chrome ---------- */
+$('backbtn').addEventListener('click',()=>{save();location.href='../../index.html';});
+$('mutebtn').addEventListener('click',()=>{S.muted=!S.muted;save();renderBoard();});
+document.addEventListener('click',()=>ac(),{once:true});
 window.addEventListener('pagehide',save);
-document.addEventListener('pointerdown',()=>ac(),{once:true});
-hud();
-show('ranch');
-if(S.ranch.length===0 && totalEggs()>0){ show('hatchery'); hint('Tap the egg 3 times to hatch your first beast! 🐣'); }
-welcome();
-requestAnimationFrame(loop);
+window.addEventListener('visibilitychange',()=>{if(document.hidden)save();});
+
+/* ---------- boot: first session deals a guaranteed pair ---------- */
+if(S.board.length===0&&S.wins===0&&S.dealt===0){
+  ['emberling','emberling','tidepup'].forEach(k=>{const c=newCard(k);S.board.push(c);registerDex(c);});
+  save();
+  hint('Two Emberlings! <b>Tap one, then the other</b> to LEVEL UP! ⭐');
+} else {
+  hint('Tap two cards to merge them!');
+}
+renderBoard();
 </script>
 </body>
 </html>
