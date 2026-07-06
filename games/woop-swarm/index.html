@@ -641,6 +641,13 @@ resize();
 const RUN_LENGTH = 360;        /* seconds until the boss */
 const PLAYER_R = 17;
 const ENEMY_CAP = 220;
+/* MEGA WOOP: grow huge, invincible, eat the swarm on contact */
+const GIANT_TIME = 7;          /* seconds the rampage lasts */
+const GIANT_SCALE = 3;         /* how much bigger you get */
+const GIANT_FIRST = 90;        /* bops needed for the first MEGA WOOP */
+const GIANT_STEP = 140;        /* bops added to the bar each time */
+/* Firepower drop: a fresh toy handed to you on a timer, no luck needed */
+const FIREPOWER_EVERY = 30;    /* seconds between free firepower drops */
 const State = { MENU: 'menu', PLAYING: 'playing', LEVELUP: 'levelup', PAUSED: 'paused', OVER: 'over' };
 let state = State.MENU;
 
@@ -656,8 +663,14 @@ const player = {
     dmgMul: 1, cdMul: 1, areaMul: 1,
     weapons: [],     /* {key, lv, cd} */
     passives: {},    /* key -> lv */
-    won: false
+    won: false,
+    giantT: 0,               /* seconds of MEGA WOOP remaining */
+    nextGiantAt: GIANT_FIRST, /* bops needed for the next MEGA WOOP */
+    firepowerT: FIREPOWER_EVERY /* seconds until the next free firepower drop */
 };
+function isGiant() { return player.giantT > 0; }
+function playerR() { return isGiant() ? PLAYER_R * GIANT_SCALE : player.r; }
+let giantBannerT = 0;
 
 /* ================= Weapons & passives (data-driven) ================= */
 const WEAPONS = {
@@ -982,6 +995,8 @@ function killEnemy(e) {
     e.on = false;
     enemyCount--;
     player.kills++;
+    /* enough bops banked? go MEGA WOOP and eat the swarm */
+    if (!isGiant() && !e.boss && player.kills >= player.nextGiantAt) startGiant();
     sfxPop();
     const K = KINDS[e.kind];
     burst(e.x, e.y, e.boss ? 60 : (e.elite ? 18 : 6), [K.col, '#FFFFFF', '#FFE14D'], e.boss ? 520 : 260, e.boss ? 1.2 : 0.5);
@@ -1004,12 +1019,48 @@ function killEnemy(e) {
     }
 }
 function hurtPlayer(dmg) {
+    if (isGiant()) return;          /* MEGA WOOP is invincible */
     if (player.hurtT > 0) return;
     player.hurtT = 0.45;
     player.hp -= dmg;
     sfxHurt();
     addTrauma(0.3);
     if (player.hp <= 0) { player.hp = 0; endRun(false); }
+}
+
+/* ================= MEGA WOOP (giant rampage) ================= */
+function startGiant() {
+    player.giantT = GIANT_TIME;
+    player.nextGiantAt = player.kills + GIANT_STEP;
+    player.hurtT = 0;
+    giantBannerT = 1.8;
+    sfxEvolve();
+    addTrauma(0.6);
+    burst(player.x, player.y, 50, ['#FFE14D', '#FF5FA2', '#4DFFDF', '#FFFFFF'], 520, 1.1);
+}
+
+/* ================= Firepower drop (free toy on a timer) ================= */
+function grantFirepower() {
+    const missing = Object.keys(WEAPONS).filter(k => !weaponOf(k));
+    if (player.weapons.length < 4 && missing.length) {
+        const key = missing[(Math.random() * missing.length) | 0];
+        player.weapons.push({ key, lv: 1, cd: 0 });
+        showToast('🎁 NEW FIREPOWER: ' + WEAPONS[key].name + '!');
+    } else {
+        const ups = player.weapons.filter(w => w.lv < WEAPONS[w.key].maxLv);
+        if (ups.length) {
+            const w = ups[(Math.random() * ups.length) | 0];
+            w.lv++;
+            showToast('⬆️ ' + WEAPONS[w.key].name + ' powered up!');
+        } else {
+            player.hp = Math.min(player.maxHp, player.hp + 30);
+            showToast('🍩 Snack drop! +30 HP');
+        }
+    }
+    sfxLevel();
+    addTrauma(0.18);
+    burst(player.x, player.y, 22, ['#FFE14D', '#4DFFDF', '#FFFFFF'], 360, 0.8);
+    refreshWeaponRow();
 }
 
 /* ================= XP / level-up ================= */
@@ -1151,6 +1202,10 @@ function startRun() {
     player.weapons = [{ key: 'bopper', lv: 1, cd: 0 }];
     player.passives = {};
     player.won = false;
+    player.giantT = 0;
+    player.nextGiantAt = GIANT_FIRST;
+    player.firepowerT = FIREPOWER_EVERY;
+    giantBannerT = 0;
     for (const p of [enemies, shots, puddles, rings, gems, parts, dnums]) {
         for (const o of p) o.on = false;
     }
@@ -1204,12 +1259,16 @@ function endRun(won) {
     document.getElementById('pauseBtn').style.display = 'none';
     document.getElementById('overPanel').classList.add('show');
 }
+function showToast(msg, ms) {
+    const el = document.getElementById('stickerToast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), ms || 2600);
+}
 function showStickerToast(tiers) {
     const names = { bronze: '🥉 Bronze', silver: '🥈 Silver', gold: '🥇 Gold' };
-    const el = document.getElementById('stickerToast');
-    el.textContent = 'Sticker earned: ' + tiers.map(t => names[t]).join(' + ') + '!';
-    el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 3200);
+    showToast('Sticker earned: ' + tiers.map(t => names[t]).join(' + ') + '!', 3200);
 }
 
 /* ================= Screen shake ================= */
@@ -1299,6 +1358,12 @@ function update(dt) {
 
     player.time += dt;
     player.hurtT = Math.max(0, player.hurtT - dt);
+    if (player.giantT > 0) player.giantT = Math.max(0, player.giantT - dt);
+    if (giantBannerT > 0) giantBannerT = Math.max(0, giantBannerT - dt);
+
+    /* free firepower on a steady clock so it never feels like one toy */
+    player.firepowerT -= dt;
+    if (player.firepowerT <= 0) { player.firepowerT = FIREPOWER_EVERY; grantFirepower(); }
 
     /* regen from Big Heart */
     if ((player.passives.heart || 0) > 0) {
@@ -1309,16 +1374,19 @@ function update(dt) {
         }
     }
 
-    /* movement */
+    /* movement (a touch faster while giant, to chase down the swarm) */
     const [mx, my] = moveInput();
-    player.x += mx * player.speed * dt;
-    player.y += my * player.speed * dt;
+    const moveSpeed = player.speed * (isGiant() ? 1.3 : 1);
+    player.x += mx * moveSpeed * dt;
+    player.y += my * moveSpeed * dt;
 
     director(dt);
     gridRebuild();
     fireWeapons(dt);
 
     /* --- enemies chase + touch damage + separation-lite --- */
+    const giant = isGiant();
+    const eatR = playerR();
     for (const e of enemies) {
         if (!e.on) continue;
         const dx = player.x - e.x, dy = player.y - e.y;
@@ -1327,7 +1395,14 @@ function update(dt) {
         e.y += (dy / d) * e.spd * dt;
         e.wob += dt * 6;
         e.flash = Math.max(0, e.flash - dt);
-        if (d < e.r + player.r) hurtPlayer(e.dmg);
+        if (giant) {
+            if (d < e.r + eatR) {
+                if (e.boss) hurtEnemy(e, 300 * dt);   /* chomp the boss, don't swallow it whole */
+                else { burst(e.x, e.y, 6, ['#FFE14D', '#FFFFFF'], 260, 0.5); killEnemy(e); }
+            }
+        } else if (d < e.r + player.r) {
+            hurtPlayer(e.dmg);
+        }
     }
 
     /* --- orbit buddies (continuous) --- */
@@ -1654,6 +1729,35 @@ function render() {
         ctx.globalAlpha = 1;
     }
 
+    /* MEGA WOOP: golden edge glow while giant + a punchy banner on trigger */
+    if (isGiant()) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const gp = 0.12 + Math.sin(performance.now() / 130) * 0.06;
+        const vg = ctx.createRadialGradient(cw / 2, ch / 2, Math.min(cw, ch) * 0.4, cw / 2, ch / 2, Math.max(cw, ch) * 0.72);
+        vg.addColorStop(0, 'rgba(255,225,77,0)');
+        vg.addColorStop(1, 'rgba(255,225,77,' + gp + ')');
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, cw, ch);
+    }
+    if (giantBannerT > 0) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const k = Math.min(1, giantBannerT * 2);
+        const pop = 1 + (1 - Math.min(1, giantBannerT / 1.8)) * 0.15;
+        ctx.globalAlpha = k;
+        ctx.textAlign = 'center';
+        ctx.save();
+        ctx.translate(cw / 2, ch * 0.34);
+        ctx.scale(pop, pop);
+        ctx.font = '800 ' + Math.min(cw * 0.11, 60) + 'px Nunito, sans-serif';
+        ctx.lineWidth = 6; ctx.strokeStyle = '#2B2350'; ctx.strokeText('MEGA WOOP!', 0, 0);
+        ctx.fillStyle = '#FFE14D'; ctx.fillText('MEGA WOOP!', 0, 0);
+        ctx.font = '800 ' + Math.min(cw * 0.045, 22) + 'px Nunito, sans-serif';
+        ctx.lineWidth = 4; ctx.strokeStyle = '#2B2350'; ctx.strokeText('EAT THE SWARM! 😋', 0, Math.min(cw * 0.08, 42));
+        ctx.fillStyle = '#FFFFFF'; ctx.fillText('EAT THE SWARM! 😋', 0, Math.min(cw * 0.08, 42));
+        ctx.restore();
+        ctx.globalAlpha = 1;
+    }
+
     /* low HP vignette */
     if (state === State.PLAYING && player.hp < player.maxHp * 0.3) {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1671,12 +1775,25 @@ function drawPlayer() {
     const moving = mx !== 0 || my !== 0;
     const bob = moving ? Math.sin(performance.now() / 90) * 2.5 : Math.sin(performance.now() / 400) * 1.5;
     const px = player.x, py = player.y + bob;
+    const giant = isGiant();
+    const scale = giant ? GIANT_SCALE : 1;
+
+    ctx.save();
+    if (giant) {
+        /* pulsing golden aura + a wobble to sell the bigness */
+        const pulse = 1 + Math.sin(performance.now() / 90) * 0.05;
+        ctx.translate(px, py); ctx.scale(scale * pulse, scale * pulse); ctx.translate(-px, -py);
+        ctx.globalAlpha = 0.35 + Math.sin(performance.now() / 120) * 0.12;
+        ctx.fillStyle = '#FFE14D';
+        ctx.beginPath(); ctx.arc(px, py, player.r + 12, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+    }
 
     ctx.globalAlpha = hurt ? 0.45 : 1;
     /* body */
-    ctx.fillStyle = '#8F7BFF';
+    ctx.fillStyle = giant ? '#B79CFF' : '#8F7BFF';
     ctx.beginPath(); ctx.arc(px, py, player.r + 2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#A794FF';
+    ctx.fillStyle = giant ? '#CDBBFF' : '#A794FF';
     ctx.beginPath(); ctx.arc(px - 3, py - 4, player.r - 4, 0, Math.PI * 2); ctx.fill();
     /* face */
     const lx = mx * 3, ly = my * 3;
@@ -1690,15 +1807,28 @@ function drawPlayer() {
     ctx.arc(px - 5 + lx, py - 4 + ly, 2.7, 0, Math.PI * 2);
     ctx.arc(px + 5 + lx, py - 4 + ly, 2.7, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#2B2350';
-    ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    ctx.arc(px, py + 5, 4.5, 0.15 * Math.PI, 0.85 * Math.PI);
-    ctx.stroke();
+    if (giant) {
+        /* big chompy open mouth */
+        ctx.fillStyle = '#2B2350';
+        ctx.beginPath();
+        ctx.arc(px, py + 5, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FF5FA2';
+        ctx.beginPath();
+        ctx.arc(px, py + 7.5, 3, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        ctx.strokeStyle = '#2B2350';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.arc(px, py + 5, 4.5, 0.15 * Math.PI, 0.85 * Math.PI);
+        ctx.stroke();
+    }
     ctx.globalAlpha = 1;
+    ctx.restore();
 
-    /* HP bar above the player */
-    if (state === State.PLAYING || state === State.LEVELUP) {
+    /* HP bar above the player (hidden during the invincible rampage) */
+    if (!giant && (state === State.PLAYING || state === State.LEVELUP)) {
         const w = 46, hpk = clamp(player.hp / player.maxHp, 0, 1);
         ctx.fillStyle = 'rgba(0,0,0,0.4)';
         ctx.fillRect(px - w / 2, py - player.r - 16, w, 7);
