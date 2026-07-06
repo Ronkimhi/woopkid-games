@@ -34,6 +34,7 @@ Live: https://ronkimhi.github.io/woopkid-games/ (woopkid.com will point here)
 - No build step, no frameworks, no libraries. Each game is one self-contained HTML file.
 - Mobile-first touch, 60fps on mid-range hardware.
 - The site remembers you: personal bests, sticker album, and daily streak, all in localStorage. Nothing leaves the device.
+- Every game has a top-10 high score leaderboard (🏆 button in-game) with arcade-style name entry, and the [Hall of Fame](https://woopkid.com/leaderboard/) page collects every board in one place. Boards are per-device: siblings sharing a phone compete under their own names, and nothing is ever uploaded.
 
 ## Local development
 
