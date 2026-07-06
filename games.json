@@ -1,247 +1,259 @@
 {
- "site": "WoopKid World",
- "url": "https://woopkid.com",
- "description": "Free browser games for kids ages 5-12. No ads, no tracking, no accounts, no downloads.",
- "audience": {
-  "minAge": 5,
-  "maxAge": 12
- },
- "safety": {
-  "ads": false,
-  "tracking": false,
-  "accounts": false,
-  "inAppPurchases": false,
-  "chat": false,
-  "externalLinks": false,
-  "openSource": "https://github.com/Ronkimhi/woopkid-games"
- },
- "platforms": [
-  "Chromebook",
-  "iPad",
-  "Android tablet",
-  "phone",
-  "desktop browser"
- ],
- "updated": "2026-07-06",
- "games": [
-  {
-   "slug": "pets-clicker",
-   "name": "Woop Pets Clicker",
-   "url": "https://woopkid.com/games/pets-clicker/",
-   "genre": "Tap + Idle",
-   "categories": [
-    "chill",
-    "quick"
-   ],
-   "players": 1,
-   "description": "Tap adorable pets to earn Woops, buy silly upgrades and unlock 12 wacky pets from Blobby to THE WOOP."
+  "site": "WoopKid World",
+  "url": "https://woopkid.com",
+  "description": "Free browser games for kids ages 5-12. No ads, no tracking, no accounts, no downloads.",
+  "audience": {
+    "minAge": 5,
+    "maxAge": 12
   },
-  {
-   "slug": "merge-squad",
-   "name": "Merge Squad",
-   "url": "https://woopkid.com/games/merge-squad/",
-   "genre": "Toy Auto-Battler",
-   "categories": [
-    "action",
-    "puzzle"
-   ],
-   "players": 1,
-   "description": "Buy silly toys, merge matching toys into mightier ones and battle a rival toybox with foam bonks and water balloons."
+  "safety": {
+    "ads": false,
+    "tracking": false,
+    "accounts": false,
+    "inAppPurchases": false,
+    "chat": false,
+    "externalLinks": false,
+    "openSource": "https://github.com/Ronkimhi/woopkid-games"
   },
-  {
-   "slug": "trap-land",
-   "name": "Trap Land",
-   "url": "https://woopkid.com/games/trap-land/",
-   "genre": "Troll Platformer",
-   "categories": [
-    "action"
-   ],
-   "players": 1,
-   "description": "Help a nervous marshmallow outsmart 12 levels of sneaky traps, vanishing floors and doors with trust issues."
-  },
-  {
-   "slug": "wing-it",
-   "name": "Wing It",
-   "url": "https://woopkid.com/games/wing-it/",
-   "genre": "One-Tap Flyer",
-   "categories": [
-    "quick",
-    "action"
-   ],
-   "players": 1,
-   "description": "Flap a tiny chick through candy striped pipes, grab sparkly stars and chase your best score."
-  },
-  {
-   "slug": "speed-slope",
-   "name": "Speed Slope",
-   "url": "https://woopkid.com/games/speed-slope/",
-   "genre": "Downhill Rush",
-   "categories": [
-    "action"
-   ],
-   "players": 1,
-   "description": "Roll a glossy ball down a neon slope, dodging glowing blocks and edge gaps as the speed gets wild."
-  },
-  {
-   "slug": "road-hopper",
-   "name": "Road Hopper",
-   "url": "https://woopkid.com/games/road-hopper/",
-   "genre": "Endless Crosser",
-   "categories": [
-    "quick",
-    "action"
-   ],
-   "players": 1,
-   "description": "Hop across busy roads, ride logs over rivers, dodge speedy trains and unlock 8 silly characters."
-  },
-  {
-   "slug": "noodle-arena",
-   "name": "Noodle Arena",
-   "url": "https://woopkid.com/games/noodle-arena/",
-   "genre": "Snake Battle",
-   "categories": [
-    "action"
-   ],
-   "players": 1,
-   "description": "Steer your dayglo noodle, gobble glowing orbs, boost past 12 silly rival snakes and climb to number 1."
-  },
-  {
-   "slug": "sky-stack",
-   "name": "Sky Stack",
-   "url": "https://woopkid.com/games/sky-stack/",
-   "genre": "Tower Stacker",
-   "categories": [
-    "quick",
-    "puzzle"
-   ],
-   "players": 1,
-   "description": "Tap to drop candy blocks with perfect timing and build your tower from dawn into the starry night sky."
-  },
-  {
-   "slug": "beat-bounce",
-   "name": "Beat Bounce",
-   "url": "https://woopkid.com/games/beat-bounce/",
-   "genre": "Rhythm Dash",
-   "categories": [
-    "action"
-   ],
-   "players": 1,
-   "description": "Bounce a neon cube over spikes and gaps that land right on the music, across three chiptune levels."
-  },
-  {
-   "slug": "slice-rush",
-   "name": "Slice Rush",
-   "url": "https://woopkid.com/games/slice-rush/",
-   "genre": "Super Slicer",
-   "categories": [
-    "quick"
-   ],
-   "players": 1,
-   "description": "Flip a friendly kitchen knife across the counter, slice melons, cakes and jelly, and chain big combos."
-  },
-  {
-   "slug": "bubble-tank-duel",
-   "name": "Bubble Tank Duel",
-   "url": "https://woopkid.com/games/bubble-tank-duel/",
-   "genre": "2P Battle",
-   "categories": [
-    "two",
-    "action"
-   ],
-   "players": 2,
-   "description": "Drive bubble tanks through a maze, bounce shots off the walls and pop your buddy, or battle a silly robot. Two players on one screen."
-  },
-  {
-   "slug": "merge-drop",
-   "name": "Merge Drop",
-   "url": "https://woopkid.com/games/merge-drop/",
-   "genre": "Merge Puzzle",
-   "categories": [
-    "puzzle",
-    "chill"
-   ],
-   "players": 1,
-   "description": "Drop cute animals into the jar and match pairs to merge them all the way up to the legendary Unicorn."
-  },
-  {
-   "slug": "tap-rush",
-   "name": "Tap Rush",
-   "url": "https://woopkid.com/games/tap-rush/",
-   "genre": "Endless Runner",
-   "categories": [
-    "action",
-    "quick"
-   ],
-   "players": 1,
-   "description": "Sprint through a sunrise meadow as a speedy cartoon fox, leap over rocks and cacti, and grab stars for combos."
-  },
-  {
-   "slug": "drift-collect",
-   "name": "Drift & Collect",
-   "url": "https://woopkid.com/games/drift-collect/",
-   "genre": "Drift Racer",
-   "categories": [
-    "action"
-   ],
-   "players": 1,
-   "description": "Hold to drift a chunky toy racecar around a night carnival track and scoop up risky coin lines."
-  },
-  {
-   "slug": "color-pop",
-   "name": "Color Pop",
-   "url": "https://woopkid.com/games/color-pop/",
-   "genre": "Bubble Shooter",
-   "categories": [
-    "puzzle"
-   ],
-   "players": 1,
-   "description": "Aim the friendly cannon, bounce shots off the walls and pop bright bubbles in threes for big cascades."
-  },
-  {
-   "slug": "block-stax",
-   "name": "Block Stax",
-   "url": "https://woopkid.com/games/block-stax/",
-   "genre": "Falling Blocks",
-   "categories": [
-    "puzzle"
-   ],
-   "players": 1,
-   "description": "Slide, spin and stack seven cheerful pieces, clear full lines and chase the mighty QUAD."
-  },
-  {
-   "slug": "rope-rush",
-   "name": "Rope Rush",
-   "url": "https://woopkid.com/games/rope-rush/",
-   "genre": "Swing & Fly",
-   "categories": [
-    "action",
-    "quick"
-   ],
-   "players": 1,
-   "description": "Hold to hook a rope, release to fly, and carry your momentum across 20 levels of stars, saws and slime."
-  },
-  {
-   "slug": "scribble-legs",
-   "name": "Scribble Legs",
-   "url": "https://woopkid.com/games/scribble-legs/",
-   "genre": "Draw & Race",
-   "categories": [
-    "action",
-    "quick"
-   ],
-   "players": 1,
-   "description": "Scribble any shape and it becomes your character's spinning legs; redraw anytime to match hills, stairs, mud and tunnels while outrunning the Tickle Cloud."
-  },
-  {
-   "slug": "woop-swarm",
-   "name": "Woop Swarm",
-   "url": "https://woopkid.com/games/woop-swarm/",
-   "genre": "Bullet Heaven",
-   "categories": [
-    "action"
-   ],
-   "players": 1,
-   "description": "Move to dodge the goober swarm while toy weapons fire automatically; level up, choose upgrades, evolve toys into MEGA versions and survive six minutes to the Mega-Goober boss."
-  }
- ]
+  "platforms": [
+    "Chromebook",
+    "iPad",
+    "Android tablet",
+    "phone",
+    "desktop browser"
+  ],
+  "updated": "2026-07-06",
+  "games": [
+    {
+      "slug": "pets-clicker",
+      "name": "Woop Pets Clicker",
+      "url": "https://woopkid.com/games/pets-clicker/",
+      "genre": "Tap + Idle",
+      "categories": [
+        "chill",
+        "quick"
+      ],
+      "players": 1,
+      "description": "Tap adorable pets to earn Woops, buy silly upgrades and unlock 12 wacky pets from Blobby to THE WOOP."
+    },
+    {
+      "slug": "merge-squad",
+      "name": "Merge Squad",
+      "url": "https://woopkid.com/games/merge-squad/",
+      "genre": "Toy Auto-Battler",
+      "categories": [
+        "action",
+        "puzzle"
+      ],
+      "players": 1,
+      "description": "Buy silly toys, merge matching toys into mightier ones and battle a rival toybox with foam bonks and water balloons."
+    },
+    {
+      "slug": "trap-land",
+      "name": "Trap Land",
+      "url": "https://woopkid.com/games/trap-land/",
+      "genre": "Troll Platformer",
+      "categories": [
+        "action"
+      ],
+      "players": 1,
+      "description": "Help a nervous marshmallow outsmart 12 levels of sneaky traps, vanishing floors and doors with trust issues."
+    },
+    {
+      "slug": "wing-it",
+      "name": "Wing It",
+      "url": "https://woopkid.com/games/wing-it/",
+      "genre": "One-Tap Flyer",
+      "categories": [
+        "quick",
+        "action"
+      ],
+      "players": 1,
+      "description": "Flap a tiny chick through candy striped pipes, grab sparkly stars and chase your best score."
+    },
+    {
+      "slug": "speed-slope",
+      "name": "Speed Slope",
+      "url": "https://woopkid.com/games/speed-slope/",
+      "genre": "Downhill Rush",
+      "categories": [
+        "action"
+      ],
+      "players": 1,
+      "description": "Roll a glossy ball down a neon slope, dodging glowing blocks and edge gaps as the speed gets wild."
+    },
+    {
+      "slug": "road-hopper",
+      "name": "Road Hopper",
+      "url": "https://woopkid.com/games/road-hopper/",
+      "genre": "Endless Crosser",
+      "categories": [
+        "quick",
+        "action"
+      ],
+      "players": 1,
+      "description": "Hop across busy roads, ride logs over rivers, dodge speedy trains and unlock 8 silly characters."
+    },
+    {
+      "slug": "noodle-arena",
+      "name": "Noodle Arena",
+      "url": "https://woopkid.com/games/noodle-arena/",
+      "genre": "Snake Battle",
+      "categories": [
+        "action"
+      ],
+      "players": 1,
+      "description": "Steer your dayglo noodle, gobble glowing orbs, boost past 12 silly rival snakes and climb to number 1."
+    },
+    {
+      "slug": "sky-stack",
+      "name": "Sky Stack",
+      "url": "https://woopkid.com/games/sky-stack/",
+      "genre": "Tower Stacker",
+      "categories": [
+        "quick",
+        "puzzle"
+      ],
+      "players": 1,
+      "description": "Tap to drop candy blocks with perfect timing and build your tower from dawn into the starry night sky."
+    },
+    {
+      "slug": "beat-bounce",
+      "name": "Beat Bounce",
+      "url": "https://woopkid.com/games/beat-bounce/",
+      "genre": "Rhythm Dash",
+      "categories": [
+        "action"
+      ],
+      "players": 1,
+      "description": "Bounce a neon cube over spikes and gaps that land right on the music, across three chiptune levels."
+    },
+    {
+      "slug": "slice-rush",
+      "name": "Slice Rush",
+      "url": "https://woopkid.com/games/slice-rush/",
+      "genre": "Super Slicer",
+      "categories": [
+        "quick"
+      ],
+      "players": 1,
+      "description": "Flip a friendly kitchen knife across the counter, slice melons, cakes and jelly, and chain big combos."
+    },
+    {
+      "slug": "bubble-tank-duel",
+      "name": "Bubble Tank Duel",
+      "url": "https://woopkid.com/games/bubble-tank-duel/",
+      "genre": "2P Battle",
+      "categories": [
+        "two",
+        "action"
+      ],
+      "players": 2,
+      "description": "Drive bubble tanks through a maze, bounce shots off the walls and pop your buddy, or battle a silly robot. Two players on one screen."
+    },
+    {
+      "slug": "merge-drop",
+      "name": "Merge Drop",
+      "url": "https://woopkid.com/games/merge-drop/",
+      "genre": "Merge Puzzle",
+      "categories": [
+        "puzzle",
+        "chill"
+      ],
+      "players": 1,
+      "description": "Drop cute animals into the jar and match pairs to merge them all the way up to the legendary Unicorn."
+    },
+    {
+      "slug": "tap-rush",
+      "name": "Tap Rush",
+      "url": "https://woopkid.com/games/tap-rush/",
+      "genre": "Endless Runner",
+      "categories": [
+        "action",
+        "quick"
+      ],
+      "players": 1,
+      "description": "Sprint through a sunrise meadow as a speedy cartoon fox, leap over rocks and cacti, and grab stars for combos."
+    },
+    {
+      "slug": "drift-collect",
+      "name": "Drift & Collect",
+      "url": "https://woopkid.com/games/drift-collect/",
+      "genre": "Drift Racer",
+      "categories": [
+        "action"
+      ],
+      "players": 1,
+      "description": "Hold to drift a chunky toy racecar around a night carnival track and scoop up risky coin lines."
+    },
+    {
+      "slug": "color-pop",
+      "name": "Color Pop",
+      "url": "https://woopkid.com/games/color-pop/",
+      "genre": "Bubble Shooter",
+      "categories": [
+        "puzzle"
+      ],
+      "players": 1,
+      "description": "Aim the friendly cannon, bounce shots off the walls and pop bright bubbles in threes for big cascades."
+    },
+    {
+      "slug": "block-stax",
+      "name": "Block Stax",
+      "url": "https://woopkid.com/games/block-stax/",
+      "genre": "Falling Blocks",
+      "categories": [
+        "puzzle"
+      ],
+      "players": 1,
+      "description": "Slide, spin and stack seven cheerful pieces, clear full lines and chase the mighty QUAD."
+    },
+    {
+      "slug": "rope-rush",
+      "name": "Rope Rush",
+      "url": "https://woopkid.com/games/rope-rush/",
+      "genre": "Swing & Fly",
+      "categories": [
+        "action",
+        "quick"
+      ],
+      "players": 1,
+      "description": "Hold to hook a rope, release to fly, and carry your momentum across 20 levels of stars, saws and slime."
+    },
+    {
+      "slug": "scribble-legs",
+      "name": "Scribble Legs",
+      "url": "https://woopkid.com/games/scribble-legs/",
+      "genre": "Draw & Race",
+      "categories": [
+        "action",
+        "quick"
+      ],
+      "players": 1,
+      "description": "Scribble any shape and it becomes your character's spinning legs; redraw anytime to match hills, stairs, mud and tunnels while outrunning the Tickle Cloud."
+    },
+    {
+      "slug": "woop-swarm",
+      "name": "Woop Swarm",
+      "url": "https://woopkid.com/games/woop-swarm/",
+      "genre": "Bullet Heaven",
+      "categories": [
+        "action"
+      ],
+      "players": 1,
+      "description": "Move to dodge the goober swarm while toy weapons fire automatically; level up, choose upgrades, evolve toys into MEGA versions and survive six minutes to the Mega-Goober boss."
+    },
+    {
+      "slug": "woop-beasts",
+      "name": "WoopBeasts",
+      "url": "https://woopkid.com/games/woop-beasts/",
+      "genre": "Creature Fusion Battler",
+      "categories": [
+        "action",
+        "chill"
+      ],
+      "players": 1,
+      "description": "Hatch hero beasts with future tech widgets, fuse two into brand-new species you name yourself, merge three to evolve, and battle your squad up an endless ladder. Every creature you invent is saved forever in your Woopdex."
+    }
+  ]
 }
