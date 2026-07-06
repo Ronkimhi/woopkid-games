@@ -26,6 +26,7 @@ Live: https://ronkimhi.github.io/woopkid-games/ (woopkid.com will point here)
 | 16 | Merge Squad | Toy merge auto-battler | Wave 3 |
 | 17 | Rope Rush | Swing & fly momentum | Wave 3 |
 | 18 | Scribble Legs | Draw-your-legs physics racer | Wave 3 |
+| 19 | Woop Swarm | Bullet-heaven survivors-like | Wave 3 |
 
 ## Principles
 
