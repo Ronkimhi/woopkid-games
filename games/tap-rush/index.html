@@ -168,9 +168,10 @@ html, body {
 }
 #title h1 {
     font-weight: 800;
-    font-size: min(17vw, 90px);
+    font-size: min(14.5vw, 84px);
     color: #FFFFFF;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
+    white-space: nowrap;
     text-shadow: 0 5px 0 rgba(74, 44, 23, 0.25), 0 12px 24px rgba(74, 44, 23, 0.2);
     animation: titleBob 2.6s ease-in-out infinite;
 }
@@ -211,7 +212,7 @@ html, body {
     display: none;
     animation: pulse 1.1s ease-in-out infinite;
 }
-#tapHint span { display: block; font-size: min(4vw, 17px); margin-top: 6px; opacity: 0.85; }
+#tapHint span { display: block; font-size: min(3.6vw, 15px); margin-top: 6px; opacity: 0.85; padding: 0 14px; }
 @keyframes pulse {
     0%, 100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.12); opacity: 0.82; }
@@ -329,6 +330,33 @@ html, body {
     cursor: pointer;
 }
 #playBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #D96A22; }
+
+#score.pop { animation: scorePop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes scorePop {
+    0% { transform: translateX(-50%) scale(1); }
+    40% { transform: translateX(-50%) scale(1.28); }
+    100% { transform: translateX(-50%) scale(1); }
+}
+#combo.fever {
+    background: linear-gradient(135deg, #FFD93D, #FF8A3D);
+    color: #FFFFFF;
+    box-shadow: 0 3px 0 rgba(216, 106, 34, 0.55), 0 0 18px rgba(255, 200, 60, 0.75);
+    animation: feverPulse 0.45s ease-in-out infinite alternate;
+}
+@keyframes feverPulse {
+    from { transform: translateX(-50%) scale(1); }
+    to { transform: translateX(-50%) scale(1.1); }
+}
+#title h1 span {
+    display: inline-block;
+    animation: letterBob 1.7s ease-in-out infinite;
+    animation-delay: calc(var(--i) * 0.09s);
+}
+@keyframes letterBob {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    30% { transform: translateY(-12px) rotate(-3deg); }
+    60% { transform: translateY(2px) rotate(2deg); }
+}
 </style>
 </head>
 <body>
@@ -343,11 +371,11 @@ html, body {
 <div id="combo">x2</div>
 
 <div id="title">
-    <h1>TAP RUSH</h1>
-    <p>Run. Jump. Beat your best!</p>
+    <h1><span style="--i:0">T</span><span style="--i:1">A</span><span style="--i:2">P</span>&nbsp;<span style="--i:3">R</span><span style="--i:4">U</span><span style="--i:5">S</span><span style="--i:6">H</span></h1>
+    <p>Run. Jump. Duck under birds. Beat your best!</p>
     <div><span id="menuBest" style="display:none;"></span></div>
 </div>
-<div id="tapHint">TAP TO RUN<span>tap to jump, hold to jump higher, tap again to flip</span></div>
+<div id="tapHint">TAP TO RUN<span>tap = jump &middot; hold = higher &middot; tap again = flip</span><span>stay low to duck under birds!</span></div>
 
 <div id="pauseOverlay">
     <h2>PAUSED</h2>
@@ -707,13 +735,23 @@ var MAX_FALL = 1100;
 var COYOTE = 0.12;
 var BUFFER = 0.12;
 var BASE_SPEED = 260;
-var MAX_SPEED = 560;
+var MAX_SPEED = 600;
 var STAR_POINTS = 10;
 var NEAR_BONUS = 5;
+var FEVER_AT = 5;               /* combo multiplier that ignites fever mode */
+var MILE_STEP = 500;            /* meters between SPEED UP! milestones */
 
-function speedFor(m) { return BASE_SPEED + (MAX_SPEED - BASE_SPEED) * Math.min(1, m / 2200); }
-function speedRatio() { return (speedFor(distM) - BASE_SPEED) / (MAX_SPEED - BASE_SPEED); }
-function multFor(s) { return s >= 10 ? 5 : (s >= 6 ? 3 : (s >= 3 ? 2 : 1)); }
+function speedFor(m) {
+    /* main ramp to 2000m, then a slow relentless creep so long runs keep biting */
+    var v = BASE_SPEED + (MAX_SPEED - BASE_SPEED) * Math.min(1, m / 2000);
+    if (m > 2000) v += Math.min(60, (m - 2000) * 0.02);
+    return v;
+}
+function speedRatio() { return clamp((speedFor(distM) - BASE_SPEED) / (MAX_SPEED + 60 - BASE_SPEED), 0, 1); }
+function multFor(s) { return s >= 15 ? 8 : (s >= 10 ? 5 : (s >= 6 ? 3 : (s >= 3 ? 2 : 1))); }
+function nextTier(s) { return s >= 15 ? 0 : (s >= 10 ? 15 : (s >= 6 ? 10 : (s >= 3 ? 6 : 3))); }
+/* gaps between obstacle groups shrink as the run goes on */
+function gapScale() { return 1 - 0.36 * clamp((distM - 600) / 2800, 0, 1); }
 
 var State = {
     MENU: 'menu',
@@ -728,6 +766,7 @@ var currentState = State.MENU;
 var S = 1;    /* device pixels per logical unit */
 var VW = 400; /* logical view width */
 var cloudSprs = [], grassSpr = null, glowSpr = null, sunSpr = null;
+var moonSpr = null, starfieldSpr = null, twinkleSpr = null, vignetteSpr = null;
 
 function makeCanvas(w, h) {
     var c = document.createElement('canvas');
@@ -835,6 +874,57 @@ function buildSprites() {
     sc.beginPath();
     sc.arc(100, 100, 34, 0, Math.PI * 2);
     sc.fill();
+
+    /* Moon with soft glow and craters */
+    moonSpr = makeCanvas(160 * ts, 160 * ts);
+    var mc = moonSpr.getContext('2d');
+    mc.scale(ts, ts);
+    var mg = mc.createRadialGradient(80, 80, 8, 80, 80, 80);
+    mg.addColorStop(0, 'rgba(230,240,255,0.8)');
+    mg.addColorStop(0.4, 'rgba(200,220,255,0.35)');
+    mg.addColorStop(1, 'rgba(200,220,255,0)');
+    mc.fillStyle = mg;
+    mc.fillRect(0, 0, 160, 160);
+    mc.fillStyle = '#F4F6E8';
+    mc.beginPath(); mc.arc(80, 80, 26, 0, Math.PI * 2); mc.fill();
+    mc.fillStyle = 'rgba(190,200,180,0.55)';
+    mc.beginPath();
+    mc.arc(72, 72, 6, 0, Math.PI * 2);
+    mc.arc(90, 86, 4, 0, Math.PI * 2);
+    mc.arc(78, 94, 3, 0, Math.PI * 2);
+    mc.fill();
+
+    /* Night starfield: two layers so one can twinkle */
+    starfieldSpr = makeCanvas(VW * ts, (GROUND_Y - 60) * ts);
+    var fc = starfieldSpr.getContext('2d');
+    fc.scale(ts, ts);
+    var k;
+    for (k = 0; k < 70; k++) {
+        fc.globalAlpha = rand(0.25, 0.9);
+        fc.fillStyle = k % 7 === 0 ? '#BFD9FF' : '#FFFFFF';
+        var sxx = rand(4, VW - 4), syy = rand(4, GROUND_Y - 90), srr = rand(0.8, 2);
+        fc.beginPath(); fc.arc(sxx, syy, srr, 0, Math.PI * 2); fc.fill();
+    }
+    twinkleSpr = makeCanvas(VW * ts, (GROUND_Y - 60) * ts);
+    var tc = twinkleSpr.getContext('2d');
+    tc.scale(ts, ts);
+    tc.fillStyle = '#FFFDE0';
+    for (k = 0; k < 22; k++) {
+        tc.globalAlpha = rand(0.5, 1);
+        var txx = rand(6, VW - 6), tyy = rand(6, GROUND_Y - 110), trr = rand(1.2, 2.6);
+        tc.beginPath(); tc.arc(txx, tyy, trr, 0, Math.PI * 2); tc.fill();
+    }
+
+    /* Fever vignette: warm gold edges, clear center (prebuilt, one drawImage per frame) */
+    vignetteSpr = makeCanvas(VW * ts, H * ts);
+    var vc = vignetteSpr.getContext('2d');
+    vc.scale(ts, ts);
+    var vg = vc.createRadialGradient(VW / 2, H / 2, Math.min(VW, H) * 0.34, VW / 2, H / 2, Math.max(VW, H) * 0.72);
+    vg.addColorStop(0, 'rgba(255,200,60,0)');
+    vg.addColorStop(0.65, 'rgba(255,190,60,0.24)');
+    vg.addColorStop(1, 'rgba(255,145,35,0.68)');
+    vc.fillStyle = vg;
+    vc.fillRect(0, 0, VW, H);
 }
 
 function resize() {
@@ -851,22 +941,39 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 
-/* ================= Sunrise to day palette ================= */
-var dayCache = { q: -1, sky: null, hillFar: '#DE968C', hillNear: '#C47C6E', tint: 0.16 };
+/* ================= Full day journey: sunrise -> day -> sunset -> night ================= */
+/* extra keyframes keep the sky saturated: straight orange->blue lerps go muddy gray */
+var KEY_T = [0, 0.16, 0.3, 0.45, 0.68, 1];
+var SKY_TOP = [[255, 148, 94], [255, 186, 110], [170, 214, 240], [108, 198, 248], [138, 88, 168], [16, 18, 46]];
+var SKY_MID = [[255, 188, 128], [255, 212, 148], [206, 232, 238], [148, 216, 252], [255, 146, 104], [36, 42, 86]];
+var SKY_BOT = [[255, 224, 166], [255, 234, 186], [234, 244, 240], [212, 240, 255], [255, 206, 128], [66, 76, 122]];
+var HILL_FAR = [[224, 152, 138], [216, 170, 130], [186, 206, 132], [164, 216, 128], [172, 112, 132], [42, 48, 90]];
+var HILL_NEAR = [[198, 124, 106], [188, 142, 102], [148, 202, 104], [126, 196, 96], [134, 86, 104], [29, 34, 68]];
+function kLerp(stops, t) {
+    var i = 1;
+    while (i < KEY_T.length - 1 && t > KEY_T[i]) i++;
+    var f = (t - KEY_T[i - 1]) / (KEY_T[i] - KEY_T[i - 1]);
+    return lerpC(stops[i - 1], stops[i], clamp(f, 0, 1));
+}
+var dayCache = { q: -1, sky: null, hillFar: '#DE968C', hillNear: '#C47C6E', tint: 0.16, night: 0, t: 0 };
 function updateDay() {
-    var t = Math.min(1, distM / 1200);
-    var q = Math.round(t * 40);
+    var t = Math.min(1, distM / 3200);
+    var q = Math.round(t * 80);
     if (q === dayCache.q) return;
     dayCache.q = q;
-    t = q / 40;
+    t = q / 80;
     var g = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
-    g.addColorStop(0, lerpC([255, 148, 94], [108, 198, 248], t));
-    g.addColorStop(0.55, lerpC([255, 188, 128], [148, 216, 252], t));
-    g.addColorStop(1, lerpC([255, 224, 166], [212, 240, 255], t));
+    g.addColorStop(0, kLerp(SKY_TOP, t));
+    g.addColorStop(0.55, kLerp(SKY_MID, t));
+    g.addColorStop(1, kLerp(SKY_BOT, t));
     dayCache.sky = g;
-    dayCache.hillFar = lerpC([224, 152, 138], [164, 216, 128], t);
-    dayCache.hillNear = lerpC([198, 124, 106], [126, 196, 96], t);
-    dayCache.tint = (1 - t) * 0.16;
+    dayCache.hillFar = kLerp(HILL_FAR, t);
+    dayCache.hillNear = kLerp(HILL_NEAR, t);
+    /* warm ground tint at sunrise, again at sunset */
+    var warm = Math.max(0, 0.16 * (1 - t / 0.3));
+    if (t > 0.42 && t < 0.9) warm += 0.11 * Math.sin((t - 0.42) / 0.48 * Math.PI);
+    dayCache.tint = warm;
+    dayCache.night = clamp((t - 0.7) / 0.3, 0, 1);
     dayCache.t = t;
 }
 
@@ -893,6 +1000,11 @@ var panelShown = false;
 var trauma = 0;
 var worldSp = 0;        /* actual scroll speed, decays during the tumble */
 var lastKind = '';
+var freezeT = 0;        /* hit-stop timer: world pauses, render continues */
+var fever = false;      /* combo x5+: double distance points, golden everything */
+var feverCount = 0;     /* fevers ignited this run */
+var nextMile = MILE_STEP; /* next SPEED UP! milestone in meters */
+var duckCount = 0;      /* birds ducked under this run */
 
 function runScore() { return (scoreF | 0) + bonus; }
 
@@ -909,10 +1021,27 @@ function foxTargetX() { return clamp(VW * 0.26, 100, 420); }
 /* ================= Pools: never allocate during gameplay ================= */
 var obstacles = [];
 for (var oi = 0; oi < 14; oi++) {
-    obstacles.push({ active: false, kind: 'rock', x: 0, w: 0, h: 0, hw: 0, hh: 0, winceT: 0, nearMissed: false, seed: 0 });
+    obstacles.push({ active: false, kind: 'rock', x: 0, w: 0, h: 0, hw: 0, hh: 0, winceT: 0, nearMissed: false, seed: 0, fly: false, yOff: 0 });
 }
 var stars = [];
-for (var si = 0; si < 12; si++) stars.push({ active: false, x: 0, y: 0, phase: 0, trailT: 0 });
+for (var si = 0; si < 12; si++) stars.push({ active: false, x: 0, y: 0, phase: 0, trailT: 0, mega: false });
+var rings = [];
+for (var ri = 0; ri < 12; ri++) rings.push({ active: false, x: 0, y: 0, r0: 0, r1: 0, life: 0, ttl: 0.4, color: '#FFE14D', lw: 4 });
+function spawnRing(x, y, r0, r1, ttl, color, lw) {
+    for (var i = 0; i < rings.length; i++) {
+        var r = rings[i];
+        if (!r.active) {
+            r.active = true;
+            r.x = x; r.y = y; r.r0 = r0; r.r1 = r1;
+            r.life = 0; r.ttl = ttl; r.color = color; r.lw = lw || 4;
+            return;
+        }
+    }
+}
+/* fox afterimage trail during fever */
+var trailBuf = [];
+for (var ti = 0; ti < 5; ti++) trailBuf.push({ x: 0, y: 0, rot: 0, a: 0 });
+var trailHead = 0, trailTimer = 0;
 var parts = [];
 for (var qi = 0; qi < 160; qi++) {
     parts.push({ active: false, type: 0, x: 0, y: 0, vx: 0, vy: 0, rot: 0, vr: 0, life: 0, ttl: 1, size: 4, color: '#fff', seed: 0 });
@@ -968,9 +1097,36 @@ function burstSparks(x, y) {
     }
 }
 var CONFETTI_COLORS = ['#FF8A3D', '#7ED957', '#4FC3F7', '#FFD93D', '#FF5FA2', '#B388FF'];
-function burstConfetti() {
-    for (var i = 0; i < 70; i++) {
+function burstConfetti(n) {
+    for (var i = 0; i < n; i++) {
         spawnPart(3, rand(VW * 0.15, VW * 0.85), rand(-60, -10), rand(-70, 70), rand(50, 190), rand(2, 3.2), rand(5, 9), CONFETTI_COLORS[i % CONFETTI_COLORS.length]);
+    }
+}
+var SHARD_COLORS = ['#FFE14D', '#FFC93D', '#FFF3B0'];
+/* Candy-Crush layered pickup juice: halo + shockwave ring + chunky shards + star glints + sparks.
+   The floating score label is added by the caller. */
+function starJuice(x, y, m, mega) {
+    var i, a, sp2;
+    spawnPart(8, x, y, 0, 0, mega ? 0.42 : 0.3, mega ? 60 : 38, '#FFFFFF');                 /* halo flash */
+    spawnRing(x, y, 8, (mega ? 70 : 42) + m * 5, 0.38, mega ? '#FFB040' : '#FFE14D', mega ? 6 : 4); /* shockwave */
+    if (m >= 3 || mega) spawnRing(x, y, 4, (mega ? 96 : 60) + m * 5, 0.5, '#FFFFFF', 2.5);  /* second wave on big combos */
+    for (i = 0; i < (mega ? 8 : 5); i++) {                                                  /* chunky shards */
+        a = rand(0, Math.PI * 2);
+        sp2 = rand(90, mega ? 320 : 230);
+        spawnPart(6, x, y, Math.cos(a) * sp2, Math.sin(a) * sp2 - 60, rand(0.4, 0.7), rand(5, mega ? 11 : 8), SHARD_COLORS[i % 3]);
+    }
+    for (i = 0; i < (mega ? 5 : 3); i++) {                                                  /* star glints */
+        spawnPart(5, x + rand(-26, 26), y + rand(-24, 20), 0, -20, rand(0.3, 0.5), rand(7, mega ? 15 : 11), '#FFFFFF');
+    }
+    for (i = 0; i < 7; i++) {                                                               /* sparks */
+        a = rand(0, Math.PI * 2);
+        sp2 = rand(40, 200);
+        spawnPart(2, x, y, Math.cos(a) * sp2, Math.sin(a) * sp2, rand(0.3, 0.6), rand(2.5, 4.5), SPARK_COLORS[i % 3]);
+    }
+}
+function spawnSpeedlines(n) {
+    for (var i = 0; i < n; i++) {
+        spawnPart(7, VW + rand(0, 120), rand(60, GROUND_Y + 60), -rand(900, 1400), 0, rand(0.3, 0.55), rand(30, 90), 'rgba(255,255,255,0.55)');
     }
 }
 function burstPoof(x, y) {
@@ -1047,22 +1203,26 @@ function spawnObstacle(kind, x) {
         o.winceT = 0;
         o.nearMissed = false;
         o.seed = rand(0, 10);
+        o.fly = false;
+        o.yOff = 0;
         if (kind === 'rock') { o.w = 54; o.h = 44; o.hw = 44; o.hh = 38; }
         else if (kind === 'log') { o.w = 96; o.h = 40; o.hw = 76; o.hh = 30; }
         else if (kind === 'cactus') { o.w = 44; o.h = 62; o.hw = 30; o.hh = 56; }
+        else if (kind === 'bird') { o.w = 52; o.h = 40; o.hw = 40; o.hh = 30; o.fly = true; o.yOff = 104; }
         else { o.w = 48; o.h = 86; o.hw = 32; o.hh = 78; } /* tallcactus */
         return o;
     }
     return null;
 }
-function spawnStar(x, y) {
+function spawnStar(x, y, mega) {
     for (var i = 0; i < stars.length; i++) {
         if (!stars[i].active) {
             stars[i].active = true;
             stars[i].x = x;
-            stars[i].y = clamp(y, 140, GROUND_Y - 26);
+            stars[i].y = clamp(y, 130, GROUND_Y - 26);
             stars[i].phase = rand(0, Math.PI * 2);
             stars[i].trailT = rand(0, 0.15);
+            stars[i].mega = !!mega;
             return;
         }
     }
@@ -1077,68 +1237,124 @@ function starArc(cx, topY, n, spread) {
 }
 
 /* Every group is fair by construction: gaps between groups scale with speed,
-   two jump spacings scale with speed, and tight pairs only appear once the
-   speed makes a single full jump wide enough to clear them. */
+   multi-jump spacings scale with speed, and hard patterns only unlock once the
+   speed makes them clearable. Birds are ducked under (stay grounded), so star
+   lines near birds are placed LOW to teach the right move. */
+var PATTERNS = [
+    /* name, base weight, min distance (m) */
+    ['single', 30, 0],
+    ['log', 14, 120],
+    ['duo', 17, 500],
+    ['bird', 16, 700],
+    ['tall', 12, 800],
+    ['pair', 11, 1000],
+    ['birdcombo', 14, 1300],
+    ['triple', 13, 1700]
+];
+function pickPattern() {
+    var total = 0, i, w;
+    for (i = 0; i < PATTERNS.length; i++) {
+        if (distM < PATTERNS[i][2]) continue;
+        w = PATTERNS[i][1];
+        if (i === 0) w = Math.max(10, w - 20 * Math.min(1, distM / 2600)); /* fewer freebies late */
+        total += w;
+    }
+    var roll = Math.random() * total;
+    for (i = 0; i < PATTERNS.length; i++) {
+        if (distM < PATTERNS[i][2]) continue;
+        w = PATTERNS[i][1];
+        if (i === 0) w = Math.max(10, w - 20 * Math.min(1, distM / 2600));
+        roll -= w;
+        if (roll <= 0) return PATTERNS[i][0];
+    }
+    return 'single';
+}
 function spawnGroup() {
     var sp = speedFor(distM);
     var x0 = VW + 80;
     var width = 0;
-    var r = Math.random();
-    var kind;
+    var kind, kA, dx;
 
-    if (distM < 300) {
-        /* tutorial zone: single easy obstacles */
-        kind = r < 0.5 ? 'rock' : 'cactus';
+    if (distM < 250) {
+        /* tutorial zone: single easy obstacles, generous stars */
+        kind = Math.random() < 0.5 ? 'rock' : 'cactus';
         if (kind === lastKind) kind = kind === 'rock' ? 'cactus' : 'rock';
         var o1 = spawnObstacle(kind, x0);
         width = o1 ? o1.w : 50;
-        if (Math.random() < 0.6) starArc(x0 + width / 2, GROUND_Y - 96 - (kind === 'cactus' ? 8 : 0), 3, 130);
-    } else if (distM >= 600 && r < 0.18) {
-        /* tight cactus pair, one big jump clears both (only at higher speed) */
-        kind = 'pair';
-        spawnObstacle('cactus', x0);
-        var o2 = spawnObstacle('cactus', x0 + 50);
-        width = 50 + (o2 ? o2.w : 44);
-        starArc(x0 + width / 2, GROUND_Y - 112, 3, 120);
-    } else if (distM >= 500 && r < 0.42) {
-        /* two obstacles with a full landing gap between: two quick jumps */
-        kind = 'duo';
-        var dx = Math.max(sp * 0.85, 250);
-        var kA = Math.random() < 0.5 ? 'rock' : 'cactus';
-        var kB = Math.random() < 0.5 ? 'log' : 'cactus';
-        spawnObstacle(kA, x0);
-        var oB = spawnObstacle(kB, x0 + dx);
-        width = dx + (oB ? oB.w : 50);
-        if (Math.random() < 0.5) starArc(x0 + dx / 2, GROUND_Y - 60, 3, 110);
-    } else if (distM >= 800 && r < 0.58) {
-        /* tall cactus: needs a full hold jump or a flip */
-        kind = 'tallcactus';
-        var oT = spawnObstacle('tallcactus', x0);
-        width = oT ? oT.w : 48;
-        starArc(x0 + width / 2, GROUND_Y - 128, 3, 140);
-    } else if (r < 0.72) {
-        kind = 'log';
-        var oL = spawnObstacle('log', x0);
-        width = oL ? oL.w : 96;
-        if (Math.random() < 0.5) starArc(x0 + width / 2, GROUND_Y - 86, 3, 130);
+        if (Math.random() < 0.65) starArc(x0 + width / 2, GROUND_Y - 96 - (kind === 'cactus' ? 8 : 0), 3, 130);
     } else {
-        kind = r < 0.86 ? 'rock' : 'cactus';
-        if (kind === lastKind) kind = kind === 'rock' ? 'cactus' : 'rock';
-        var oS = spawnObstacle(kind, x0);
-        width = oS ? oS.w : 50;
-        if (Math.random() < 0.5) starArc(x0 + width / 2, GROUND_Y - 100, 3, 130);
+        kind = pickPattern();
+        if (kind === 'single') {
+            kA = Math.random() < 0.55 ? 'rock' : 'cactus';
+            if (kA === lastKind) kA = kA === 'rock' ? 'cactus' : 'rock';
+            var oS = spawnObstacle(kA, x0);
+            width = oS ? oS.w : 50;
+            if (Math.random() < 0.5) starArc(x0 + width / 2, GROUND_Y - 100, 3, 130);
+            kind = kA;
+        } else if (kind === 'log') {
+            var oL = spawnObstacle('log', x0);
+            width = oL ? oL.w : 96;
+            if (Math.random() < 0.5) starArc(x0 + width / 2, GROUND_Y - 86, 3, 130);
+        } else if (kind === 'duo') {
+            /* two obstacles with a full landing gap: two quick jumps */
+            dx = Math.max(sp * 0.85, 250);
+            kA = Math.random() < 0.5 ? 'rock' : 'cactus';
+            spawnObstacle(kA, x0);
+            var oB = spawnObstacle(Math.random() < 0.5 ? 'log' : 'cactus', x0 + dx);
+            width = dx + (oB ? oB.w : 50);
+            if (Math.random() < 0.5) starArc(x0 + dx / 2, GROUND_Y - 60, 3, 110);
+        } else if (kind === 'bird') {
+            /* flying bird: stay LOW and run under it (or a brave full jump over) */
+            spawnObstacle('bird', x0);
+            width = 52;
+            /* low star line teaches "stay down" */
+            spawnStar(x0 - 70, GROUND_Y - 30);
+            spawnStar(x0 + 26, GROUND_Y - 30);
+            spawnStar(x0 + 122, GROUND_Y - 30);
+        } else if (kind === 'tall') {
+            /* tall cactus: needs a full hold jump or a flip */
+            var oT = spawnObstacle('tallcactus', x0);
+            width = oT ? oT.w : 48;
+            starArc(x0 + width / 2, GROUND_Y - 128, 3, 140);
+        } else if (kind === 'pair') {
+            /* tight cactus pair, one big jump clears both */
+            spawnObstacle('cactus', x0);
+            var o2 = spawnObstacle('cactus', x0 + 50);
+            width = 50 + (o2 ? o2.w : 44);
+            starArc(x0 + width / 2, GROUND_Y - 112, 3, 120);
+        } else if (kind === 'birdcombo') {
+            /* jump the rock, land, then duck under the bird */
+            kA = Math.random() < 0.5 ? 'rock' : 'cactus';
+            spawnObstacle(kA, x0);
+            dx = Math.max(sp * 0.95, 300);
+            spawnObstacle('bird', x0 + dx);
+            width = dx + 52;
+            spawnStar(x0 + dx - 60, GROUND_Y - 30);
+            spawnStar(x0 + dx + 30, GROUND_Y - 30);
+        } else {
+            /* triple: three quick jumps in a row */
+            dx = Math.max(sp * 0.82, 240);
+            spawnObstacle(Math.random() < 0.5 ? 'rock' : 'cactus', x0);
+            spawnObstacle(Math.random() < 0.5 ? 'cactus' : 'log', x0 + dx);
+            var o3 = spawnObstacle(Math.random() < 0.5 ? 'rock' : 'cactus', x0 + dx * 2);
+            width = dx * 2 + (o3 ? o3.w : 50);
+            starArc(x0 + dx, GROUND_Y - 60, 3, 110);
+        }
     }
     lastKind = kind;
 
-    /* free floating star line in the gap after the group */
-    if (Math.random() < 0.35) {
+    /* rare MEGA star: high above the gap, needs a double-jump flip. +60 */
+    if (distM > 350 && Math.random() < 0.09) {
+        spawnStar(x0 + width + sp * rand(0.5, 0.65), GROUND_Y - 188, true);
+    } else if (Math.random() < 0.35) {
+        /* free floating star line in the gap after the group */
         var gx = x0 + width + sp * rand(0.45, 0.6);
         var gy = Math.random() < 0.5 ? GROUND_Y - 32 : GROUND_Y - 78;
         for (var s2 = 0; s2 < 3; s2++) spawnStar(gx + s2 * 46, gy);
     }
 
-    /* breathing gap before the next group always scales with speed */
-    spawnGap = width + sp * rand(0.95, 1.5) + 140;
+    /* breathing gap scales with speed AND shrinks as the run goes on */
+    spawnGap = width + sp * rand(0.95, 1.5) * gapScale() + 140;
 }
 
 /* ================= Run control ================= */
@@ -1148,6 +1364,8 @@ function resetRun() {
     for (i = 0; i < stars.length; i++) stars[i].active = false;
     for (i = 0; i < parts.length; i++) parts[i].active = false;
     for (i = 0; i < popups.length; i++) popups[i].active = false;
+    for (i = 0; i < rings.length; i++) rings[i].active = false;
+    for (i = 0; i < trailBuf.length; i++) trailBuf[i].a = 0;
     distM = 0; scoreF = 0; bonus = 0; shownScore = -1;
     runStars = 0; streak = 0; mult = 1; topMult = 1;
     newBest = false;
@@ -1156,6 +1374,13 @@ function resetRun() {
     trauma = 0;
     worldSp = 0;
     lastKind = '';
+    freezeT = 0;
+    fever = false;
+    feverCount = 0;
+    duckCount = 0;
+    nextMile = MILE_STEP;
+    trailTimer = 0; trailHead = 0;
+    comboEl.classList.remove('fever');
     fox.y = GROUND_Y; fox.vy = 0;
     fox.grounded = true; fox.holding = false; fox.canDouble = true;
     fox.flipT = -1; fox.rot = 0; fox.rotV = 0;
@@ -1232,6 +1457,11 @@ function breakCombo(x, y) {
     if (streak === 0) return;
     streak = 0;
     mult = 1;
+    if (fever) {
+        fever = false;
+        comboEl.classList.remove('fever');
+        spawnPopup(fox.x, fox.y - 110, 'fever over', 16, '#FFD9A8');
+    }
     burstPoof(x, y);
     sfxPoof();
     comboEl.classList.add('puff');
@@ -1243,6 +1473,9 @@ function die() {
     deathT = 0;
     settled = false;
     trauma = 0.5;
+    freezeT = 0.09; /* hit-stop: a heartbeat of stillness sells the impact */
+    fever = false;
+    comboEl.classList.remove('fever');
     fox.vy = -420;              /* cartoon trip: hop up, then tumble */
     fox.rotV = 11;
     fox.holding = false;
@@ -1272,12 +1505,22 @@ function showPanel() {
     distEl.style.display = 'none';
     comboEl.style.display = 'none';
     var sc = runScore();
-    panelScoreEl.textContent = sc;
     panelBestEl.textContent = data.highScore;
     newBestEl.style.display = newBest ? 'block' : 'none';
-    document.getElementById('panelTitle').textContent = newBest ? 'AMAZING!' : 'NICE RUN!';
-    panelStatsEl.textContent = '⭐ ' + runStars + ' star' + (runStars === 1 ? '' : 's') +
-        '  |  top combo x' + topMult + '  |  ' + (distM | 0) + 'm';
+    document.getElementById('panelTitle').textContent = newBest ? 'AMAZING!' : (sc >= prevBest * 0.8 && prevBest > 100 ? 'GREAT RUN!' : 'NICE RUN!');
+    var statsTxt = '⭐ ' + runStars + '  |  top combo x' + topMult + '  |  ' + (distM | 0) + 'm';
+    if (feverCount > 0) statsTxt += '  |  🔥 x' + feverCount;
+    if (duckCount > 0) statsTxt += '  |  🐦 ' + duckCount;
+    panelStatsEl.textContent = statsTxt;
+    /* score counts up: numbers you watch grow feel earned */
+    var cntStart = performance.now();
+    var cntDur = Math.min(900, 250 + sc * 2);
+    (function tick() {
+        var f = Math.min(1, (performance.now() - cntStart) / cntDur);
+        var e = 1 - (1 - f) * (1 - f);
+        panelScoreEl.textContent = Math.round(sc * e);
+        if (f < 1 && panelShown) requestAnimationFrame(tick);
+    })();
     var diff = prevBest - sc;
     if (!newBest && prevBest >= 50 && sc < prevBest && diff <= prevBest * 0.2) {
         nearMissEl.textContent = 'SO CLOSE! ' + diff + ' away from your best';
@@ -1294,8 +1537,10 @@ function showPanel() {
         stickerBanner.style.display = 'none';
     }
     if (earnedTiers.length > 0 || newBest) {
-        burstConfetti();
+        burstConfetti(70);
         sfxFanfare();
+    } else if (sc >= 150) {
+        burstConfetti(28); /* even a decent run deserves a little party */
     }
     overPanel.classList.add('show');
 }
@@ -1342,7 +1587,28 @@ function updateGame(dt) {
     hillNearX -= sp * 0.4 * dt;
     hillFarX -= sp * 0.18 * dt;
     distM += sp * dt / 10;
-    scoreF += sp * dt / 10;
+    scoreF += sp * dt / 10 * (fever ? 2 : 1); /* fever doubles distance points */
+
+    /* distance milestones: the world visibly speeds up */
+    if (distM >= nextMile) {
+        spawnPopup(fox.x + 40, fox.y - 150, 'SPEED UP!', 26, '#4FC3F7');
+        spawnSpeedlines(6);
+        trauma = Math.max(trauma, 0.22);
+        sfxWhoosh();
+        scorePop();
+        nextMile += MILE_STEP;
+    }
+    /* ambient speed lines once the run gets fast; constant golden rush in fever */
+    if ((fever || speedRatio() > 0.72) && Math.random() < (fever ? 0.28 : 0.1)) spawnSpeedlines(1);
+
+    /* afterimage trail sampling (drawn only during fever) */
+    trailTimer -= dt;
+    if (trailTimer <= 0) {
+        trailTimer = 0.045;
+        var tb = trailBuf[trailHead];
+        tb.x = fox.x; tb.y = fox.y; tb.rot = fox.rot; tb.a = fever ? 0.3 : 0;
+        trailHead = (trailHead + 1) % trailBuf.length;
+    }
 
     /* fox physics: variable jump by hold, heavier fall */
     fox.x += (foxTargetX() - fox.x) * Math.min(1, 3 * dt);
@@ -1374,6 +1640,7 @@ function updateGame(dt) {
             fox.rot = 0;
             fox.squash = 1;
             puffDust(fox.x, GROUND_Y, 6, false);
+            if (speedRatio() > 0.55) spawnRing(fox.x, GROUND_Y - 4, 6, 36, 0.28, 'rgba(255,255,255,0.85)', 3);
             sfxLand();
         }
     }
@@ -1390,21 +1657,44 @@ function updateGame(dt) {
         if (o.winceT > 0) o.winceT -= dt;
         if (o.x < -110) { o.active = false; continue; }
         var hx = o.x + (o.w - o.hw) / 2;
-        var hy = GROUND_Y - o.hh;
-        if (foxR > hx && foxL < hx + o.hw && fox.y > hy && foxTop < GROUND_Y) {
+        var oTop, oBot;
+        if (o.fly) {
+            var bcy = GROUND_Y - o.yOff + Math.sin(time * 4 + o.seed) * 8;
+            oTop = bcy - o.hh / 2;
+            oBot = bcy + o.hh / 2;
+        } else {
+            oTop = GROUND_Y - o.hh;
+            oBot = GROUND_Y;
+        }
+        if (foxR > hx && foxL < hx + o.hw && fox.y > oTop && foxTop < oBot) {
             die();
             return;
         }
-        /* wince + near miss while sailing over */
-        if (!fox.grounded && fox.x > hx - 14 && fox.x < hx + o.hw + 14) {
+        if (o.fly) {
+            /* reward the smart move: staying grounded and running under the bird */
+            if (fox.grounded && !o.nearMissed && fox.x > hx && fox.x < hx + o.hw) {
+                o.nearMissed = true;
+                o.winceT = 0.55;
+                duckCount++;
+                var db = NEAR_BONUS * mult;
+                bonus += db;
+                spawnPopup(o.x + o.w / 2, oTop - 24, 'DUCKED! +' + db, 19, '#4FC3F7');
+                spawnRing(fox.x, fox.y - 26, 8, 40, 0.3, '#4FC3F7', 3);
+                sfxWhoosh();
+            }
+        } else if (!fox.grounded && fox.x > hx - 14 && fox.x < hx + o.hw + 14) {
+            /* wince + tiered near miss while sailing over: closer = braver = more points */
             var clearance = (GROUND_Y - fox.y) - o.hh;
             if (clearance > 0) {
                 if (clearance < 60 && o.winceT <= 0) o.winceT = 0.55;
                 if (clearance < 26 && !o.nearMissed) {
                     o.nearMissed = true;
                     o.winceT = 0.6;
-                    bonus += NEAR_BONUS;
-                    spawnPopup(o.x + o.w / 2, GROUND_Y - o.h - 34, 'CLOSE! +5', 19, '#FF5FA2');
+                    var perfect = clearance < 13;
+                    var nb = (perfect ? NEAR_BONUS * 3 : NEAR_BONUS) * mult;
+                    bonus += nb;
+                    spawnPopup(o.x + o.w / 2, GROUND_Y - o.h - 34, (perfect ? 'PERFECT! +' : 'CLOSE! +') + nb, perfect ? 22 : 19, perfect ? '#FFD93D' : '#FF5FA2');
+                    if (perfect) spawnRing(fox.x, fox.y, 6, 48, 0.35, '#FFD93D', 4);
                     sfxWhoosh();
                 }
             }
@@ -1426,22 +1716,38 @@ function updateGame(dt) {
             breakCombo(30, st.y); /* missed one: gentle poof, no punishment */
             continue;
         }
-        var dx = fox.x - st.x, dy = (fox.y - 28) - (st.y + Math.sin(time * 3 + st.phase) * 6);
-        if (dx * dx + dy * dy < 1600) {
+        var sy = st.y + Math.sin(time * 3 + st.phase) * 6;
+        var dx = fox.x - st.x, dy = (fox.y - 28) - sy;
+        var rad2 = st.mega ? 2900 : 1600;
+        if (dx * dx + dy * dy < rad2) {
             st.active = false;
             runStars++;
             streak++;
             var m2 = multFor(streak);
-            var pts = STAR_POINTS * m2;
+            var pts = st.mega ? 60 : STAR_POINTS * m2;
             bonus += pts;
-            burstSparks(st.x, st.y);
-            spawnPopup(st.x, st.y - 24, '+' + pts + (m2 > 1 ? ' x' + m2 : ''), 16 + m2 * 2, '#FFFFFF');
+            starJuice(st.x, sy, m2, st.mega);
+            spawnPopup(st.x, sy - 30, (st.mega ? 'MEGA! +' : '+') + pts + (!st.mega && m2 > 1 ? ' x' + m2 : ''), (st.mega ? 26 : 16 + m2 * 2), st.mega ? '#FFB040' : (m2 >= FEVER_AT ? '#FFD93D' : '#FFFFFF'));
             sfxStar(streak);
+            if (st.mega) { trauma = Math.max(trauma, 0.2); scorePop(); }
             if (m2 > mult) {
                 mult = m2;
                 if (m2 > topMult) topMult = m2;
+                freezeT = Math.max(freezeT, 0.045); /* tiny hit-stop makes the tier-up land */
+                spawnRing(fox.x, fox.y - 26, 10, 64, 0.45, '#FFD93D', 5);
                 spawnPopup(fox.x, fox.y - 96, 'x' + m2 + ' COMBO!', 26, '#FFD93D');
                 sfxCombo();
+                scorePop();
+                if (m2 >= FEVER_AT && !fever) {
+                    fever = true;
+                    feverCount++;
+                    comboEl.classList.add('fever');
+                    spawnPopup(fox.x + 10, fox.y - 140, 'FEVER! 2x POINTS!', 30, '#FF8A3D');
+                    spawnRing(fox.x, fox.y - 26, 12, 110, 0.6, '#FF8A3D', 6);
+                    spawnSpeedlines(5);
+                    trauma = Math.max(trauma, 0.25);
+                    sfxFanfare();
+                }
             }
         }
     }
@@ -1452,6 +1758,7 @@ function updateGame(dt) {
 
     updateParticles(dt);
     updatePopups(dt);
+    updateRings(dt);
 
     /* HUD */
     var sc = runScore();
@@ -1463,10 +1770,19 @@ function updateGame(dt) {
     if (streak >= 3) {
         comboEl.classList.remove('puff');
         comboEl.style.display = 'block';
-        comboEl.textContent = '⭐ x' + mult + ' combo';
+        var nt = nextTier(streak);
+        comboEl.textContent = fever ? '🔥 x' + mult + ' FEVER!' :
+            ('⭐ x' + mult + (nt > 0 ? ' · ' + (nt - streak) + ' to x' + multFor(nt) : ''));
     } else if (streak === 0 && comboEl.style.display === 'block' && !comboEl.classList.contains('puff')) {
         comboEl.style.display = 'none';
     }
+}
+
+/* retrigger the HUD score pop animation */
+function scorePop() {
+    scoreEl.classList.remove('pop');
+    void scoreEl.offsetWidth;
+    scoreEl.classList.add('pop');
 }
 
 function updateDying(dt) {
@@ -1500,6 +1816,7 @@ function updateDying(dt) {
 
     updateParticles(dts);
     updatePopups(dts);
+    updateRings(dts);
 
     if (deathT > 1.35) showPanel();
 }
@@ -1516,6 +1833,12 @@ function updateParticles(dt) {
         } else if (p.type === 2) {
             p.vx *= (1 - Math.min(1, 4 * dt));
             p.vy *= (1 - Math.min(1, 4 * dt));
+        } else if (p.type === 5 || p.type === 8) {
+            /* glints and halos: stay put (slight drift), scale handled at draw */
+        } else if (p.type === 6) {
+            p.vy = Math.min(600, p.vy + 700 * dt); /* shards: chunky, heavy */
+        } else if (p.type === 7) {
+            /* speed lines: pure horizontal streaks */
         } else {
             p.vy = Math.min(240, p.vy + 220 * dt);
             p.x += Math.sin(p.life * 5 + p.seed) * 26 * dt;
@@ -1523,6 +1846,14 @@ function updateParticles(dt) {
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.rot += p.vr * dt;
+    }
+}
+function updateRings(dt) {
+    for (var i = 0; i < rings.length; i++) {
+        var r = rings[i];
+        if (!r.active) continue;
+        r.life += dt;
+        if (r.life >= r.ttl) r.active = false;
     }
 }
 function updatePopups(dt) {
@@ -1537,6 +1868,7 @@ function updatePopups(dt) {
 
 function update(dt) {
     time += dt;
+    if (freezeT > 0) { freezeT -= dt; return; } /* hit-stop: whole world holds its breath */
     updateClouds(dt);
     updateButterflies(dt);
     if (trauma > 0) trauma = Math.max(0, trauma - 2.2 * dt);
@@ -1549,6 +1881,7 @@ function update(dt) {
             /* the show goes on behind the panel: confetti, dust, clouds keep moving */
             updateParticles(dt);
             updatePopups(dt);
+            updateRings(dt);
             break;
     }
 }
@@ -1579,6 +1912,10 @@ function drawGround() {
         ctx.fillStyle = 'rgba(255,140,70,' + dayCache.tint.toFixed(3) + ')';
         ctx.fillRect(0, GROUND_Y, VW, GROUND_H);
     }
+    if (dayCache.night > 0.01) {
+        ctx.fillStyle = 'rgba(18,24,58,' + (dayCache.night * 0.42).toFixed(3) + ')';
+        ctx.fillRect(0, GROUND_Y, VW, GROUND_H);
+    }
 }
 
 function drawStarShape(x, y, r, rot) {
@@ -1599,13 +1936,26 @@ function drawStars() {
         if (!st.active) continue;
         var y = st.y + Math.sin(time * 3 + st.phase) * 6;
         var pulse = 1 + 0.12 * Math.sin(time * 5 + st.phase);
-        ctx.drawImage(glowSpr, (st.x - 28) | 0, (y - 28) | 0, 56, 56);
-        drawStarShape(st.x, y, 14 * pulse, time * 1.6 + st.phase);
-        ctx.fillStyle = '#FFE14D';
-        ctx.fill();
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = '#F1A62B';
-        ctx.stroke();
+        if (st.mega) {
+            ctx.drawImage(glowSpr, (st.x - 46) | 0, (y - 46) | 0, 92, 92);
+            drawStarShape(st.x, y, 22 * pulse, time * 2.1 + st.phase);
+            ctx.fillStyle = '#FFB040';
+            ctx.fill();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#E07B1A';
+            ctx.stroke();
+            drawStarShape(st.x, y, 10 * pulse, -time * 1.4 + st.phase);
+            ctx.fillStyle = '#FFF3B0';
+            ctx.fill();
+        } else {
+            ctx.drawImage(glowSpr, (st.x - 28) | 0, (y - 28) | 0, 56, 56);
+            drawStarShape(st.x, y, 14 * pulse, time * 1.6 + st.phase);
+            ctx.fillStyle = '#FFE14D';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#F1A62B';
+            ctx.stroke();
+        }
     }
 }
 
@@ -1646,6 +1996,63 @@ function drawFace(cx, cy, s, wince, seed) {
 function drawObstacle(o) {
     var x = o.x | 0;
     var wince = o.winceT > 0;
+    if (o.fly) {
+        /* cheeky bluebird: flap, bob, watch out below */
+        var bcy = GROUND_Y - o.yOff + Math.sin(time * 4 + o.seed) * 8;
+        var flap = Math.sin(time * 15 + o.seed);
+        ctx.save();
+        ctx.translate(x + o.w / 2, bcy);
+        /* far wing */
+        ctx.fillStyle = '#2E9BD6';
+        ctx.beginPath();
+        ctx.ellipse(2, -4, 16, 7 + flap * 4, -0.5 - flap * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+        /* body */
+        ctx.fillStyle = '#4FC3F7';
+        ctx.strokeStyle = '#1D6FA3';
+        ctx.lineWidth = 3.2;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 19, 14, 0.06, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+        /* belly */
+        ctx.fillStyle = '#EAF7FF';
+        ctx.beginPath();
+        ctx.ellipse(2, 6, 11, 7, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        /* tail feathers */
+        ctx.fillStyle = '#2E9BD6';
+        ctx.beginPath();
+        ctx.moveTo(16, -2); ctx.lineTo(28, -8 + flap * 3); ctx.lineTo(27, 3 + flap * 3); ctx.closePath();
+        ctx.fill();
+        /* near wing */
+        ctx.fillStyle = '#7DD6FF';
+        ctx.strokeStyle = '#1D6FA3';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.ellipse(-1, -3, 15, 6.5 + flap * 4.5, -0.4 + flap * 0.5, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+        /* beak */
+        ctx.fillStyle = '#FFB040';
+        ctx.beginPath();
+        ctx.moveTo(-18, -1); ctx.lineTo(-27, 2); ctx.lineTo(-17, 5); ctx.closePath();
+        ctx.fill();
+        /* eye */
+        if (wince) {
+            ctx.strokeStyle = INK;
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.moveTo(-14, -7); ctx.lineTo(-8, -4);
+            ctx.moveTo(-14, -1); ctx.lineTo(-8, -4);
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath(); ctx.arc(-10, -4, 4.6, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = INK;
+            ctx.beginPath(); ctx.arc(-11.4, -4, 2.2, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+        return;
+    }
     ctx.save();
     ctx.translate(x, GROUND_Y);
     if (o.kind === 'rock') {
@@ -1974,21 +2381,61 @@ function drawFox() {
     }
 }
 
+function drawGlint(x, y, r, rot) {
+    /* 4-point sparkle cross */
+    ctx.beginPath();
+    for (var i = 0; i < 8; i++) {
+        var a = rot + i * Math.PI / 4;
+        var rr2 = (i % 2 === 0) ? r : r * 0.22;
+        var px = x + Math.cos(a) * rr2;
+        var py = y + Math.sin(a) * rr2;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+}
 function drawParticles() {
     for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
         if (!p.active) continue;
-        var a = 1 - p.life / p.ttl;
+        var lf = p.life / p.ttl;
+        var a = 1 - lf;
         ctx.globalAlpha = a;
         ctx.fillStyle = p.color;
         if (p.type === 1 || p.type === 4) {
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * (0.6 + 0.6 * (p.life / p.ttl)), 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, p.size * (0.6 + 0.6 * lf), 0, Math.PI * 2);
             ctx.fill();
         } else if (p.type === 2) {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2);
             ctx.fill();
+        } else if (p.type === 5) {
+            /* glint: blooms then shrinks */
+            var gs = Math.sin(Math.PI * lf);
+            ctx.globalAlpha = gs;
+            drawGlint(p.x, p.y, p.size * (0.4 + gs), p.rot * 0.3);
+            ctx.fill();
+        } else if (p.type === 6) {
+            /* chunky candy shard: spinning triangle */
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.beginPath();
+            ctx.moveTo(0, -p.size);
+            ctx.lineTo(p.size * 0.85, p.size * 0.6);
+            ctx.lineTo(-p.size * 0.85, p.size * 0.6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        } else if (p.type === 7) {
+            /* speed line streak */
+            ctx.globalAlpha = a * 0.55;
+            ctx.fillRect(p.x | 0, p.y | 0, p.size, 2.4);
+        } else if (p.type === 8) {
+            /* halo flash: expanding soft glow */
+            ctx.globalAlpha = a * 0.9;
+            var hs = p.size * (0.7 + 1.6 * lf);
+            ctx.drawImage(glowSpr, (p.x - hs) | 0, (p.y - hs) | 0, hs * 2, hs * 2);
         } else {
             ctx.save();
             ctx.translate(p.x, p.y);
@@ -1996,6 +2443,37 @@ function drawParticles() {
             ctx.fillRect(-p.size / 2, -p.size * 0.75, p.size, p.size * 1.5);
             ctx.restore();
         }
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawRings() {
+    for (var i = 0; i < rings.length; i++) {
+        var r = rings[i];
+        if (!r.active) continue;
+        var t = r.life / r.ttl;
+        var e = 1 - (1 - t) * (1 - t) * (1 - t); /* easeOutCubic expansion */
+        ctx.globalAlpha = (1 - t) * 0.9;
+        ctx.lineWidth = r.lw * (1 - t * 0.6);
+        ctx.strokeStyle = r.color;
+        ctx.beginPath();
+        ctx.arc(r.x | 0, r.y | 0, r.r0 + (r.r1 - r.r0) * e, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawTrail() {
+    /* golden afterimages during fever */
+    for (var i = 0; i < trailBuf.length; i++) {
+        var tb = trailBuf[i];
+        if (tb.a <= 0.01) continue;
+        tb.a *= 0.93;
+        ctx.globalAlpha = tb.a;
+        ctx.fillStyle = '#FFC24D';
+        ctx.beginPath();
+        ctx.ellipse(tb.x | 0, (tb.y - 26) | 0, 26, 17, tb.rot || -0.05, 0, Math.PI * 2);
+        ctx.fill();
     }
     ctx.globalAlpha = 1;
 }
@@ -2030,19 +2508,45 @@ function render() {
     ctx.fillStyle = dayCache.sky || '#FFB07C';
     ctx.fillRect(-10, -10, VW + 20, H + 20);
 
-    /* sun climbs as the run goes from sunrise to day */
     var t = dayCache.t || 0;
-    var sunY = 440 - 320 * t;
-    ctx.drawImage(sunSpr, (VW * 0.76 - 90) | 0, (sunY - 90) | 0, 180, 180);
+    var night = dayCache.night || 0;
 
-    var i, c;
+    /* stars fade in as night falls; sparse layer twinkles */
+    if (night > 0.01) {
+        ctx.globalAlpha = night;
+        ctx.drawImage(starfieldSpr, 0, 0, VW, GROUND_Y - 60);
+        ctx.globalAlpha = night * (0.35 + 0.65 * Math.abs(Math.sin(time * 1.7)));
+        ctx.drawImage(twinkleSpr, 0, 0, VW, GROUND_Y - 60);
+        ctx.globalAlpha = 1;
+    }
+
+    /* sun arcs up then sets; moon rises for the night shift */
+    if (t < 0.8) {
+        var sunT = clamp(t / 0.68, 0, 1);
+        var sunY = 440 - 330 * Math.sin(sunT * Math.PI);
+        ctx.globalAlpha = 1 - clamp((t - 0.62) / 0.18, 0, 1);
+        ctx.drawImage(sunSpr, (VW * 0.76 - 90) | 0, (sunY - 90) | 0, 180, 180);
+        ctx.globalAlpha = 1;
+    }
+    if (t > 0.62) {
+        var moonY = 480 - 350 * clamp((t - 0.62) / 0.38, 0, 1);
+        ctx.globalAlpha = clamp((t - 0.62) / 0.2, 0, 1);
+        ctx.drawImage(moonSpr, (VW * 0.22 - 70) | 0, (moonY - 70) | 0, 140, 140);
+        ctx.globalAlpha = 1;
+    }
+
+    var i, c, ca = 1 - 0.55 * night;
     for (i = 0; i < cloudsFar.length; i++) {
         c = cloudsFar[i];
-        ctx.globalAlpha = c.a;
+        ctx.globalAlpha = c.a * ca;
         ctx.drawImage(cloudSprs[c.spr], c.x | 0, c.y | 0, 170 * c.s, 80 * c.s);
     }
 
-    /* parallax hills */
+    /* parallax hills: three depths */
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = dayCache.hillFar;
+    hillband(hillFarX * 0.5, 640, 130, GROUND_Y - 90);
+    ctx.globalAlpha = 1;
     ctx.fillStyle = dayCache.hillFar;
     hillband(hillFarX, 460, 90, GROUND_Y - 24);
     ctx.fillStyle = dayCache.hillNear;
@@ -2050,7 +2554,7 @@ function render() {
 
     for (i = 0; i < cloudsNear.length; i++) {
         c = cloudsNear[i];
-        ctx.globalAlpha = c.a;
+        ctx.globalAlpha = c.a * ca;
         ctx.drawImage(cloudSprs[c.spr], c.x | 0, c.y | 0, 170 * c.s, 80 * c.s);
     }
     ctx.globalAlpha = 1;
@@ -2059,9 +2563,18 @@ function render() {
     drawGround();
     drawObstacles();
     drawStars();
+    if (fever) drawTrail();
     drawFox();
+    drawRings();
     drawParticles();
     drawPopups();
+
+    /* golden fever glow around the edges of the world */
+    if (fever) {
+        ctx.globalAlpha = 0.55 + 0.3 * Math.sin(time * 6);
+        ctx.drawImage(vignetteSpr, 0, 0, VW, H);
+        ctx.globalAlpha = 1;
+    }
 }
 /* ================= Input ================= */
 canvas.addEventListener('pointerdown', function (e) {
@@ -2177,6 +2690,8 @@ window.__tapRushTest = {
     get dist() { return distM; },
     get streak() { return streak; },
     get mult() { return mult; },
+    get fever() { return fever; },
+    get ducks() { return duckCount; },
     get panelShown() { return panelShown; }
 };
 
