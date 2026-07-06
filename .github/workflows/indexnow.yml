@@ -1,0 +1,28 @@
+name: Ping IndexNow on deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for GitHub Pages to serve the new build
+        run: sleep 120
+      - name: Submit all sitemap URLs to IndexNow
+        run: |
+          URLS=$(grep -o '<loc>[^<]*</loc>' sitemap.xml | sed 's/<loc>//;s/<\/loc>//' | jq -R . | jq -s .)
+          PAYLOAD=$(jq -n \
+            --arg host "woopkid.com" \
+            --arg key "b0d9bcfde7634e0aa5e0e23f27f092a4" \
+            --arg keyLocation "https://woopkid.com/b0d9bcfde7634e0aa5e0e23f27f092a4.txt" \
+            --argjson urlList "$URLS" \
+            '{host: $host, key: $key, keyLocation: $keyLocation, urlList: $urlList}')
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "https://api.indexnow.org/indexnow" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -d "$PAYLOAD")
+          echo "IndexNow responded $CODE"
+          test "$CODE" = "200" -o "$CODE" = "202"
