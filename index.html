@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>WoopKid World: Free Games for Kids. No Ads, Ever.</title>
 <meta name="description" content="WoopKid World: free browser games for kids ages 5-12. No ads, no tracking, no accounts. Clickers, platformers, flyers, puzzles and more. Just tap and play.">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#FFF6E9">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -27,11 +28,72 @@
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "WoopKid World",
-  "url": "https://woopkid.com/",
-  "description": "Free browser games for kids ages 5-12. No ads, no tracking, no accounts.",
-  "publisher": { "@type": "Organization", "name": "WoopKid", "url": "https://woopkid.com" }
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://woopkid.com/#website",
+      "name": "WoopKid World",
+      "alternateName": "WoopKid",
+      "url": "https://woopkid.com/",
+      "description": "Free browser games for kids ages 5-12. No ads, no tracking, no accounts, no downloads. Works on Chromebook, tablet and phone.",
+      "publisher": { "@id": "https://woopkid.com/#org" },
+      "audience": { "@type": "PeopleAudience", "suggestedMinAge": 5, "suggestedMaxAge": 12 }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://woopkid.com/#org",
+      "name": "WoopKid",
+      "url": "https://woopkid.com/",
+      "logo": "https://woopkid.com/og-image.png",
+      "description": "Independent maker of free, ad-free, tracker-free HTML5 browser games for kids."
+    },
+    {
+      "@type": "ItemList",
+      "name": "All WoopKid games",
+      "numberOfItems": 19,
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Woop Pets Clicker", "url": "https://woopkid.com/games/pets-clicker/" },
+        { "@type": "ListItem", "position": 2, "name": "Merge Squad", "url": "https://woopkid.com/games/merge-squad/" },
+        { "@type": "ListItem", "position": 3, "name": "Trap Land", "url": "https://woopkid.com/games/trap-land/" },
+        { "@type": "ListItem", "position": 4, "name": "Wing It", "url": "https://woopkid.com/games/wing-it/" },
+        { "@type": "ListItem", "position": 5, "name": "Speed Slope", "url": "https://woopkid.com/games/speed-slope/" },
+        { "@type": "ListItem", "position": 6, "name": "Road Hopper", "url": "https://woopkid.com/games/road-hopper/" },
+        { "@type": "ListItem", "position": 7, "name": "Noodle Arena", "url": "https://woopkid.com/games/noodle-arena/" },
+        { "@type": "ListItem", "position": 8, "name": "Sky Stack", "url": "https://woopkid.com/games/sky-stack/" },
+        { "@type": "ListItem", "position": 9, "name": "Beat Bounce", "url": "https://woopkid.com/games/beat-bounce/" },
+        { "@type": "ListItem", "position": 10, "name": "Slice Rush", "url": "https://woopkid.com/games/slice-rush/" },
+        { "@type": "ListItem", "position": 11, "name": "Bubble Tank Duel", "url": "https://woopkid.com/games/bubble-tank-duel/" },
+        { "@type": "ListItem", "position": 12, "name": "Merge Drop", "url": "https://woopkid.com/games/merge-drop/" },
+        { "@type": "ListItem", "position": 13, "name": "Tap Rush", "url": "https://woopkid.com/games/tap-rush/" },
+        { "@type": "ListItem", "position": 14, "name": "Drift & Collect", "url": "https://woopkid.com/games/drift-collect/" },
+        { "@type": "ListItem", "position": 15, "name": "Color Pop", "url": "https://woopkid.com/games/color-pop/" },
+        { "@type": "ListItem", "position": 16, "name": "Block Stax", "url": "https://woopkid.com/games/block-stax/" },
+        { "@type": "ListItem", "position": 17, "name": "Rope Rush", "url": "https://woopkid.com/games/rope-rush/" },
+        { "@type": "ListItem", "position": 18, "name": "Scribble Legs", "url": "https://woopkid.com/games/scribble-legs/" },
+        { "@type": "ListItem", "position": 19, "name": "Woop Swarm", "url": "https://woopkid.com/games/woop-swarm/" }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is WoopKid World really free and ad-free?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Every game on WoopKid World is completely free with zero advertising: no ad networks, no banners, no video ads, no in-app purchases and no premium tier. There is nothing to buy and nothing to download." }
+        },
+        {
+          "@type": "Question",
+          "name": "Is WoopKid safe for young kids?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. There are no ads, no chat, no user accounts, no data collection and no external links. All progress is saved locally on your device. Content is bright and cartoon-style with no violence beyond comic reactions, suitable for ages 5-12." }
+        },
+        {
+          "@type": "Question",
+          "name": "Does WoopKid work on Chromebooks and tablets?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Every game is a lightweight HTML5 game that runs in any modern browser on Chromebook, iPad, Android tablet, phone, Mac or PC. Nothing to install, no accounts needed, which also makes it a favorite for indoor recess at school." }
+        }
+      ]
+    }
+  ]
 }
 </script>
 <style>
@@ -200,6 +262,20 @@ footer{margin-top:52px;text-align:center}
   .playbtn{font-size:14px;padding:7px 14px}
   .wrap{padding:14px 13px 48px}
 }
+/* ---------- static fallback links (replaced by JS cards) ---------- */
+.static-game{
+  display:block;background:var(--paper);border:3px solid var(--ink);border-radius:16px;
+  padding:12px 16px;font-weight:800;color:var(--ink);text-decoration:none;box-shadow:var(--shadow-press);
+}
+/* ---------- grown-ups info ---------- */
+.grownups{margin-top:46px}
+.grownups-card{
+  background:var(--paper);border:3px solid var(--ink);border-radius:22px;
+  padding:20px 22px;box-shadow:var(--shadow);max-width:760px;margin:14px auto 0;
+}
+.grownups-card p{font-size:15px;line-height:1.55;font-weight:700;margin:0 0 12px}
+.grownups-card p:last-child{margin-bottom:0}
+.grownups-card a{color:var(--grape);font-weight:900}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
@@ -242,11 +318,41 @@ footer{margin-top:52px;text-align:center}
     <button class="chip" data-cat="chill">🌤️ Chill</button>
   </div>
 
-  <section class="grid" id="grid" aria-label="Games"></section>
+  <section class="grid" id="grid" aria-label="Games">
+    <!-- Static fallback: replaced by interactive cards when JS runs; keeps every game reachable for crawlers and no-JS browsers -->
+    <a class="static-game" href="games/pets-clicker/">🐹 Woop Pets Clicker — tap and idle game: tap your pet, earn Woops, unlock 12 silly friends</a>
+    <a class="static-game" href="games/merge-squad/">🧸 Merge Squad — merge toys into mighty squads and bonk the rival toybox</a>
+    <a class="static-game" href="games/trap-land/">😜 Trap Land — comedy troll platformer with 12 levels of sneaky traps</a>
+    <a class="static-game" href="games/wing-it/">🐤 Wing It — one-tap flyer: flap through the pipes and chase your best score</a>
+    <a class="static-game" href="games/speed-slope/">🌀 Speed Slope — steer a runaway ball down an endless neon slope</a>
+    <a class="static-game" href="games/road-hopper/">🐔 Road Hopper — hop across roads and rivers, unlock goofy characters</a>
+    <a class="static-game" href="games/noodle-arena/">🐍 Noodle Arena — grow the longest noodle and outsmart 12 rival snakes</a>
+    <a class="static-game" href="games/sky-stack/">🗼 Sky Stack — drop blocks with perfect timing and build to the clouds</a>
+    <a class="static-game" href="games/beat-bounce/">🎵 Beat Bounce — rhythm jumper: bounce to the beat across three chiptune levels</a>
+    <a class="static-game" href="games/slice-rush/">🍉 Slice Rush — flip your blade and slice everything on the counter</a>
+    <a class="static-game" href="games/bubble-tank-duel/">🫧 Bubble Tank Duel — 2 player bubble tank battle on one screen</a>
+    <a class="static-game" href="games/merge-drop/">🐣 Merge Drop — drop, stack and merge animals up to the unicorn</a>
+    <a class="static-game" href="games/tap-rush/">🦊 Tap Rush — endless runner: jump rocks, grab stars, chase combos</a>
+    <a class="static-game" href="games/drift-collect/">🚗 Drift &amp; Collect — hold to drift, release to fly, scoop every coin</a>
+    <a class="static-game" href="games/color-pop/">🎯 Color Pop — bubble shooter with wall-bounce shots and big cascades</a>
+    <a class="static-game" href="games/block-stax/">🟦 Block Stax — stack falling pieces and clear perfect lines</a>
+    <a class="static-game" href="games/rope-rush/">🪀 Rope Rush — hold to hook a rope, release to fly across 20 swinging levels</a>
+    <a class="static-game" href="games/scribble-legs/">✏️ Scribble Legs — draw your own wacky legs and outrun the giggling Tickle Cloud</a>
+    <a class="static-game" href="games/woop-swarm/">👾 Woop Swarm — dodge the goober swarm, evolve your toys, bop the boss</a>
+  </section>
 
   <h2 class="shelf-title">Your Sticker Album</h2>
   <p class="shelf-sub">Play games, hit milestones, collect them all!</p>
   <div class="shelf" id="shelf"></div>
+
+  <section class="grownups" aria-label="Information for parents and teachers">
+    <h2 class="shelf-title">For Grown-Ups</h2>
+    <div class="grownups-card">
+      <p><strong>Is WoopKid really free and ad-free?</strong> Yes. Every game is completely free with zero advertising: no ad networks, no video ads, no in-app purchases, nothing to buy and nothing to download.</p>
+      <p><strong>Is it safe for young kids?</strong> Yes. No ads, no chat, no accounts, no data collection and no external links. Progress is saved only on your device. Content is bright and cartoon-style, made for ages 5-12.</p>
+      <p><strong>Does it work on school Chromebooks?</strong> Yes. Every game is a lightweight HTML5 game that runs in any modern browser on Chromebook, tablet, phone or computer. Teachers: see <a href="teachers/">WoopKid for Teachers</a> for indoor recess and brain breaks.</p>
+    </div>
+  </section>
 
   <footer>
     <div class="promises">
@@ -278,6 +384,8 @@ const WoopProfile = {
 const GAMES = [
   { slug:'woop-swarm', name:'Woop Swarm', genre:'Bullet Heaven', cat:['action'], acc:'#B25CFF', emoji:'👾',
     desc:'Dodge the goober swarm. Level up, evolve your toys, bop the boss.', live:true, bestLabel:'Bops' },
+  { slug:'scribble-legs', name:'Scribble Legs', genre:'Draw & Race', cat:['action','quick'], acc:'#6B4DFF', emoji:'✏️',
+    desc:'Draw your own wacky legs and outrun the giggling Tickle Cloud.', live:true, bestLabel:'Meters' },
   { slug:'rope-rush', name:'Rope Rush', genre:'Swing & Fly', cat:['action','quick'], acc:'#8F7BFF', emoji:'🪀',
     desc:'Hold to hook, release to fly. Swing through 20 levels of stars and saws.', live:true, bestLabel:'Stars' },
   { slug:'merge-squad', name:'Merge Squad', genre:'Toy Auto-Battler', cat:['action','puzzle'], acc:'#FF8A3D', emoji:'🧸',
