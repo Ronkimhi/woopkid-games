@@ -166,9 +166,34 @@ html, body {
     100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
+#timerPill {
+    position: fixed;
+    top: 64px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #FFFFFF;
+    border: 3px solid #2B2350;
+    border-radius: 999px;
+    padding: 3px 16px;
+    font-weight: 800;
+    font-size: 15px;
+    color: #2B2350;
+    letter-spacing: 1px;
+    box-shadow: 3px 4px 0 rgba(43, 35, 80, 0.2);
+    z-index: 30;
+    display: none;
+    pointer-events: none;
+}
+#timerPill.warn { background: #FFD93D; animation: timerPulse 0.5s ease-in-out infinite; }
+#timerPill.sudden { background: #FF5FA2; color: #FFFFFF; animation: timerPulse 0.4s ease-in-out infinite; }
+@keyframes timerPulse {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.12); }
+}
+
 #toast {
     position: fixed;
-    top: 76px;
+    top: 108px;
     left: 50%;
     transform: translateX(-50%);
     background: #2B2350;
@@ -413,6 +438,8 @@ html, body {
     <div class="dotRow" id="dotsR"></div>
 </div>
 
+<div id="timerPill">45</div>
+
 <div id="banner">
     <div id="bannerMain"></div>
     <div id="bannerSub"></div>
@@ -435,6 +462,7 @@ html, body {
     <div id="hints">
         <div class="hintCard"><b>2 PLAYERS</b><br>P1: WASD to drive, E to shoot.<br>P2: Arrows to drive, SPACE to shoot.<br>Touch: each player drags their half of the screen, bubbles fire on their own!</div>
         <div class="hintCard cyan"><b>VS ROBOT</b><br>Drive with WASD or Arrows, shoot with E or SPACE.<br>Touch: drag anywhere to drive, your tank shoots on its own.</div>
+        <div class="hintCard"><b>NEW!</b> Grab power bubbles: &#128737;&#65039; shield, &#10007;3 triple shot, &#9889; zoom, &#11044; mega bubble. Crumbly walls pop when shot. Too slow? The foam closes in!</div>
     </div>
 </div>
 
@@ -477,8 +505,8 @@ function angDiff(a, b) {
 var CS = 80;              /* maze cell size */
 var WT = 12;              /* wall thickness */
 var TANK_R = 21;
-var TANK_SPD = 175;
-var TANK_ROT = 3.6;       /* rad per second */
+var TANK_SPD = 185;
+var TANK_ROT = 4.0;       /* rad per second */
 var BUB_R = 9;
 var BUB_SPD = 310;
 var MAX_BOUNCE = 3;       /* bubbles bounce up to 3 times, the 4th wall pops them */
@@ -488,6 +516,15 @@ var BUB_GRACE = 0.22;     /* seconds a fresh bubble ignores its owner */
 var BUB_LIFE = 10;
 var RESPAWN_DELAY = 0.8;  /* popped tank reinflates at spawn after 800ms */
 var WIN_SCORE = 5;
+var ROUND_TIME = 45;      /* seconds until sudden-death foam */
+var FOAM_SPD = 30;        /* how fast the foam band closes in */
+var SOFT_FRAC = 0.30;     /* fraction of interior walls that are crumbly */
+var PICKUP_R = 15;
+var BIG_R = 16;
+var BIG_SPD = 235;
+var BOOST_MULT = 1.38;
+var BOOST_TIME = 7;
+var PICKUP_TYPES = ['shield', 'triple', 'speed', 'big'];
 
 /* Robot personalities */
 var DIFFS = {
@@ -615,23 +652,27 @@ function mazeConnected(m) {
     return count === total;
 }
 
-/* wall rectangles in core coordinates (arena spans 0..cols*CS x 0..rows*CS) */
-function wallRects(m) {
+/* wall rectangles in core coordinates (arena spans 0..cols*CS x 0..rows*CS).
+   Border walls are always solid; a share of interior walls are "soft"
+   crumbly bubble-bricks that a shot can pop (removing walls can never
+   disconnect the maze). */
+function wallRects(m, rng) {
+    rng = rng || Math.random;
     var rects = [];
     var w = m.cols * CS, h = m.rows * CS, e = WT / 2;
-    rects.push({ x: -e, y: -e, w: w + WT, h: WT });
-    rects.push({ x: -e, y: h - e, w: w + WT, h: WT });
-    rects.push({ x: -e, y: -e, w: WT, h: h + WT });
-    rects.push({ x: w - e, y: -e, w: WT, h: h + WT });
+    rects.push({ x: -e, y: -e, w: w + WT, h: WT, soft: false, alive: true });
+    rects.push({ x: -e, y: h - e, w: w + WT, h: WT, soft: false, alive: true });
+    rects.push({ x: -e, y: -e, w: WT, h: h + WT, soft: false, alive: true });
+    rects.push({ x: w - e, y: -e, w: WT, h: h + WT, soft: false, alive: true });
     var r, c;
     for (r = 0; r < m.rows; r++) {
         for (c = 0; c < m.cols - 1; c++) {
-            if (m.V[r][c]) rects.push({ x: (c + 1) * CS - e, y: r * CS - e, w: WT, h: CS + WT });
+            if (m.V[r][c]) rects.push({ x: (c + 1) * CS - e, y: r * CS - e, w: WT, h: CS + WT, soft: rng() < SOFT_FRAC, alive: true });
         }
     }
     for (r = 0; r < m.rows - 1; r++) {
         for (c = 0; c < m.cols; c++) {
-            if (m.H[r][c]) rects.push({ x: c * CS - e, y: (r + 1) * CS - e, w: CS + WT, h: WT });
+            if (m.H[r][c]) rects.push({ x: c * CS - e, y: (r + 1) * CS - e, w: CS + WT, h: WT, soft: rng() < SOFT_FRAC, alive: true });
         }
     }
     return rects;
@@ -664,7 +705,8 @@ function emptyInput() {
 function mkTank() {
     return {
         x: 0, y: 0, a: 0, alive: true, infl: 1, score: 0, cd: 0,
-        prevShoot: false, recoil: 0, velx: 0, vely: 0, spawnX: 0, spawnY: 0
+        prevShoot: false, recoil: 0, velx: 0, vely: 0, spawnX: 0, spawnY: 0,
+        shield: false, triple: 0, big: 0, boostT: 0, drv: 0
     };
 }
 
@@ -687,13 +729,23 @@ function createGame(opts) {
         round: 1,
         winner: -1,
         over: false,
+        countT: 0,
+        roundT: ROUND_TIME,
+        sudden: false,
+        foam: 0,
+        lastTick: -1,
+        pickups: [],
+        pickT: 4,
         bot: {
             path: [], repathT: 0, losT: 0, canSee: false, sillyT: 0, sillyIn: 0,
-            shootT: 0.8, backT: 0, checkT: 0, lastX: 0, lastY: 0
+            shootT: 0.8, backT: 0, checkT: 0, lastX: 0, lastY: 0, wantPick: -1
         }
     };
-    for (var i = 0; i < MAX_BUBBLES * 2; i++) {
-        g.bubbles.push({ active: false, x: 0, y: 0, vx: 0, vy: 0, bounces: 0, owner: 0, age: 0 });
+    for (var i = 0; i < 12; i++) {
+        g.bubbles.push({ active: false, x: 0, y: 0, vx: 0, vy: 0, bounces: 0, owner: 0, age: 0, r: BUB_R, maxB: MAX_BOUNCE });
+    }
+    for (var pi = 0; pi < 3; pi++) {
+        g.pickups.push({ active: false, type: 'shield', x: 0, y: 0, age: 0 });
     }
     var D = DIFFS[g.diff] || DIFFS.medium;
     g.bot.sillyIn = D.sillyMin + g.rng() * (D.sillyMax - D.sillyMin);
@@ -719,19 +771,34 @@ function spawnTankAt(g, i) {
     t.recoil = 0;
     t.velx = 0;
     t.vely = 0;
+    t.shield = false;
+    t.triple = 0;
+    t.big = 0;
+    t.boostT = 0;
+    t.drv = 0;
 }
 
 function newRound(g) {
     g.maze = genMaze(g.cols, g.rows, g.rng);
-    g.walls = wallRects(g.maze);
+    g.walls = wallRects(g.maze, g.rng);
     for (var i = 0; i < g.bubbles.length; i++) g.bubbles[i].active = false;
+    for (var p = 0; p < g.pickups.length; p++) g.pickups[p].active = false;
     spawnTankAt(g, 0);
     spawnTankAt(g, 1);
+    g.phase = 'count';
+    g.countT = g.round === 1 ? 2.99 : 1.99;
+    g.lastCount = 99;
+    g.roundT = ROUND_TIME;
+    g.sudden = false;
+    g.foam = 0;
+    g.lastTick = -1;
+    g.pickT = 4 + g.rng() * 2;
     g.bot.path = [];
     g.bot.repathT = 0;
     g.bot.canSee = false;
     g.bot.backT = 0;
     g.bot.checkT = 0;
+    g.bot.wantPick = -1;
     g.bot.lastX = g.tanks[1].x;
     g.bot.lastY = g.tanks[1].y;
     g.events.push({ type: 'newRound', round: g.round });
@@ -745,19 +812,24 @@ function liveBubbles(g, owner) {
     return n;
 }
 
-function spawnBubble(g, owner, x, y, ang) {
+function spawnBubble(g, owner, x, y, ang, r, spd, maxB) {
+    r = r || BUB_R;
+    spd = spd || BUB_SPD;
+    maxB = maxB || MAX_BOUNCE;
     for (var i = 0; i < g.bubbles.length; i++) {
         var b = g.bubbles[i];
         if (!b.active) {
             b.active = true;
             b.x = x;
             b.y = y;
-            b.vx = Math.cos(ang) * BUB_SPD;
-            b.vy = Math.sin(ang) * BUB_SPD;
+            b.vx = Math.cos(ang) * spd;
+            b.vy = Math.sin(ang) * spd;
             b.bounces = 0;
             b.owner = owner;
             b.age = 0;
-            g.events.push({ type: 'shoot', owner: owner, x: x, y: y });
+            b.r = r;
+            b.maxB = maxB;
+            g.events.push({ type: 'shoot', owner: owner, x: x, y: y, a: ang, big: r > BUB_R });
             return b;
         }
     }
@@ -767,16 +839,34 @@ function spawnBubble(g, owner, x, y, ang) {
 function tryFire(g, i) {
     var t = g.tanks[i];
     if (!t.alive || t.cd > 0 || liveBubbles(g, i) >= MAX_BUBBLES) return null;
-    t.cd = SHOOT_CD;
     t.recoil = 1;
+    /* physical recoil nudge: tanks feel weighty when firing */
+    t.x -= Math.cos(t.a) * 3;
+    t.y -= Math.sin(t.a) * 3;
     var tip = TANK_R + BUB_R + 4;
-    return spawnBubble(g, i, t.x + Math.cos(t.a) * tip, t.y + Math.sin(t.a) * tip, t.a);
+    var bx = t.x + Math.cos(t.a) * tip, by = t.y + Math.sin(t.a) * tip;
+    if (t.big > 0) {
+        t.big--;
+        t.cd = 0.5;
+        return spawnBubble(g, i, bx, by, t.a, BIG_R, BIG_SPD, MAX_BOUNCE + 2);
+    }
+    if (t.triple > 0) {
+        t.triple--;
+        t.cd = SHOOT_CD;
+        spawnBubble(g, i, bx, by, t.a - 0.24);
+        spawnBubble(g, i, bx, by, t.a + 0.24);
+        return spawnBubble(g, i, bx, by, t.a);
+    }
+    t.cd = SHOOT_CD;
+    return spawnBubble(g, i, bx, by, t.a);
 }
 
 function updateTank(g, i, dt) {
     var t = g.tanks[i];
     if (t.infl < 1) t.infl = Math.min(1, t.infl + dt / 0.35);
     if (!t.alive) return;
+    if (t.boostT > 0) t.boostT = Math.max(0, t.boostT - dt);
+    var boost = t.boostT > 0 ? BOOST_MULT : 1;
     var inp = g.inputs[i];
     var px = t.x, py = t.y;
     var mvx = 0, mvy = 0, sp;
@@ -785,12 +875,17 @@ function updateTank(g, i, dt) {
         var mt = TANK_ROT * 1.5 * dt;
         t.a += clamp(d, -mt, mt);
         var align = Math.cos(angDiff(inp.jang, t.a));
-        sp = TANK_SPD * inp.jmag * Math.max(0.2, align);
+        sp = TANK_SPD * boost * inp.jmag * Math.max(0.2, align);
         mvx = Math.cos(t.a) * sp * dt;
         mvy = Math.sin(t.a) * sp * dt;
+        t.drv = sp / TANK_SPD;
     } else {
         t.a += clamp(inp.turn, -1.3, 1.3) * TANK_ROT * dt;
-        sp = clamp(inp.drive, -1.1, 1.1) * TANK_SPD;
+        /* smoothed drive: responsive but weighty */
+        var tgt = clamp(inp.drive, -1.1, 1.1);
+        t.drv += clamp(tgt - t.drv, -7 * dt, 7 * dt);
+        if (Math.abs(t.drv) < 0.02 && tgt === 0) t.drv = 0;
+        sp = t.drv * TANK_SPD * boost;
         if (sp < 0) sp *= 0.62;
         mvx = Math.cos(t.a) * sp * dt;
         mvy = Math.sin(t.a) * sp * dt;
@@ -800,6 +895,7 @@ function updateTank(g, i, dt) {
     var pass, w, cc;
     for (pass = 0; pass < 2; pass++) {
         for (w = 0; w < g.walls.length; w++) {
+            if (!g.walls[w].alive) continue;
             cc = circleWall(t.x, t.y, TANK_R, g.walls[w]);
             if (cc) { t.x += cc.nx * cc.depth; t.y += cc.ny * cc.depth; }
         }
@@ -826,14 +922,14 @@ function updateTank(g, i, dt) {
     t.prevShoot = want;
 }
 
-function popTank(g, victim, owner, x, y) {
+function popTank(g, victim, owner, x, y, cause) {
     var t = g.tanks[victim];
     if (!t.alive) return;
     t.alive = false;
     var self = owner === victim;
     var scorer = self ? 1 - victim : owner;
     g.tanks[scorer].score++;
-    g.events.push({ type: 'pop', victim: victim, scorer: scorer, self: self, x: x, y: y });
+    g.events.push({ type: 'pop', victim: victim, scorer: scorer, self: self, x: x, y: y, cause: cause || 'bubble' });
     g.phase = 'banner';
     g.bannerT = RESPAWN_DELAY;
 }
@@ -855,10 +951,19 @@ function updateBubbles(g, dt) {
             b.x += b.vx * sdt;
             b.y += b.vy * sdt;
             for (var w = 0; w < g.walls.length; w++) {
-                var c = circleWall(b.x, b.y, BUB_R, g.walls[w]);
+                var wall = g.walls[w];
+                if (!wall.alive) continue;
+                var c = circleWall(b.x, b.y, b.r, wall);
                 if (!c) continue;
+                if (wall.soft) {
+                    /* crumbly wall: the shot pops it (and itself) */
+                    wall.alive = false;
+                    b.active = false;
+                    g.events.push({ type: 'wallBreak', x: wall.x + wall.w / 2, y: wall.y + wall.h / 2, owner: b.owner });
+                    break;
+                }
                 b.bounces++;
-                if (b.bounces > MAX_BOUNCE) {
+                if (b.bounces > b.maxB) {
                     b.active = false;
                     g.events.push({ type: 'burst', x: b.x, y: b.y });
                 } else {
@@ -879,14 +984,102 @@ function updateBubbles(g, dt) {
                 if (!t.alive) continue;
                 if (ti === b.owner && b.age < BUB_GRACE) continue;
                 var dx = b.x - t.x, dy = b.y - t.y;
-                var hr = TANK_R * 0.9 + BUB_R;
+                var hr = TANK_R * 0.9 + b.r;
                 if (dx * dx + dy * dy < hr * hr) {
                     b.active = false;
-                    popTank(g, ti, b.owner, t.x, t.y);
+                    if (t.shield) {
+                        t.shield = false;
+                        g.events.push({ type: 'shieldSave', who: ti, x: t.x, y: t.y });
+                        break;
+                    }
+                    popTank(g, ti, b.owner, t.x, t.y, 'bubble');
                     return;
                 }
             }
         }
+    }
+}
+
+/* ---------- Pickups & sudden-death foam ---------- */
+function spawnPickup(g) {
+    var slot = null;
+    for (var i = 0; i < g.pickups.length; i++) {
+        if (!g.pickups[i].active) { slot = g.pickups[i]; break; }
+    }
+    if (!slot) return;
+    for (var tr = 0; tr < 24; tr++) {
+        var r = (g.rng() * g.rows) | 0, c = (g.rng() * g.cols) | 0;
+        var x = c * CS + CS / 2, y = r * CS + CS / 2, ok = true;
+        for (var ti = 0; ti < 2; ti++) {
+            var t = g.tanks[ti];
+            var dx = x - t.x, dy = y - t.y;
+            if (dx * dx + dy * dy < (CS * 1.6) * (CS * 1.6)) ok = false;
+        }
+        for (var pi = 0; pi < g.pickups.length; pi++) {
+            var q = g.pickups[pi];
+            if (q.active && q.x === x && q.y === y) ok = false;
+        }
+        if (g.sudden) {
+            var edge = Math.min(x, y, g.cols * CS - x, g.rows * CS - y);
+            if (edge < g.foam + CS * 0.6) ok = false;
+        }
+        if (!ok) continue;
+        slot.active = true;
+        slot.type = PICKUP_TYPES[(g.rng() * PICKUP_TYPES.length) | 0];
+        slot.x = x;
+        slot.y = y;
+        slot.age = 0;
+        g.events.push({ type: 'pickupSpawn', x: x, y: y, ptype: slot.type });
+        return;
+    }
+}
+
+function updatePickups(g, dt) {
+    g.pickT -= dt;
+    if (g.pickT <= 0) {
+        var act = 0;
+        for (var i = 0; i < g.pickups.length; i++) if (g.pickups[i].active) act++;
+        if (act < 2) spawnPickup(g);
+        g.pickT = 6 + g.rng() * 4;
+    }
+    for (var pi = 0; pi < g.pickups.length; pi++) {
+        var p = g.pickups[pi];
+        if (!p.active) continue;
+        p.age += dt;
+        for (var ti = 0; ti < 2; ti++) {
+            var t = g.tanks[ti];
+            if (!t.alive) continue;
+            var dx = p.x - t.x, dy = p.y - t.y, rr2 = TANK_R + PICKUP_R;
+            if (dx * dx + dy * dy < rr2 * rr2) {
+                p.active = false;
+                if (p.type === 'shield') t.shield = true;
+                else if (p.type === 'triple') t.triple = 3;
+                else if (p.type === 'speed') t.boostT = BOOST_TIME;
+                else t.big = 2;
+                g.events.push({ type: 'pickup', who: ti, ptype: p.type, x: p.x, y: p.y });
+                break;
+            }
+        }
+    }
+}
+
+/* Sudden death: soap foam creeps in from every edge and pops laggards. */
+function foamCheck(g, dt) {
+    if (!g.sudden) return;
+    var aw = g.cols * CS, ah = g.rows * CS;
+    var cap = Math.min(aw, ah) / 2 - CS * 0.65;
+    g.foam = Math.min(cap, g.foam + FOAM_SPD * dt);
+    var worst = -1, depth = 0;
+    for (var ti = 0; ti < 2; ti++) {
+        var t = g.tanks[ti];
+        if (!t.alive) continue;
+        var edge = Math.min(t.x, t.y, aw - t.x, ah - t.y);
+        var d = g.foam - (edge - TANK_R * 0.35);
+        if (d > 0 && d > depth) { depth = d; worst = ti; }
+    }
+    if (worst >= 0) {
+        var v = g.tanks[worst];
+        popTank(g, worst, worst, v.x, v.y, 'foam');
     }
 }
 
@@ -906,6 +1099,7 @@ function los(g, x1, y1, x2, y2) {
         var py = y1 + dy * s / steps;
         for (var w = 0; w < g.walls.length; w++) {
             var rc = g.walls[w];
+            if (!rc.alive) continue;
             if (px > rc.x - pad && px < rc.x + rc.w + pad && py > rc.y - pad && py < rc.y + rc.h + pad) return false;
         }
     }
@@ -945,6 +1139,11 @@ function bfsPath(g, r0, c0, r1, c1) {
 function botThink(g, dt) {
     var st = g.bot;
     var D = DIFFS[g.diff] || DIFFS.medium;
+    /* the robot sharpens up a little every round so matches stay tense */
+    var ramp = Math.min(1.35, 1 + 0.055 * (g.round - 1));
+    var aimTol = D.aimTol / ramp;
+    var shootCd = D.shootCd / ramp;
+    var spdF = D.spd * Math.min(1.12, ramp);
     var b = g.tanks[1], p = g.tanks[0];
     var inp = emptyInput();
     if (!b.alive || !p.alive) { g.inputs[1] = inp; return; }
@@ -957,7 +1156,7 @@ function botThink(g, dt) {
     if (st.sillyT > 0) {
         st.sillyT -= dt;
         inp.turn = 1;
-        if (st.sillyT < 0.08 && st.shootT <= 0) { inp.shoot = true; st.shootT = D.shootCd; }
+        if (st.sillyT < 0.08 && st.shootT <= 0) { inp.shoot = true; st.shootT = shootCd; }
         g.inputs[1] = inp;
         return;
     }
@@ -1000,16 +1199,34 @@ function botThink(g, dt) {
         var want = Math.atan2(ty - b.y, tx - b.x);
         var da = angDiff(want, b.a);
         inp.turn = clamp(da * 4, -1, 1) * D.rot;
-        if (Math.abs(da) < 0.7 && dd > CS * 1.1) inp.drive = 0.6 * D.spd;
-        if (Math.abs(da) < D.aimTol && st.shootT <= 0) {
+        if (Math.abs(da) < 0.7 && dd > CS * 1.1) inp.drive = 0.6 * spdF;
+        if (Math.abs(da) < aimTol && st.shootT <= 0) {
             inp.shoot = true;
-            st.shootT = D.shootCd;
+            st.shootT = shootCd;
         }
     } else {
-        /* navigate the maze toward the player with BFS waypoints */
+        /* navigate the maze with BFS waypoints */
         if (st.repathT <= 0) {
             st.repathT = 0.45;
-            st.path = bfsPath(g, cellR(g, b.y), cellC(g, b.x), cellR(g, p.y), cellC(g, p.x));
+            var br = cellR(g, b.y), bc = cellC(g, b.x);
+            var tr2 = cellR(g, p.y), tc2 = cellC(g, p.x);
+            /* sudden death with foam closing in: run for the middle */
+            if (g.sudden) {
+                var edge = Math.min(b.x, b.y, g.cols * CS - b.x, g.rows * CS - b.y);
+                if (edge < g.foam + CS * 1.2) { tr2 = (g.rows / 2) | 0; tc2 = (g.cols / 2) | 0; }
+            }
+            /* sometimes go shopping for a nearby power bubble instead */
+            var seekP = g.diff === 'easy' ? 0.35 : (g.diff === 'hard' ? 0.9 : 0.65);
+            if (!g.sudden && g.rng() < seekP) {
+                var bestD = Math.abs(tr2 - br) + Math.abs(tc2 - bc);
+                for (var pk = 0; pk < g.pickups.length; pk++) {
+                    var pp = g.pickups[pk];
+                    if (!pp.active) continue;
+                    var pd = Math.abs(cellR(g, pp.y) - br) + Math.abs(cellC(g, pp.x) - bc);
+                    if (pd < bestD) { bestD = pd; tr2 = cellR(g, pp.y); tc2 = cellC(g, pp.x); }
+                }
+            }
+            st.path = bfsPath(g, br, bc, tr2, tc2);
         }
         while (st.path.length) {
             var wp0 = st.path[0];
@@ -1021,13 +1238,32 @@ function botThink(g, dt) {
         var want2 = Math.atan2(wp.y - b.y, wp.x - b.x);
         var da2 = angDiff(want2, b.a);
         inp.turn = clamp(da2 * 4, -1, 1) * D.rot;
-        if (Math.abs(da2) < 1.0) inp.drive = D.spd;
+        if (Math.abs(da2) < 1.0) inp.drive = spdF;
     }
     g.inputs[1] = inp;
 }
 
 function step(g, dt) {
     if (g.over) return;
+    if (g.phase === 'count') {
+        /* tanks reinflate + aim during the countdown, nothing else moves */
+        for (var ci = 0; ci < 2; ci++) {
+            var ct = g.tanks[ci];
+            if (ct.infl < 1) ct.infl = Math.min(1, ct.infl + dt / 0.35);
+            ct.a += clamp(g.inputs[ci].turn, -1.3, 1.3) * TANK_ROT * dt;
+        }
+        g.countT -= dt;
+        var cn = Math.ceil(g.countT);
+        if (g.countT > 0 && cn !== g.lastCount) {
+            g.lastCount = cn;
+            g.events.push({ type: 'count', n: cn });
+        }
+        if (g.countT <= 0) {
+            g.phase = 'play';
+            g.events.push({ type: 'go' });
+        }
+        return;
+    }
     if (g.phase === 'banner') {
         g.bannerT -= dt;
         if (g.bannerT <= 0) {
@@ -1039,21 +1275,36 @@ function step(g, dt) {
             } else {
                 g.round++;
                 newRound(g);
-                g.phase = 'play';
             }
         }
         return;
+    }
+    /* play phase: round clock ticks toward sudden death */
+    if (!g.sudden) {
+        g.roundT -= dt;
+        var s = Math.ceil(g.roundT);
+        if (g.roundT <= 0) {
+            g.sudden = true;
+            g.events.push({ type: 'sudden' });
+        } else if (s <= 5 && s !== g.lastTick) {
+            g.lastTick = s;
+            g.events.push({ type: 'tick', n: s });
+        }
     }
     if (g.mode === 'bot') botThink(g, dt);
     updateTank(g, 0, dt);
     updateTank(g, 1, dt);
     updateBubbles(g, dt);
+    if (g.phase === 'play') updatePickups(g, dt);
+    if (g.phase === 'play') foamCheck(g, dt);
 }
 
 var Core = {
     CS: CS, WT: WT, TANK_R: TANK_R, BUB_R: BUB_R, BUB_SPD: BUB_SPD,
     MAX_BOUNCE: MAX_BOUNCE, MAX_BUBBLES: MAX_BUBBLES, WIN_SCORE: WIN_SCORE,
-    RESPAWN_DELAY: RESPAWN_DELAY, DIFFS: DIFFS,
+    RESPAWN_DELAY: RESPAWN_DELAY, DIFFS: DIFFS, ROUND_TIME: ROUND_TIME,
+    FOAM_SPD: FOAM_SPD, PICKUP_R: PICKUP_R, PICKUP_TYPES: PICKUP_TYPES,
+    spawnPickup: spawnPickup, updatePickups: updatePickups, foamCheck: foamCheck,
     genMaze: genMaze, neighbors: neighbors, mazeConnected: mazeConnected,
     wallRects: wallRects, circleWall: circleWall,
     createGame: createGame, newRound: newRound, step: step, setInput: setInput,
@@ -1356,6 +1607,125 @@ function sfxFanfare() {
     o.stop(t + 0.64);
 }
 
+/* Countdown beep */
+function sfxCount() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime, p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(540 * p, t);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.13, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone; o.start(t); o.stop(t + 0.12);
+}
+/* GO! rising chirp */
+function sfxGo() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime, p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(420 * p, t);
+    o.frequency.exponentialRampToValueAtTime(940 * p, t + 0.16);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.18, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone; o.start(t); o.stop(t + 0.26);
+}
+/* Power bubble collected: sparkly two-note */
+function sfxPickup() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime, p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(880 * p, t);
+    o.frequency.setValueAtTime(1174 * p, t + 0.08);
+    o.frequency.setValueAtTime(1568 * p, t + 0.16);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.15, t + 0.012);
+    g.gain.setValueAtTime(0.15, t + 0.18);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone; o.start(t); o.stop(t + 0.32);
+}
+/* Shield deflect: rubbery boing */
+function sfxShield() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime, p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(300 * p, t);
+    o.frequency.exponentialRampToValueAtTime(150 * p, t + 0.06);
+    o.frequency.exponentialRampToValueAtTime(430 * p, t + 0.16);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.2, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone; o.start(t); o.stop(t + 0.24);
+}
+/* Crumbly wall pops: soft crunch */
+function sfxCrunch() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime, p = pitchVar();
+    var src = audioCtx.createBufferSource();
+    src.buffer = getNoise();
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(1100 * p, t);
+    lp.frequency.exponentialRampToValueAtTime(240 * p, t + 0.13);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.22, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+    src.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
+    src.onended = voiceDone; src.start(t); src.stop(t + 0.16);
+}
+/* Sudden death: gentle wobbly alarm */
+function sfxSudden() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime;
+    var o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(392, t);
+    o.frequency.setValueAtTime(311, t + 0.14);
+    o.frequency.setValueAtTime(392, t + 0.28);
+    o.frequency.setValueAtTime(311, t + 0.42);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.15, t + 0.02);
+    g.gain.setValueAtTime(0.15, t + 0.5);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.62);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone; o.start(t); o.stop(t + 0.64);
+}
+/* Last-seconds tick */
+function sfxTick() {
+    if (!canPlay()) return;
+    activeVoices++;
+    var t = audioCtx.currentTime, p = pitchVar();
+    var o = audioCtx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(980 * p, t);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.08, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.onended = voiceDone; o.start(t); o.stop(t + 0.06);
+}
+
 /* ---------- App state ---------- */
 var App = { MENU: 'menu', PLAYING: 'playing', PAUSED: 'paused', OVER: 'over' };
 var appState = App.MENU;
@@ -1415,27 +1785,69 @@ function buildArenaLayer() {
 
     var walls = game.walls;
     var i, w;
+    /* floor sprinkles: tiny stars and dots for a candy-lagoon feel */
+    var spr = ['#FFE9E5', '#E3F8FD', '#F1EAF9', '#FFF3D6'];
+    for (i = 0; i < game.cols * game.rows; i++) {
+        var sx = (i % game.cols) * CS + 10 + ((i * 37) % (CS - 24));
+        var sy = ((i / game.cols) | 0) * CS + 10 + ((i * 53) % (CS - 24));
+        c.fillStyle = spr[i % 4];
+        if (i % 3 === 0) {
+            drawStar(c, sx, sy, 5, (i % 7) * 0.4);
+            c.fill();
+        } else {
+            c.beginPath();
+            c.arc(sx, sy, 2.5 + (i % 3), 0, TAU);
+            c.fill();
+        }
+    }
+    /* spawn pads with player color + shape cue */
+    for (i = 0; i < 2; i++) {
+        var st2 = game.tanks[i];
+        c.fillStyle = PAL[i].pale;
+        c.strokeStyle = PAL[i].main;
+        c.lineWidth = 3;
+        c.setLineDash([7, 6]);
+        c.beginPath();
+        c.arc(st2.spawnX, st2.spawnY, TANK_R + 9, 0, TAU);
+        c.fill();
+        c.stroke();
+        c.setLineDash([]);
+    }
     /* hard offset shadows first */
     c.fillStyle = 'rgba(43,35,80,0.18)';
     for (i = 0; i < walls.length; i++) {
         w = walls[i];
+        if (!w.alive) continue;
         rr(c, w.x + 3, w.y + 5, w.w, w.h, 7);
         c.fill();
     }
-    /* chunky rounded pastel blocks with ink outlines */
+    /* chunky rounded blocks: lavender = solid, pink bubble-brick = crumbly */
     for (i = 0; i < walls.length; i++) {
         w = walls[i];
+        if (!w.alive) continue;
         rr(c, w.x, w.y, w.w, w.h, 7);
-        c.fillStyle = '#B8A7FF';
+        c.fillStyle = w.soft ? '#FFC7E0' : '#B8A7FF';
         c.fill();
         c.lineWidth = 3;
-        c.strokeStyle = INK;
+        c.strokeStyle = w.soft ? '#E4699F' : INK;
         c.stroke();
+        if (w.soft) {
+            c.fillStyle = 'rgba(255,255,255,0.8)';
+            var horiz = w.w > w.h;
+            var len = horiz ? w.w : w.h;
+            for (var bdo = 12; bdo < len - 6; bdo += 16) {
+                c.beginPath();
+                if (horiz) c.arc(w.x + bdo, w.y + w.h / 2, 3, 0, TAU);
+                else c.arc(w.x + w.w / 2, w.y + bdo, 3, 0, TAU);
+                c.fill();
+            }
+        }
     }
     /* soft top highlight per block */
     c.fillStyle = 'rgba(255,255,255,0.4)';
     for (i = 0; i < walls.length; i++) {
         w = walls[i];
+        if (!w.alive) continue;
         rr(c, w.x + 3, w.y + 2.5, Math.max(4, w.w - 6), Math.min(4.5, w.h - 5), 2.5);
         c.fill();
     }
@@ -1485,6 +1897,28 @@ function buildBubbleSprites() {
         c.fill();
         bubSpr.push(s);
     }
+    buildHaloSprites();
+}
+
+/* Soft radial halo sprites (white + one tint per player), prebuilt so the
+   game loop never touches gradients */
+var haloSprs = [];
+function buildHaloSprites() {
+    haloSprs = [];
+    var tints = ['255,255,255', '255,111,97', '53,199,227', '255,95,162'];
+    for (var i = 0; i < tints.length; i++) {
+        var s = makeCanvas(128, 128);
+        var c = s.getContext('2d');
+        var g = c.createRadialGradient(64, 64, 4, 64, 64, 62);
+        g.addColorStop(0, 'rgba(' + tints[i] + ',0.85)');
+        g.addColorStop(0.5, 'rgba(' + tints[i] + ',0.35)');
+        g.addColorStop(1, 'rgba(' + tints[i] + ',0)');
+        c.fillStyle = g;
+        c.beginPath();
+        c.arc(64, 64, 62, 0, TAU);
+        c.fill();
+        haloSprs.push(s);
+    }
 }
 
 /* ---------- Effect pools (render side) ---------- */
@@ -1494,6 +1928,85 @@ var drops = [];
 for (var di = 0; di < 90; di++) drops.push({ active: false, x: 0, y: 0, vx: 0, vy: 0, t: 0, ttl: 1, size: 3, color: '#fff' });
 var confs = [];
 for (var ci = 0; ci < 140; ci++) confs.push({ active: false, x: 0, y: 0, vx: 0, vy: 0, t: 0, ttl: 1, size: 6, rot: 0, vr: 0, color: '#fff', seed: 0 });
+var halos = [];
+for (var hi = 0; hi < 10; hi++) halos.push({ active: false, x: 0, y: 0, t: 0, ttl: 1, r0: 10, r1: 40, tint: 0 });
+var glints = [];
+for (var gi = 0; gi < 24; gi++) glints.push({ active: false, x: 0, y: 0, vx: 0, vy: 0, t: 0, ttl: 1, r: 6, rot: 0, vr: 0, color: '#fff' });
+var labels = [];
+for (var li = 0; li < 10; li++) labels.push({ active: false, x: 0, y: 0, t: 0, ttl: 1, txt: '', color: '#fff', size: 22 });
+
+function spawnHalo(x, y, r0, r1, ttl, tint) {
+    for (var i = 0; i < halos.length; i++) {
+        if (!halos[i].active) {
+            var h = halos[i];
+            h.active = true; h.x = x; h.y = y; h.t = 0; h.ttl = ttl;
+            h.r0 = r0; h.r1 = r1; h.tint = tint || 0;
+            return;
+        }
+    }
+}
+function spawnGlints(x, y, n, color) {
+    var made = 0;
+    for (var i = 0; i < glints.length && made < n; i++) {
+        if (!glints[i].active) {
+            var q = glints[i];
+            var a = rand(0, TAU), sp = rand(40, 150);
+            q.active = true; q.x = x; q.y = y;
+            q.vx = Math.cos(a) * sp; q.vy = Math.sin(a) * sp - 40;
+            q.t = 0; q.ttl = rand(0.35, 0.6);
+            q.r = rand(4, 8); q.rot = rand(0, TAU); q.vr = rand(-6, 6);
+            q.color = color;
+            made++;
+        }
+    }
+}
+function spawnLabel(x, y, txt, color, size) {
+    for (var i = 0; i < labels.length; i++) {
+        if (!labels[i].active) {
+            var l = labels[i];
+            l.active = true; l.x = x; l.y = y; l.t = 0; l.ttl = 0.9;
+            l.txt = txt; l.color = color; l.size = size || 22;
+            return;
+        }
+    }
+}
+/* muzzle puff: a little cone of mist in the firing direction */
+function spawnPuff(x, y, ang) {
+    var made = 0;
+    for (var i = 0; i < drops.length && made < 6; i++) {
+        if (!drops[i].active) {
+            var d = drops[i];
+            var a = ang + rand(-0.5, 0.5), sp = rand(40, 130);
+            d.active = true; d.x = x; d.y = y;
+            d.vx = Math.cos(a) * sp; d.vy = Math.sin(a) * sp - 20;
+            d.t = 0; d.ttl = rand(0.2, 0.4); d.size = rand(2, 4.5);
+            d.color = 'rgba(255,255,255,0.9)';
+            made++;
+        }
+    }
+}
+/* point-burst confetti (wall crumbs, pickup sparkles) */
+function burstConfettiAt(x, y, colors, n) {
+    var made = 0;
+    for (var i = 0; i < confs.length && made < n; i++) {
+        if (!confs[i].active) {
+            var f = confs[i];
+            var a = rand(0, TAU), sp = rand(70, 240);
+            f.active = true;
+            f.x = x; f.y = y;
+            f.vx = Math.cos(a) * sp;
+            f.vy = Math.sin(a) * sp - 90;
+            f.t = 0;
+            f.ttl = rand(0.5, 0.9);
+            f.size = rand(4, 8);
+            f.rot = rand(0, TAU);
+            f.vr = rand(-9, 9);
+            f.color = colors[(Math.random() * colors.length) | 0];
+            f.seed = rand(0, 10);
+            made++;
+        }
+    }
+}
 
 function spawnRing(x, y, r0, r1, ttl, color, lw) {
     for (var i = 0; i < rings.length; i++) {
@@ -1568,6 +2081,40 @@ function updateFx(dt) {
         f.y += f.vy * dt;
         f.rot += f.vr * dt;
     }
+    for (i = 0; i < halos.length; i++) {
+        var h = halos[i];
+        if (!h.active) continue;
+        h.t += dt;
+        if (h.t >= h.ttl) h.active = false;
+    }
+    for (i = 0; i < glints.length; i++) {
+        var q2 = glints[i];
+        if (!q2.active) continue;
+        q2.t += dt;
+        if (q2.t >= q2.ttl) { q2.active = false; continue; }
+        q2.x += q2.vx * dt;
+        q2.y += q2.vy * dt;
+        q2.rot += q2.vr * dt;
+    }
+    for (i = 0; i < labels.length; i++) {
+        var l = labels[i];
+        if (!l.active) continue;
+        l.t += dt;
+        if (l.t >= l.ttl) { l.active = false; continue; }
+        l.y -= 38 * dt;
+    }
+}
+/* halos render under everything else */
+function drawHalos() {
+    for (var i = 0; i < halos.length; i++) {
+        var h = halos[i];
+        if (!h.active) continue;
+        var k = h.t / h.ttl;
+        var r = h.r0 + (h.r1 - h.r0) * (1 - (1 - k) * (1 - k));
+        ctx.globalAlpha = 1 - k;
+        ctx.drawImage(haloSprs[h.tint], (h.x - r) | 0, (h.y - r) | 0, (r * 2) | 0, (r * 2) | 0);
+    }
+    ctx.globalAlpha = 1;
 }
 function drawFx() {
     var i;
@@ -1602,6 +2149,43 @@ function drawFx() {
         ctx.rotate(f.rot);
         ctx.fillRect(-f.size / 2, -f.size * 0.75, f.size, f.size * 1.5);
         ctx.restore();
+    }
+    /* star glints: 4-point sparkles */
+    for (i = 0; i < glints.length; i++) {
+        var q2 = glints[i];
+        if (!q2.active) continue;
+        var gk = 1 - q2.t / q2.ttl;
+        var gr = q2.r * gk;
+        ctx.globalAlpha = gk;
+        ctx.fillStyle = q2.color;
+        ctx.save();
+        ctx.translate(q2.x, q2.y);
+        ctx.rotate(q2.rot);
+        ctx.beginPath();
+        ctx.moveTo(0, -gr);
+        ctx.quadraticCurveTo(gr * 0.18, -gr * 0.18, gr, 0);
+        ctx.quadraticCurveTo(gr * 0.18, gr * 0.18, 0, gr);
+        ctx.quadraticCurveTo(-gr * 0.18, gr * 0.18, -gr, 0);
+        ctx.quadraticCurveTo(-gr * 0.18, -gr * 0.18, 0, -gr);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+    /* floating labels */
+    for (i = 0; i < labels.length; i++) {
+        var l = labels[i];
+        if (!l.active) continue;
+        var lk = l.t / l.ttl;
+        var sc = lk < 0.25 ? easeOutBack(lk / 0.25) : 1;
+        ctx.globalAlpha = lk > 0.6 ? (1 - lk) / 0.4 : 1;
+        ctx.font = '800 ' + ((l.size * sc) | 0) + 'px Nunito, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = INK;
+        ctx.strokeText(l.txt, l.x | 0, l.y | 0);
+        ctx.fillStyle = l.color;
+        ctx.fillText(l.txt, l.x | 0, l.y | 0);
     }
     ctx.globalAlpha = 1;
 }
@@ -1671,7 +2255,9 @@ function drawTank(i) {
     ctx.fill();
 
     ctx.rotate(t.a);
-    ctx.scale(sc, sc);
+    /* squash & stretch: stretch along heading with speed, squash on recoil */
+    var stretch = Math.min(0.09, speed / 2400);
+    ctx.scale((1 + stretch - t.recoil * 0.13) * sc, (1 - stretch * 0.7 + t.recoil * 0.09) * sc);
     var rec = t.recoil * 3;
 
     /* treads */
@@ -1691,12 +2277,22 @@ function drawTank(i) {
     rr(ctx, 4 - rec, -6, TANK_R + 13, 12, 6);
     ctx.fill();
     ctx.stroke();
-    /* muzzle ring */
-    ctx.fillStyle = P.light;
+    /* muzzle ring (swells when a mega bubble is loaded) */
+    ctx.fillStyle = t.big > 0 ? '#B388FF' : P.light;
     ctx.beginPath();
-    ctx.arc(TANK_R + 15 - rec, 0, 7, 0, TAU);
+    ctx.arc(TANK_R + 15 - rec, 0, t.big > 0 ? 9.5 : 7, 0, TAU);
     ctx.fill();
     ctx.stroke();
+    /* triple-shot pips on the barrel */
+    if (t.triple > 0) {
+        ctx.fillStyle = '#FF8A3D';
+        for (var tp = 0; tp < t.triple; tp++) {
+            ctx.beginPath();
+            ctx.arc(10 + tp * 8 - rec, -10, 3, 0, TAU);
+            ctx.fill();
+            ctx.stroke();
+        }
+    }
 
     /* round body */
     ctx.fillStyle = P.main;
@@ -1738,16 +2334,260 @@ function drawTank(i) {
         ctx.fill();
     }
     ctx.restore();
+
+    /* shield: a wobbling soap bubble around the whole tank */
+    if (t.shield) {
+        var sr = (TANK_R + 9 + Math.sin(time * 5 + i) * 1.5) * sc;
+        ctx.globalAlpha = 0.16;
+        ctx.fillStyle = '#8FE5F5';
+        ctx.beginPath();
+        ctx.arc(t.x | 0, t.y | 0, sr, 0, TAU);
+        ctx.fill();
+        ctx.globalAlpha = 0.9;
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(158,255,214,0.8)';
+        ctx.beginPath();
+        ctx.arc(t.x | 0, t.y | 0, sr - 3, -2.4, -1.2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+    }
 }
 
 function drawBubbles() {
     for (var i = 0; i < game.bubbles.length; i++) {
         var b = game.bubbles[i];
         if (!b.active) continue;
+        /* motion trail: fading ghosts along the velocity */
+        ctx.fillStyle = PAL[b.owner].light;
+        for (var k = 3; k >= 1; k--) {
+            ctx.globalAlpha = 0.09 * (4 - k);
+            ctx.beginPath();
+            ctx.arc((b.x - b.vx * 0.014 * k) | 0, (b.y - b.vy * 0.014 * k) | 0, Math.max(1, b.r * (1 - k * 0.16)), 0, TAU);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
         var wobble = 1 + Math.sin(b.age * 7 + i) * 0.05;
-        var sz = BUB_R * 2.4 * wobble;
+        var sz = b.r * 2.4 * wobble;
         ctx.drawImage(bubSpr[b.owner], (b.x - sz / 2) | 0, (b.y - sz / 2) | 0, sz, sz);
     }
+}
+
+/* ---------- Pickups, foam, countdown, ambient ---------- */
+var PICK_COLORS = { shield: '#7ED957', triple: '#FF8A3D', speed: '#FFD93D', big: '#B388FF' };
+var PICK_LABELS = { shield: 'SHIELD!', triple: 'TRIPLE!', speed: 'ZOOM!', big: 'MEGA!' };
+function drawPickups() {
+    for (var i = 0; i < game.pickups.length; i++) {
+        var p = game.pickups[i];
+        if (!p.active) continue;
+        var bob = Math.sin(time * 3 + p.x * 0.05) * 3;
+        var sc = p.age < 0.35 ? easeOutBack(Math.max(0.02, p.age / 0.35)) : 1;
+        /* pulsing beacon ring */
+        var pk = (time * 1.1 + i * 0.37) % 1;
+        ctx.globalAlpha = 0.5 * (1 - pk);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = PICK_COLORS[p.type];
+        ctx.beginPath();
+        ctx.arc(p.x | 0, p.y | 0, PICKUP_R + 4 + pk * 15, 0, TAU);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.save();
+        ctx.translate(p.x | 0, (p.y + bob) | 0);
+        ctx.scale(sc, sc);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.globalAlpha = 0.94;
+        ctx.beginPath();
+        ctx.arc(0, 0, PICKUP_R, 0, TAU);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = INK;
+        ctx.stroke();
+        ctx.fillStyle = PICK_COLORS[p.type];
+        ctx.lineWidth = 2;
+        if (p.type === 'shield') {
+            ctx.beginPath();
+            ctx.moveTo(0, -8);
+            ctx.lineTo(7, -5);
+            ctx.quadraticCurveTo(7, 4, 0, 8);
+            ctx.quadraticCurveTo(-7, 4, -7, -5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        } else if (p.type === 'triple') {
+            for (var d3 = -1; d3 <= 1; d3++) {
+                ctx.beginPath();
+                ctx.arc(d3 * 6, d3 === 0 ? -3 : 3, 3.4, 0, TAU);
+                ctx.fill();
+                ctx.stroke();
+            }
+        } else if (p.type === 'speed') {
+            drawBolt(ctx, 0, 0, 0.9);
+            ctx.fill();
+            ctx.stroke();
+        } else {
+            ctx.beginPath();
+            ctx.arc(0, 0, 8, 0, TAU);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(-2.5, -3, 2.4, 0, TAU);
+            ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.beginPath();
+        ctx.ellipse(-5, -7, 4, 2.4, -0.7, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+/* sudden-death soap foam creeping in from the arena edges */
+function drawFoam() {
+    if (!game.sudden || game.foam <= 0.5) return;
+    var aw = game.cols * CS, ah = game.rows * CS, f = game.foam;
+    ctx.fillStyle = 'rgba(255,150,205,0.42)';
+    ctx.beginPath();
+    ctx.rect(-ARENA_M, -ARENA_M, aw + ARENA_M * 2, ah + ARENA_M * 2);
+    ctx.rect(f, f, aw - f * 2, ah - f * 2);
+    ctx.fill('evenodd');
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    var stepPx = 30, x, y;
+    for (x = f; x <= aw - f; x += stepPx) {
+        ctx.beginPath();
+        ctx.arc(x | 0, (f + Math.sin(time * 4 + x * 0.15) * 2) | 0, 6 + Math.sin(time * 5 + x) * 2, 0, TAU);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x | 0, (ah - f + Math.sin(time * 4.4 + x * 0.13) * 2) | 0, 6 + Math.cos(time * 5 + x) * 2, 0, TAU);
+        ctx.fill();
+    }
+    for (y = f; y <= ah - f; y += stepPx) {
+        ctx.beginPath();
+        ctx.arc((f + Math.sin(time * 4.2 + y * 0.14) * 2) | 0, y | 0, 6 + Math.sin(time * 5 + y) * 2, 0, TAU);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc((aw - f + Math.cos(time * 4.6 + y * 0.12) * 2) | 0, y | 0, 6 + Math.cos(time * 5 + y) * 2, 0, TAU);
+        ctx.fill();
+    }
+}
+
+/* 3-2-1 round countdown badge drawn in arena space */
+function drawCountdown() {
+    if (game.phase !== 'count') return;
+    var aw = game.cols * CS, ah = game.rows * CS;
+    var n = Math.max(1, Math.ceil(game.countT));
+    var frac = game.countT - Math.floor(game.countT);
+    var s = 0.6 + 0.4 * easeOutBack(Math.min(1, (1 - frac) * 1.6));
+    ctx.globalAlpha = frac * 0.6;
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#FF5FA2';
+    ctx.beginPath();
+    ctx.arc(aw / 2, ah / 2, 56 + (1 - frac) * 46, 0, TAU);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.save();
+    ctx.translate((aw / 2) | 0, (ah / 2) | 0);
+    ctx.scale(s, s);
+    ctx.fillStyle = 'rgba(255,255,255,0.93)';
+    ctx.beginPath();
+    ctx.arc(0, 0, 52, 0, TAU);
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = INK;
+    ctx.stroke();
+    ctx.fillStyle = n % 2 === 0 ? '#35C7E3' : '#FF6F61';
+    ctx.font = '800 56px Nunito, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('' + n, 0, 4);
+    ctx.restore();
+    ctx.font = '800 26px Nunito, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.fillStyle = INK;
+    ctx.strokeText('ROUND ' + game.round, aw / 2, ah / 2 - 88);
+    ctx.fillText('ROUND ' + game.round, aw / 2, ah / 2 - 88);
+}
+
+/* ambient drifting bubbles inside the arena + zoom sparkle trails */
+var ambient = [];
+for (var ai = 0; ai < 8; ai++) ambient.push({ x: Math.random(), y: Math.random(), r: rand(3, 7), spd: rand(8, 20), ph: rand(0, TAU) });
+function updateAmbient(dt) {
+    if (!game) return;
+    var ah = game.rows * CS;
+    for (var i = 0; i < ambient.length; i++) {
+        var b = ambient[i];
+        b.y -= b.spd * dt / ah;
+        if (b.y < -0.03) { b.y = 1.03; b.x = Math.random(); }
+    }
+    for (var ti = 0; ti < 2; ti++) {
+        var t = game.tanks[ti];
+        if (t.alive && t.boostT > 0 && Math.random() < dt * 18) {
+            spawnDrops(t.x - Math.cos(t.a) * TANK_R, t.y - Math.sin(t.a) * TANK_R, 1, '#FFD93D');
+        }
+    }
+}
+function drawAmbient() {
+    var aw = game.cols * CS, ah = game.rows * CS;
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    for (var i = 0; i < ambient.length; i++) {
+        var b = ambient[i];
+        var x = b.x * aw + Math.sin(time * 0.7 + b.ph) * 10;
+        ctx.beginPath();
+        ctx.arc(x | 0, (b.y * ah) | 0, b.r, 0, TAU);
+        ctx.fill();
+    }
+}
+
+/* mini tanks that drive laps behind the menu */
+function drawMiniTank(x, y, ang, i) {
+    var P = PAL[i];
+    ctx.save();
+    ctx.translate(x | 0, y | 0);
+    ctx.fillStyle = 'rgba(43,35,80,0.12)';
+    ctx.beginPath();
+    ctx.ellipse(3, 5, 24, 21, 0, 0, TAU);
+    ctx.fill();
+    ctx.rotate(ang);
+    ctx.fillStyle = P.dark;
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2.5;
+    rr(ctx, -18, -24, 36, 10, 5); ctx.fill(); ctx.stroke();
+    rr(ctx, -18, 14, 36, 10, 5); ctx.fill(); ctx.stroke();
+    rr(ctx, 4, -6, 32, 12, 6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = P.main;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 21, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.lineWidth = 2;
+    if (i === 0) drawStar(ctx, -5, 0, 8, 0); else drawBolt(ctx, -5, 0, 1);
+    ctx.fill();
+    ctx.stroke();
+    for (var ey = -1; ey <= 1; ey += 2) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath(); ctx.arc(9, 8 * ey, 5.5, 0, TAU); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = INK;
+        ctx.beginPath(); ctx.arc(11, 8 * ey + Math.sin(time * 6 + i) * 1.4, 2.6, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+}
+function drawMenuTanks() {
+    var cx0 = cw / 2, cy0 = chh * 0.88, rad = Math.min(cw * 0.42, 260);
+    var a0 = time * 0.6;
+    var x1 = cx0 + Math.cos(a0) * rad, y1 = cy0 + Math.sin(a0) * rad * 0.22;
+    var h1 = Math.atan2(Math.cos(a0) * 0.22, -Math.sin(a0));
+    drawMiniTank(x1, y1, h1, 0);
+    var a2 = a0 + Math.PI;
+    var x2 = cx0 + Math.cos(a2) * rad, y2 = cy0 + Math.sin(a2) * rad * 0.22;
+    var h2 = Math.atan2(Math.cos(a2) * 0.22, -Math.sin(a2));
+    drawMiniTank(x2, y2, h2, 1);
 }
 
 function drawJoysticks() {
@@ -1778,6 +2618,7 @@ function render() {
 
     if (appState === App.MENU || !game) {
         drawMenuBubs();
+        drawMenuTanks();
         return;
     }
 
@@ -1791,10 +2632,15 @@ function render() {
     if (arenaC) {
         ctx.drawImage(arenaC, -ARENA_M, -ARENA_M, game.cols * CS + ARENA_M * 2, game.rows * CS + ARENA_M * 2);
     }
+    drawAmbient();
+    drawHalos();
+    drawPickups();
     drawBubbles();
     drawTank(0);
     drawTank(1);
+    drawFoam();
     drawFx();
+    drawCountdown();
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawJoysticks();
@@ -1861,6 +2707,8 @@ function drainEvents() {
             case 'shoot':
                 sfxShoot();
                 spawnRing(e.x, e.y, 3, 13, 0.22, 'rgba(255,255,255,0.85)', 3);
+                spawnPuff(e.x, e.y, e.a || 0);
+                if (e.big) spawnHalo(e.x, e.y, 8, 28, 0.3, 3);
                 break;
             case 'bounce':
                 if (time - lastBounceSfx > 0.06) { lastBounceSfx = time; sfxBounce(); }
@@ -1880,6 +2728,48 @@ function drainEvents() {
             case 'matchEnd':
                 onMatchEnd(e);
                 break;
+            case 'wallBreak':
+                sfxCrunch();
+                trauma = Math.max(trauma, 0.22);
+                spawnHalo(e.x, e.y, 8, 46, 0.35, 3);
+                spawnRing(e.x, e.y, 8, 34, 0.35, 'rgba(255,150,205,0.95)', 4);
+                burstConfettiAt(e.x, e.y, ['#FFC7E0', '#FF9EC4', '#FFFFFF', '#F1EAF9'], 12);
+                spawnLabel(e.x, e.y - 10, 'CRUNCH!', '#FF5FA2', 20);
+                buildArenaLayer();
+                break;
+            case 'pickupSpawn':
+                spawnRing(e.x, e.y, 6, 26, 0.4, PICK_COLORS[e.ptype], 3);
+                break;
+            case 'pickup':
+                sfxPickup();
+                spawnHalo(e.x, e.y, 10, 42, 0.4, 0);
+                spawnGlints(e.x, e.y, 6, PICK_COLORS[e.ptype]);
+                spawnRing(e.x, e.y, 8, 30, 0.35, PICK_COLORS[e.ptype], 4);
+                spawnLabel(e.x, e.y - 16, PICK_LABELS[e.ptype], PICK_COLORS[e.ptype], 24);
+                break;
+            case 'shieldSave':
+                sfxShield();
+                trauma = Math.max(trauma, 0.2);
+                spawnRing(e.x, e.y, TANK_R, TANK_R * 2.2, 0.35, 'rgba(126,217,87,0.95)', 5);
+                spawnGlints(e.x, e.y, 5, '#7ED957');
+                spawnLabel(e.x, e.y - TANK_R - 12, 'SAVED!', '#7ED957', 22);
+                break;
+            case 'count':
+                sfxCount();
+                break;
+            case 'go':
+                sfxGo();
+                spawnLabel(game.cols * CS / 2, game.rows * CS / 2, 'GO!', '#FF8A3D', 52);
+                spawnHalo(game.cols * CS / 2, game.rows * CS / 2, 20, 92, 0.45, 0);
+                break;
+            case 'tick':
+                sfxTick();
+                break;
+            case 'sudden':
+                sfxSudden();
+                trauma = Math.max(trauma, 0.35);
+                showBanner('SUDDEN DEATH!', 'The foam is coming - race to the middle!', '#FF5FA2', 1600);
+                break;
             case 'silly':
                 break;
         }
@@ -1888,17 +2778,26 @@ function drainEvents() {
 }
 
 function handlePop(e) {
-    trauma = 0.5;
+    trauma = 0.55;
     sfxPop();
     var vcol = PAL[e.victim], scol = PAL[e.scorer];
+    /* layered pop: halo + triple shockwave + shards + glints + label */
+    spawnHalo(e.x, e.y, TANK_R * 0.5, TANK_R * 3.1, 0.5, e.victim + 1);
     spawnRing(e.x, e.y, TANK_R * 0.6, TANK_R * 2.6, 0.5, vcol.main, 5);
     spawnRing(e.x, e.y, TANK_R * 0.3, TANK_R * 1.6, 0.4, 'rgba(255,255,255,0.9)', 3);
+    spawnRing(e.x, e.y, TANK_R * 0.9, TANK_R * 3.4, 0.65, vcol.light, 3);
     spawnDrops(e.x, e.y, 16, vcol.light);
     spawnDrops(e.x, e.y, 8, '#FFFFFF');
+    spawnGlints(e.x, e.y, 7, '#FFD93D');
+    spawnLabel(e.x, e.y - TANK_R - 8, 'POP!', vcol.main, 30);
     updateDots();
-    burstConfettiArena(scol.confetti, 36);
+    burstConfettiAt(e.x, e.y, scol.confetti, 20);
+    burstConfettiArena(scol.confetti, 30);
     var sc = game.tanks[e.scorer].score;
-    if (e.self) {
+    if (e.cause === 'foam') {
+        sfxGiggle();
+        showBanner('FOAMED!', 'The foam caught ' + tankName(e.victim) + '! Point to ' + tankName(e.scorer), scol.main, 1450);
+    } else if (e.self) {
         sfxGiggle();
         showBanner('SELF POP!', tankName(e.victim) + ' popped their own bubble! Point to ' + tankName(e.scorer), scol.main, 1450);
     } else {
@@ -1910,7 +2809,6 @@ function handlePop(e) {
 
 function onNewRound() {
     buildArenaLayer();
-    if (game.round > 1) showToast('ROUND ' + game.round);
 }
 
 function onMatchEnd(e) {
@@ -1932,7 +2830,7 @@ function onMatchEnd(e) {
     var title;
     if (game.mode === 'bot') title = winner === 0 ? 'YOU WIN!' : 'ROBOT WINS!';
     else title = 'PLAYER ' + (winner + 1) + ' WINS!';
-    winTitleEl.textContent = title;
+    winTitleEl.textContent = '👑 ' + title;
     winTitleEl.style.color = wcol.main;
     finalScoreEl.textContent = game.tanks[0].score + ' : ' + game.tanks[1].score;
     totalWinsEl.textContent = 'Total round wins: ' + data.totalRoundWins;
@@ -1955,8 +2853,38 @@ function onMatchEnd(e) {
     }
 
     burstConfettiArena(wcol.confetti, 110);
+    confWaves = 2;
+    nextWave = time + 0.8;
     sfxFanfare();
     overPanel.classList.add('show');
+}
+var confWaves = 0, nextWave = 0;
+
+/* ---------- Round timer pill ---------- */
+var timerPill = document.getElementById('timerPill');
+var lastTimerTxt = '', lastTimerCls = '';
+function updateTimerPill() {
+    var show = (appState === App.PLAYING || appState === App.PAUSED) && game && !game.over && game.phase !== 'count';
+    if (!show) {
+        if (lastTimerTxt !== '') { timerPill.style.display = 'none'; lastTimerTxt = ''; lastTimerCls = ''; }
+        return;
+    }
+    var txt, cls;
+    if (game.sudden) { txt = 'SUDDEN DEATH!'; cls = 'sudden'; }
+    else {
+        var s = Math.max(0, Math.ceil(game.roundT));
+        txt = '⏱ ' + s;
+        cls = s <= 10 ? 'warn' : '';
+    }
+    if (txt !== lastTimerTxt) {
+        timerPill.textContent = txt;
+        timerPill.style.display = 'block';
+        lastTimerTxt = txt;
+    }
+    if (cls !== lastTimerCls) {
+        timerPill.className = cls;
+        lastTimerCls = cls;
+    }
 }
 
 /* ---------- Match flow ---------- */
@@ -1991,7 +2919,7 @@ function startMatch(mode, diff) {
     buildDots();
     fitArena();
     drainEvents();
-    showToast(mode === 'bot' ? 'GO! BEAT THE ROBOT!' : 'GO!');
+    showToast(mode === 'bot' ? 'BEAT THE ROBOT!' : 'FIRST TO 5 WINS!');
 }
 
 function showMenu() {
@@ -2260,9 +3188,16 @@ function loop(now) {
         buildInputs(dt);
         Core.step(game, dt);
         drainEvents();
+        updateAmbient(dt);
     }
     updateFx(dt);
     if (appState === App.MENU) updateMenuBubs(dt);
+    if (appState === App.OVER && game && confWaves > 0 && time >= nextWave) {
+        burstConfettiArena(PAL[game.winner].confetti, 60);
+        confWaves--;
+        nextWave = time + 0.8;
+    }
+    updateTimerPill();
 
     render();
     requestAnimationFrame(loop);
