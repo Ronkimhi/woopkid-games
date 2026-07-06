@@ -132,21 +132,42 @@ button{font:inherit;color:inherit;cursor:pointer;}
     radial-gradient(circle at 50% 0%, #FFD9A8 0%, transparent 55%),
     linear-gradient(180deg,#CDEFFF 0%,#E8FFE0 62%,#D8C9A8 63%,#E8DCC0 100%);}
 #battleOv.on{display:flex;}
-#bbanner{text-align:center;font-size:17px;padding:12px 10px 2px;min-height:34px;}
-#brow-e,#brow-p{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 10px;}
-.bcard{width:104px;aspect-ratio:3/4.1;position:relative;flex:0 0 auto;transition:transform .18s cubic-bezier(.34,1.56,.64,1), opacity .3s, filter .3s;}
+#bbanner{text-align:center;font-size:17px;padding:12px 10px 2px;min-height:34px;z-index:9;}
+#brow-e,#brow-p{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 10px;
+  transition:opacity .4s;}
+#brow-e.gone,#brow-p.gone{opacity:0;pointer-events:none;}
+.bcard{width:104px;aspect-ratio:3/4.1;position:relative;flex:0 0 auto;transition:transform .55s cubic-bezier(.5,0,.5,1), opacity .3s;}
 .bcard .wcard{cursor:default;}
-.bcard.ko{opacity:.3;filter:grayscale(1);transform:scale(.85) rotate(6deg);}
-.bcard .hpb{position:absolute;left:6px;right:6px;bottom:-11px;height:8px;border:2px solid var(--ink);
-  border-radius:99px;background:#fff;overflow:hidden;z-index:4;}
-.bcard .hpf{height:100%;background:#6FDB6F;transition:width .2s, background .2s;border-radius:99px;}
+.bcard.flying{z-index:7;}
+.bcard.spent{opacity:0;}
 #vsflash{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);font-size:44px;opacity:.18;pointer-events:none;}
+/* arena creatures */
+.critter{position:absolute;width:132px;height:132px;z-index:6;
+  transition:transform .18s ease, opacity .4s, filter .5s;}
+.critter .cin{width:100%;height:100%;animation:bob 1.5s ease-in-out infinite;}
+.critter svg{width:100%;height:100%;filter:drop-shadow(0 6px 4px rgba(43,35,80,.22));}
+.critter.enemy svg{transform:scaleX(-1);}
+.critter.pop .cin{animation:cpop .45s cubic-bezier(.34,1.56,.64,1), bob 1.5s ease-in-out .45s infinite;}
+@keyframes cpop{from{transform:scale(.2) rotate(-14deg);opacity:0}to{transform:scale(1);opacity:1}}
+.critter.ko{transform:rotate(82deg) translate(8px,20px);filter:grayscale(.9);opacity:.8;
+  transition:transform .55s cubic-bezier(.34,1.56,.64,1), filter .55s, opacity .55s;}
+.critter.ko .cin{animation:none;}
+.critter.winner .cin{animation:hopwin .55s ease-in-out infinite;}
+@keyframes hopwin{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px) rotate(-4deg)}}
+.boom{position:absolute;font-size:38px;z-index:8;animation:boomz .5s ease-out forwards;pointer-events:none;
+  filter:drop-shadow(0 2px 0 rgba(43,35,80,.4));}
+@keyframes boomz{from{transform:scale(.3) rotate(-20deg);opacity:1}to{transform:scale(1.7) rotate(10deg);opacity:0}}
+.dizzy{position:absolute;font-size:24px;z-index:9;animation:dizz 1.4s ease-in-out infinite;pointer-events:none;}
+@keyframes dizz{0%,100%{transform:rotate(-14deg) translateY(0)}50%{transform:rotate(14deg) translateY(-6px)}}
+#finishflash{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:10;
+  font-size:44px;font-weight:800;color:#fff;-webkit-text-stroke:2px var(--ink);text-shadow:0 4px 0 rgba(43,35,80,.35);
+  pointer-events:none;}
+#finishflash.on{display:flex;animation:finpop .7s cubic-bezier(.34,1.56,.64,1);}
+@keyframes finpop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
 .dmg{position:absolute;font-weight:800;color:#E63946;text-shadow:0 2px 0 #fff;z-index:40;
   animation:rise .85s ease-out forwards;pointer-events:none;font-size:17px;}
 .dmg.pow{color:#fff;-webkit-text-stroke:1.5px var(--ink);font-size:24px;}
 @keyframes rise{from{transform:translateY(0)}to{transform:translateY(-52px) scale(1.3);opacity:0}}
-.bump-d{transform:translateY(16px) scale(1.07);}
-.bump-u{transform:translateY(-16px) scale(1.07);}
 
 /* generic overlay + card reveal */
 .overlay{position:absolute;inset:0;background:rgba(43,35,80,.88);display:none;flex-direction:column;
@@ -200,6 +221,7 @@ button{font:inherit;color:inherit;cursor:pointer;}
     <div id="bbanner"></div>
     <div id="brow-e"></div>
     <div id="vsflash">⚔️</div>
+    <div id="finishflash"></div>
     <div id="brow-p"></div>
     <div style="padding:10px 14px calc(12px + env(safe-area-inset-bottom));">
       <button class="bigbtn" id="bdone" style="width:100%;background:linear-gradient(160deg,#9BE86F,#3E9E4F);display:none;">CONTINUE ▶</button>
@@ -528,14 +550,12 @@ $('dealbtn').addEventListener('click',()=>{
   hint(same>=2?`${c.name}! You have a pair: <b>tap both to LEVEL UP!</b> ⭐`:`${c.name} joined! Merge two <b>different</b> cards to invent a new beast 🧬`);
 });
 
-/* ---------- battle ---------- */
-let bstate=null;
-$('fightbtn').addEventListener('click',()=>{
-  if(!S.board.length||bstate) return;
-  sfx.tap();
-  const team=[...S.board].sort((x,y)=>cardPower(y)-cardPower(x)).slice(0,3)
-    .map(c=>({c,hp:c.hp,max:c.hp}));
-  /* enemy squad tuned to a fair share of my power; battle 1 is a warm-up */
+/* ---------- battle: 3 acts. Cards fly to the arena, BECOME creatures,
+   brawl ~15s with no scoreboard, then the winner is revealed. ---------- */
+let bat=null;
+const PSLOTS=[[0.28,0.55],[0.14,0.68],[0.42,0.70]];   // my side (fractions of overlay)
+const ESLOTS=[[0.72,0.55],[0.86,0.68],[0.58,0.70]];   // enemy side
+function makeFoes(team){
   const target=team.reduce((s,f)=>s+cardPower(f.c),0)*(S.wins===0?0.55:clamp(0.8+S.wins*0.03,0.8,1.15));
   const per=target/3;
   const pool=ROSTER.slice(0,poolSize());
@@ -549,49 +569,157 @@ $('fightbtn').addEventListener('click',()=>{
       hp0:base.hp, kit:base.kit, seed:777+S.wins*13+i, fused:false};
     foes.push({c,hp:c.hp,max:c.hp});
   }
-  bstate={team,foes,turn:0,over:false};
-  $('brow-p').innerHTML=team.map(f=>`<div class="bcard" data-b="p${f.c.id}">${cardHTML(f.c)}<div class="hpb"><div class="hpf" style="width:100%"></div></div></div>`).join('');
-  $('brow-e').innerHTML=foes.map(f=>`<div class="bcard" data-b="e${f.c.id}">${cardHTML(f.c)}<div class="hpb"><div class="hpf" style="width:100%"></div></div></div>`).join('');
+  return foes;
+}
+/* silent pre-sim: decides the winner up front and records every hit for the choreography */
+function presim(team,foes){
+  const T=team.map(f=>({...f})), F=foes.map(f=>({...f}));
+  const hits=[]; let turn=0;
+  while(turn<400){
+    const Ta=T.filter(f=>f.hp>0), Fa=F.filter(f=>f.hp>0);
+    if(!Ta.length||!Fa.length) break;
+    const my=turn%2===0;
+    const att=(my?Ta:Fa)[0], def=(my?Fa:Ta)[0];
+    const m=(CHART[att.c.e]||{})[def.c.e]||1;
+    const dmg=Math.max(Math.ceil(att.c.atk*0.5), Math.round(att.c.atk*m - def.c.atk*0.15));
+    def.hp-=dmg;
+    hits.push({side:my?'p':'e', ai:(my?T:F).indexOf(my?att:att), di:(my?F:T).indexOf(def), dmg, pow:m>=2});
+    turn++;
+  }
+  return {hits, won:T.some(f=>f.hp>0)};
+}
+function bT(ms,fn){ bat.timers.push(setTimeout(()=>{ if(bat) fn(); },ms)); }
+$('fightbtn').addEventListener('click',()=>{
+  if(!S.board.length||bat) return;
+  sfx.tap();
+  const team=[...S.board].sort((x,y)=>cardPower(y)-cardPower(x)).slice(0,3)
+    .map(c=>({c,hp:c.hp,max:c.hp}));
+  const foes=makeFoes(team);
+  bat={team,foes,sim:presim(team,foes),critters:{},timers:[],over:false};
+  $('brow-p').classList.remove('gone'); $('brow-e').classList.remove('gone');
+  $('brow-p').style.display=''; $('brow-e').style.display='';
+  $('brow-p').innerHTML=team.map((f,i)=>`<div class="bcard" data-b="p${i}">${cardHTML(f.c)}</div>`).join('');
+  $('brow-e').innerHTML=foes.map((f,i)=>`<div class="bcard" data-b="e${i}">${cardHTML(f.c)}</div>`).join('');
   $('bbanner').textContent='⚔️ Battle '+(S.wins+1);
   $('bdone').style.display='none';
+  $('finishflash').classList.remove('on');
   $('battleOv').classList.add('on');
-  setTimeout(battleStep,600);
+  bT(900,flyIn);
 });
-function bEl(side,id){ return document.querySelector(`.bcard[data-b="${side}${id}"]`); }
-function battleStep(){
-  if(!bstate||bstate.over) return;
-  const alive=arr=>arr.filter(f=>f.hp>0);
-  const T=alive(bstate.team), F=alive(bstate.foes);
-  if(!T.length||!F.length){ battleEnd(T.length>0); return; }
-  const myTurn=bstate.turn%2===0;
-  const att=(myTurn?T:F)[0], def=(myTurn?F:T)[0];
-  const m=(CHART[att.c.e]||{})[def.c.e]||1;
-  const dmg=Math.max(Math.ceil(att.c.atk*0.5), Math.round(att.c.atk*m - def.c.atk*0.15));
-  def.hp-=dmg;
-  const ae=bEl(myTurn?'p':'e',att.c.id), de=bEl(myTurn?'e':'p',def.c.id);
-  if(ae){ ae.classList.add(myTurn?'bump-u':'bump-d'); setTimeout(()=>ae.classList.remove('bump-u','bump-d'),200); }
-  if(de){
-    const pct=Math.max(0,def.hp/def.max);
-    de.querySelector('.hpf').style.width=(pct*100)+'%';
-    de.querySelector('.hpf').style.background=pct>0.5?'#6FDB6F':pct>0.25?'#FFD93D':'#FF5757';
-    const d=document.createElement('div');
-    d.className='dmg'+(m>=2?' pow':''); d.textContent=(m>=2?'POW! ':'')+dmg;
-    const r=de.getBoundingClientRect(), ar=$('battleOv').getBoundingClientRect();
-    d.style.left=(r.left-ar.left+r.width*0.3)+'px'; d.style.top=(r.top-ar.top+8)+'px';
-    $('battleOv').appendChild(d); setTimeout(()=>d.remove(),880);
-    if(def.hp<=0) de.classList.add('ko');
+/* ACT 1: cards fly to the arena and burst into creatures */
+function flyIn(){
+  const ov=$('battleOv'); let ovr=ov.getBoundingClientRect();
+  if(ovr.width<50||ovr.height<50){ // never-painted tab safety: fall back to viewport
+    const ar=$('app').getBoundingClientRect();
+    ovr=(ar.width>50)?ar:{left:0,top:0,width:window.innerWidth,height:window.innerHeight};
   }
-  if(m>=2) sfx.pow(); else sfx.hit();
-  bstate.turn++;
-  setTimeout(battleStep, def.hp<=0?520:420);
+  if(!(ovr.width>50)) ovr={left:0,top:0,width:390,height:700}; // absolute floor
+  const CS=Math.min(140,ovr.width*0.30); // creature size
+  bat.slotPx={p:[],e:[]};
+  const doSide=(side,fighters,slots)=>{
+    fighters.forEach((f,i)=>{
+      const cardEl=document.querySelector(`.bcard[data-b="${side}${i}"]`);
+      const cx=ovr.width*slots[i][0], cy=ovr.height*slots[i][1];
+      bat.slotPx[side][i]=[cx,cy];
+      if(cardEl){
+        const r=cardEl.getBoundingClientRect();
+        const dx=(ovr.left+cx)-(r.left+r.width/2), dy=(ovr.top+cy)-(r.top+r.height/2);
+        cardEl.classList.add('flying');
+        cardEl.style.transform=`translate(${dx}px,${dy}px) rotate(${side==='p'?360:-360}deg) scale(.45)`;
+      }
+      bT(620,()=>{
+        if(cardEl) cardEl.classList.add('spent');
+        const d=document.createElement('div');
+        d.className='critter pop'+(side==='e'?' enemy':'');
+        d.style.width=d.style.height=CS+'px';
+        d.style.left=(cx-CS/2)+'px'; d.style.top=(cy-CS/2)+'px';
+        d.innerHTML=`<div class="cin">${beastSVG(f.c)}</div>`;
+        ov.appendChild(d);
+        bat.critters[side+i]=d;
+        boom(cx,cy-10,'✨');
+        bT(650,()=>d.classList.remove('pop')); // un-stick if animations were throttled
+      });
+    });
+  };
+  doSide('p',bat.team,PSLOTS);
+  doSide('e',bat.foes,ESLOTS);
+  sfx.deal();
+  bT(1300,()=>{
+    $('brow-p').classList.add('gone'); $('brow-e').classList.add('gone');
+    $('bbanner').textContent='FIGHT!';
+    sfx.pow(); shake(180);
+    bT(400,choreo);
+  });
+  bT(1900,()=>{ $('brow-p').style.display='none'; $('brow-e').style.display='none'; }); // hard-hide (fade can freeze on throttled tabs)
+}
+/* ACT 2: ~10.5s of exchanges, both directions, NO scoreboard, no KOs yet */
+function choreo(){
+  let hits=bat.sim.hits.slice();
+  if(hits.length>24){ const step=hits.length/24, out=[]; for(let i=0;i<24;i++) out.push(hits[Math.floor(i*step)]); hits=out; }
+  while(hits.length<14) hits.push(hits[(Math.random()*hits.length)|0]);
+  const iv=10500/hits.length;
+  hits.forEach((h,idx)=>bT(600+idx*iv,()=>playHit(h)));
+  bT(4200,()=>{ $('bbanner').textContent='What a fight!! 😮'; });
+  bT(8200,()=>{ $('bbanner').textContent='It could go either way…!'; });
+  bT(600+10500+300,finale);
+}
+function boom(x,y,txt){
+  const b=document.createElement('div');
+  b.className='boom'; b.textContent=txt;
+  b.style.left=(x-19)+'px'; b.style.top=(y-19)+'px';
+  $('battleOv').appendChild(b); setTimeout(()=>b.remove(),520);
+}
+function playHit(h){
+  const attKey=h.side+h.ai, defKey=(h.side==='p'?'e':'p')+h.di;
+  const att=bat.critters[attKey], def=bat.critters[defKey];
+  const aPos=bat.slotPx[h.side][h.ai], dPos=bat.slotPx[h.side==='p'?'e':'p'][h.di];
+  if(!att||!def||!aPos||!dPos) return;
+  const dx=(dPos[0]-aPos[0])*0.55, dy=(dPos[1]-aPos[1])*0.55;
+  att.style.transform=`translate(${dx}px,${dy}px) scale(1.08)`;
+  setTimeout(()=>{ att.style.transform=''; },190);
+  setTimeout(()=>{
+    boom(dPos[0],dPos[1],h.pow?'💥':'⭐');
+    def.style.transform=`translate(${(Math.random()*14-7)|0}px,${(Math.random()*10-5)|0}px) rotate(${(Math.random()*10-5)|0}deg)`;
+    setTimeout(()=>{ def.style.transform=''; },200);
+    const d=document.createElement('div');
+    d.className='dmg'+(h.pow?' pow':''); d.textContent=(h.pow?'POW! ':'')+h.dmg;
+    d.style.left=(dPos[0]-14)+'px'; d.style.top=(dPos[1]-46)+'px';
+    $('battleOv').appendChild(d); setTimeout(()=>d.remove(),880);
+    if(h.pow) sfx.pow(); else sfx.hit();
+  },170);
+}
+/* ACT 3: the dramatic reveal */
+function finale(){
+  const won=bat.sim.won;
+  $('bbanner').textContent='';
+  $('finishflash').textContent='⚡ FINISH! ⚡';
+  $('finishflash').classList.add('on');
+  sfx.pow(); shake(260);
+  bT(950,()=>{
+    $('finishflash').classList.remove('on');
+    const losers=won?'e':'p', winners=won?'p':'e';
+    for(let i=0;i<3;i++){
+      const L=bat.critters[losers+i];
+      if(L){ L.classList.add('ko');
+        const z=document.createElement('div'); z.className='dizzy'; z.textContent='😵';
+        const pos=bat.slotPx[losers][i];
+        z.style.left=(pos[0]-12)+'px'; z.style.top=(pos[1]-70)+'px';
+        $('battleOv').appendChild(z); bat.fxEls=(bat.fxEls||[]).concat(z);
+      }
+      const W=bat.critters[winners+i];
+      if(W) W.classList.add('winner');
+    }
+    if(won){ confetti(26); sfx.win(); } else sfx.lose();
+    bT(1500,()=>battleEnd(won));
+  });
 }
 function battleEnd(won){
-  bstate.over=true;
+  if(!bat||bat.over) return;
+  bat.over=true;
   const before=poolSize();
   const reward=won?30+10*S.wins:12;
   S.coins+=reward;
-  if(won){ S.wins++; sfx.win(); confetti(26); }
-  else sfx.lose();
+  if(won) S.wins++;
   const unlockedNew=won&&poolSize()>before;
   $('bbanner').innerHTML=won
     ?`🎉 VICTORY! +${reward} 🪙${unlockedNew?' · <b>NEW beast joined the deck!</b>':''}`
@@ -601,8 +729,10 @@ function battleEnd(won){
   save();
 }
 $('bdone').addEventListener('click',()=>{
+  if(bat){ bat.timers.forEach(clearTimeout); (bat.fxEls||[]).forEach(e=>e.remove()); }
+  document.querySelectorAll('#battleOv .critter').forEach(e=>e.remove());
   $('battleOv').classList.remove('on');
-  bstate=null;
+  bat=null;
   renderBoard();
   hint(S.coins>=dealCost()&&S.board.length<BOARD_SIZE?'Grab a <b>NEW CARD</b> and keep merging! 🃏':'Merge your cards, then battle again! ⚔️');
 });
