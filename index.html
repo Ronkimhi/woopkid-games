@@ -71,7 +71,8 @@
         { "@type": "ListItem", "position": 17, "name": "Rope Rush", "url": "https://woopkid.com/games/rope-rush/" },
         { "@type": "ListItem", "position": 18, "name": "Scribble Legs", "url": "https://woopkid.com/games/scribble-legs/" },
         { "@type": "ListItem", "position": 19, "name": "Woop Swarm", "url": "https://woopkid.com/games/woop-swarm/" },
-        { "@type": "ListItem", "position": 20, "name": "WoopBeasts", "url": "https://woopkid.com/games/woop-beasts/" }
+        { "@type": "ListItem", "position": 20, "name": "WoopBeasts", "url": "https://woopkid.com/games/woop-beasts/" },
+        { "@type": "ListItem", "position": 21, "name": "Nom Nom City", "url": "https://woopkid.com/games/nom-nom-city/" }
       ]
     },
     {
@@ -391,7 +392,7 @@ header.hero{text-align:center;padding:36px 0 6px;position:relative}
     </h1>
     <p class="tagline">Free games. No ads. No tracking. Just play.</p>
     <div class="herobadges" aria-hidden="true">
-      <span class="hbadge sun" style="--r:-3deg;--d:.9s">🎮 20 free games</span>
+      <span class="hbadge sun" style="--r:-3deg;--d:.9s">🎮 21 free games</span>
       <span class="hbadge pinkbg" style="--r:2deg;--d:1.05s">🚫 zero ads</span>
       <span class="hbadge mintbg" style="--r:-2deg;--d:1.2s">🔒 zero tracking</span>
     </div>
@@ -437,6 +438,7 @@ header.hero{text-align:center;padding:36px 0 6px;position:relative}
     <a class="static-game" href="games/woop-beasts/">🐲 WoopBeasts - collect beast cards, merge two into brand-new species you name, then battle your deck</a>
     <a class="static-game" href="games/scribble-legs/">✏️ Scribble Legs — draw your own wacky legs and outrun the giggling Tickle Cloud</a>
     <a class="static-game" href="games/woop-swarm/">👾 Woop Swarm — dodge the goober swarm, evolve your toys, bop the boss</a>
+    <a class="static-game" href="games/nom-nom-city/">🕳️ Nom Nom City — drag a hungry hole and gobble the whole town</a>
   </section>
 
   <h2 class="shelf-title"><span class="tsticker">🏅</span>Your Sticker Album</h2>
@@ -501,6 +503,8 @@ const WoopProfile = {
 
 /* ---------- game catalog ---------- */
 const GAMES = [
+  { slug:'nom-nom-city', name:'Nom Nom City', genre:'Hungry Hole Arcade', cat:['action','quick'], acc:'#7ED957', emoji:'🕳️', isNew:true,
+    desc:'Drag the hungry hole. Eat candy, cars, houses... the whole town.', live:true, bestLabel:'Score' },
   { slug:'woop-beasts', name:'WoopBeasts', genre:'Creature Fusion Battler', cat:['action','chill'], acc:'#B388FF', emoji:'🐲', isNew:true,
     desc:'Collect beast cards! Merge two into brand-new species you name, then battle your deck.', live:true, bestLabel:'Beasts' },
   { slug:'woop-swarm', name:'Woop Swarm', genre:'Bullet Heaven', cat:['action'], acc:'#B25CFF', emoji:'👾', isNew:true,

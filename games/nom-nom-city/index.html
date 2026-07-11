@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Nom Nom City | WoopKid</title>
+<meta name="description" content="Play Nom Nom City, a free hungry-hole game for kids. Drag a cute hole around a toy town, gobble candy, cars, trees and whole houses, and grow big enough to eat the ferris wheel. No ads, no accounts, no downloads. Works on Chromebook, tablet and phone.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="canonical" href="https://woopkid.com/games/nom-nom-city/">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#8FD463">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": ["VideoGame", "WebApplication"],
+    "name": "Nom Nom City",
+    "description": "Drag a hungry hole around a bright toy town. Everything smaller than you falls in, every bite makes you bigger, and if you grow enough you can gobble whole houses and the ferris wheel. Free, no ads, kid-safe.",
+    "url": "https://woopkid.com/games/nom-nom-city/",
+    "genre": "Arcade",
+    "gamePlatform": ["Web Browser", "Mobile Web"],
+    "applicationCategory": "Game",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Organization", "name": "WoopKid", "url": "https://woopkid.com" },
+    "inLanguage": "en",
+    "isAccessibleForFree": true,
+    "contentRating": "Everyone",
+    "audience": { "@type": "PeopleAudience", "suggestedMinAge": 5, "suggestedMaxAge": 12 },
+    "playMode": "SinglePlayer",
+    "isFamilyFriendly": true
+}
+</script>
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {
+            "@type": "Question",
+            "name": "How do you play Nom Nom City?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Drag anywhere on the screen to move the hungry hole around the town (arrow keys or WASD also work on a computer). Anything smaller than the hole falls in when you roll over it, and every bite makes the hole bigger. Start with candy and flowers, work up to cars and trees, and try to eat the whole town before the two minute timer runs out."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Is Nom Nom City free?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. Nom Nom City is completely free to play in your browser. There are no ads, no accounts, no in-app purchases and nothing to download. Your high score is saved on your own device and never sent anywhere."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Does Nom Nom City work on a Chromebook or tablet?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. Nom Nom City runs right in the web browser on Chromebooks, tablets, iPads, phones and desktop computers. Touch controls and keyboard controls are both supported, and there is nothing to install or sign up for."
+            }
+        }
+    ]
+}
+</script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+    height: 100%;
+    overflow: hidden;
+    background: #8FD463;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+}
+#game { position: fixed; inset: 0; display: block; }
+.btn {
+    position: fixed;
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    border: 3px solid rgba(43,35,80,.85);
+    background: rgba(255,255,255,.92);
+    color: #2B2350;
+    font-size: 22px;
+    font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    text-decoration: none;
+    box-shadow: 0 3px 0 rgba(43,35,80,.35);
+}
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(43,35,80,.35); }
+#backBtn  { top: 12px; left: 12px; }
+#pauseBtn { top: 12px; right: 12px; }
+#muteBtn  { top: 12px; right: 70px; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<a id="backBtn" class="btn" href="https://woopkid.com" aria-label="Back to WoopKid">←</a>
+<div id="muteBtn" class="btn" role="button" aria-label="Mute sound">🔊</div>
+<div id="pauseBtn" class="btn" role="button" aria-label="Pause">⏸</div>
+<script>
+'use strict';
+
+/* ============================== setup ============================== */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d', { alpha: false });
+let W = 0, H = 0, DPR = 1;
+function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = (W * DPR) | 0;
+    canvas.height = (H * DPR) | 0;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ============================== storage ============================== */
+const STORAGE_KEY = 'woopkid_nomnomcity';
+const defaultData = { highScore: 0, bestBite: '', bestPct: 0, totalPlays: 0, muted: false };
+function loadData() {
+    try { return Object.assign({}, defaultData, JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}); }
+    catch { return { ...defaultData }; }
+}
+function saveData() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(save)); } catch {}
+}
+const save = loadData();
+
+/* ============================== audio ============================== */
+let audioCtx = null;
+function ensureAudio() {
+    if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch { return; }
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+let liveSounds = 0;
+function tone(freq, dur, type, vol, slideTo) {
+    if (!audioCtx || save.muted || liveSounds >= 6) return;
+    liveSounds++;
+    const t = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type;
+    const jitter = 1 + (Math.random() - 0.5) * 0.1;
+    o.frequency.setValueAtTime(freq * jitter, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo * jitter), t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+    o.onended = () => { liveSounds--; };
+}
+function sfxPop(size, combo) {
+    // bigger prey = deeper gulp; combos climb in pitch
+    const base = 520 - size * 3.2;
+    tone(Math.max(90, base) * (1 + Math.min(combo, 8) * 0.08), 0.14, 'triangle', 0.20, Math.max(60, base * 0.45));
+    tone(Math.max(70, base * 0.5), 0.10, 'sine', 0.14, 50);
+}
+function sfxGrow()   { tone(300, 0.16, 'sine', 0.10, 520); }
+function sfxTick()   { tone(880, 0.06, 'square', 0.05); }
+function sfxDenied() { tone(180, 0.12, 'square', 0.05, 140); }
+function sfxFanfare() {
+    [523, 659, 784, 1047].forEach((f, i) =>
+        setTimeout(() => tone(f, 0.22, 'triangle', 0.18), i * 110));
+}
+function sfxEnd() { tone(392, 0.3, 'triangle', 0.14, 262); }
+
+/* ============================== world constants ============================== */
+const WORLD = 2400;
+const FENCE = 60;
+const BLOCK = 510, ROAD = 80;      // 4 blocks + 3 roads fill the fence-to-fence span
+const HOLE_R0 = 24, HOLE_RMAX = 172;
+const RUN_TIME = 120;
+const State = { MENU: 'menu', PLAYING: 'playing', PAUSED: 'paused', GAME_OVER: 'gameOver' };
+let currentState = State.MENU;
+
+/* ============================== object catalog ============================== */
+/* draw() paints the object at its own origin, un-rotated footprint radius r */
+const CATALOG = {
+    candy:    { r: 10, pts: 1,  tier: 0, name: 'a candy' },
+    flower:   { r: 9,  pts: 1,  tier: 0, name: 'a flower' },
+    mushroom: { r: 10, pts: 1,  tier: 0, name: 'a mushroom' },
+    cone:     { r: 11, pts: 1,  tier: 0, name: 'a traffic cone' },
+    hydrant:  { r: 11, pts: 2,  tier: 0, name: 'a fire hydrant' },
+    bush:     { r: 17, pts: 3,  tier: 1, name: 'a bush' },
+    mailbox:  { r: 14, pts: 3,  tier: 1, name: 'a mailbox' },
+    doghouse: { r: 19, pts: 4,  tier: 1, name: 'a dog house' },
+    bench:    { r: 23, pts: 8,  tier: 2, name: 'a park bench' },
+    car:      { r: 26, pts: 10, tier: 2, name: 'a car' },
+    tree:     { r: 28, pts: 10, tier: 2, name: 'a tree' },
+    truck:    { r: 38, pts: 20, tier: 3, name: 'a truck' },
+    kiosk:    { r: 42, pts: 22, tier: 3, name: 'an ice-cream kiosk' },
+    house:    { r: 58, pts: 50, tier: 4, name: 'a whole house' },
+    bigtree:  { r: 52, pts: 45, tier: 4, name: 'a giant tree' },
+    tower:    { r: 82, pts: 130, tier: 5, name: 'the clock tower' },
+    ferris:   { r: 95, pts: 160, tier: 5, name: 'the ferris wheel' },
+};
+const CAR_COLORS = ['#FF6B6B', '#4C75FF', '#FFCF3D', '#2EC4B6', '#FF5FA2', '#B388FF'];
+const HOUSE_COLORS = ['#FFB13D', '#FF8A8A', '#7EC8E3', '#C3A6FF', '#FFD97D'];
+const CANDY_COLORS = ['#FF5FA2', '#4FC3F7', '#FFCF3D', '#7ED957', '#B388FF'];
+
+function drawObj(o) {
+    const c = ctx;
+    switch (o.type) {
+        case 'candy': {
+            c.fillStyle = o.color;
+            c.beginPath(); c.arc(0, 0, 8, 0, 7); c.fill();
+            c.fillStyle = 'rgba(255,255,255,.55)';
+            c.beginPath(); c.arc(-2, -2, 3, 0, 7); c.fill();
+            c.fillStyle = o.color;
+            c.beginPath(); c.moveTo(7, -3); c.lineTo(14, -6); c.lineTo(14, 0); c.closePath(); c.fill();
+            c.beginPath(); c.moveTo(-7, 3); c.lineTo(-14, 6); c.lineTo(-14, 0); c.closePath(); c.fill();
+            break;
+        }
+        case 'flower': {
+            c.fillStyle = o.color;
+            for (let i = 0; i < 5; i++) {
+                const a = i / 5 * Math.PI * 2;
+                c.beginPath(); c.arc(Math.cos(a) * 5.5, Math.sin(a) * 5.5, 4.5, 0, 7); c.fill();
+            }
+            c.fillStyle = '#FFCF3D';
+            c.beginPath(); c.arc(0, 0, 3.5, 0, 7); c.fill();
+            break;
+        }
+        case 'mushroom': {
+            c.fillStyle = '#FF6B6B';
+            c.beginPath(); c.arc(0, 0, 9, 0, 7); c.fill();
+            c.fillStyle = '#FFF6E9';
+            c.beginPath(); c.arc(-3, -3, 2.4, 0, 7); c.arc(4, 1, 2, 0, 7); c.arc(-2, 4, 1.7, 0, 7); c.fill();
+            break;
+        }
+        case 'cone': {
+            c.fillStyle = '#FF8A3D';
+            c.beginPath(); c.arc(0, 0, 10, 0, 7); c.fill();
+            c.strokeStyle = '#FFF6E9'; c.lineWidth = 3;
+            c.beginPath(); c.arc(0, 0, 6, 0, 7); c.stroke();
+            c.fillStyle = '#FFB13D';
+            c.beginPath(); c.arc(0, 0, 2.6, 0, 7); c.fill();
+            break;
+        }
+        case 'hydrant': {
+            c.fillStyle = '#FF5252';
+            c.beginPath(); c.arc(0, 0, 9, 0, 7); c.fill();
+            c.fillStyle = '#D93030';
+            c.beginPath(); c.arc(0, 0, 4.5, 0, 7); c.fill();
+            c.fillStyle = '#FF8A8A';
+            c.fillRect(-11, -2.5, 22, 5);
+            break;
+        }
+        case 'bush': {
+            c.fillStyle = '#5CB85C';
+            c.beginPath();
+            c.arc(-6, 2, 9, 0, 7); c.arc(7, 3, 8, 0, 7); c.arc(0, -6, 9, 0, 7);
+            c.fill();
+            c.fillStyle = '#7ED957';
+            c.beginPath(); c.arc(-3, -3, 5, 0, 7); c.fill();
+            break;
+        }
+        case 'mailbox': {
+            c.fillStyle = '#4C75FF';
+            roundRect(-10, -8, 20, 16, 6); c.fill();
+            c.fillStyle = '#FFF6E9';
+            c.fillRect(-6, -3, 12, 3);
+            break;
+        }
+        case 'doghouse': {
+            c.fillStyle = '#C98A4B';
+            roundRect(-15, -13, 30, 26, 5); c.fill();
+            c.fillStyle = '#8A5A2B';
+            c.fillRect(-15, -2, 30, 4);
+            c.fillStyle = '#5A3A1B';
+            c.beginPath(); c.arc(0, 8, 5, 0, 7); c.fill();
+            break;
+        }
+        case 'bench': {
+            c.fillStyle = '#A9713F';
+            roundRect(-22, -9, 44, 18, 6); c.fill();
+            c.strokeStyle = '#8A5A2B'; c.lineWidth = 2.5;
+            for (let i = -14; i <= 14; i += 7) {
+                c.beginPath(); c.moveTo(i, -8); c.lineTo(i, 8); c.stroke();
+            }
+            break;
+        }
+        case 'car': {
+            c.fillStyle = 'rgba(43,35,80,.25)';
+            roundRect(-24, -13, 6, 26, 3); c.fill();
+            roundRect(18, -13, 6, 26, 3); c.fill();
+            c.fillStyle = o.color;
+            roundRect(-24, -12, 48, 24, 9); c.fill();
+            c.fillStyle = '#BFE8FF';
+            roundRect(-8, -9, 12, 18, 4); c.fill();
+            c.fillStyle = 'rgba(255,255,255,.4)';
+            roundRect(-20, -9, 8, 5, 2.5); c.fill();
+            break;
+        }
+        case 'tree': {
+            c.fillStyle = 'rgba(43,35,80,.14)';
+            c.beginPath(); c.arc(3, 4, 26, 0, 7); c.fill();
+            c.fillStyle = '#4CA64C';
+            c.beginPath(); c.arc(0, 0, 26, 0, 7); c.fill();
+            c.fillStyle = '#5CB85C';
+            c.beginPath(); c.arc(-5, -5, 17, 0, 7); c.fill();
+            c.fillStyle = '#7ED957';
+            c.beginPath(); c.arc(-8, -8, 8, 0, 7); c.fill();
+            break;
+        }
+        case 'truck': {
+            c.fillStyle = '#E8E8F0';
+            roundRect(-36, -16, 50, 32, 7); c.fill();
+            c.fillStyle = o.color;
+            roundRect(16, -15, 20, 30, 7); c.fill();
+            c.fillStyle = '#BFE8FF';
+            roundRect(24, -10, 7, 20, 3); c.fill();
+            c.fillStyle = '#FFCF3D';
+            c.beginPath(); c.arc(-22, 0, 8, 0, 7); c.fill();
+            break;
+        }
+        case 'kiosk': {
+            c.fillStyle = '#FFF6E9';
+            roundRect(-34, -34, 68, 68, 12); c.fill();
+            c.fillStyle = '#FF5FA2';
+            for (let i = 0; i < 4; i++) c.fillRect(-34 + i * 17 + (i % 2) * 0, -34, 8.5, 68);
+            c.fillStyle = '#FFF6E9';
+            c.beginPath(); c.arc(0, 0, 15, 0, 7); c.fill();
+            c.fillStyle = '#FFCF3D';
+            c.beginPath(); c.arc(0, 0, 10, 0, 7); c.fill();
+            break;
+        }
+        case 'house': {
+            c.fillStyle = 'rgba(43,35,80,.15)';
+            roundRect(-46, -42, 96, 92, 10); c.fill();
+            c.fillStyle = o.color;
+            roundRect(-48, -44, 96, 92, 10); c.fill();
+            c.fillStyle = 'rgba(43,35,80,.22)';
+            c.fillRect(-48, -4, 96, 8);
+            c.fillStyle = '#FFF6E9';
+            c.beginPath(); c.arc(24, 24, 9, 0, 7); c.fill();
+            c.fillStyle = '#FF6B6B';
+            c.beginPath(); c.arc(24, 24, 5, 0, 7); c.fill();
+            break;
+        }
+        case 'bigtree': {
+            c.fillStyle = 'rgba(43,35,80,.14)';
+            c.beginPath(); c.arc(4, 5, 48, 0, 7); c.fill();
+            c.fillStyle = '#3D8B3D';
+            c.beginPath(); c.arc(0, 0, 48, 0, 7); c.fill();
+            c.fillStyle = '#4CA64C';
+            c.beginPath(); c.arc(-8, -8, 32, 0, 7); c.fill();
+            c.fillStyle = '#7ED957';
+            c.beginPath(); c.arc(-14, -14, 14, 0, 7); c.fill();
+            c.fillStyle = '#FF8A8A';
+            c.beginPath(); c.arc(18, -20, 4, 0, 7); c.arc(-28, 12, 4, 0, 7); c.arc(8, 30, 4, 0, 7); c.fill();
+            break;
+        }
+        case 'tower': {
+            c.fillStyle = 'rgba(43,35,80,.16)';
+            c.beginPath(); c.arc(4, 5, 68, 0, 7); c.fill();
+            c.fillStyle = '#C3A6FF';
+            c.beginPath(); c.arc(0, 0, 68, 0, 7); c.fill();
+            c.fillStyle = '#B388FF';
+            c.beginPath(); c.arc(0, 0, 52, 0, 7); c.fill();
+            c.fillStyle = '#FFF6E9';
+            c.beginPath(); c.arc(0, 0, 30, 0, 7); c.fill();
+            c.strokeStyle = '#2B2350'; c.lineWidth = 4;
+            c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -18); c.stroke();
+            c.beginPath(); c.moveTo(0, 0); c.lineTo(12, 6); c.stroke();
+            c.fillStyle = '#2B2350';
+            c.beginPath(); c.arc(0, 0, 4, 0, 7); c.fill();
+            break;
+        }
+        case 'ferris': {
+            c.strokeStyle = '#FF8A3D'; c.lineWidth = 8;
+            c.beginPath(); c.arc(0, 0, 74, 0, 7); c.stroke();
+            c.strokeStyle = '#FFB13D'; c.lineWidth = 5;
+            for (let i = 0; i < 8; i++) {
+                const a = o.spin + i / 8 * Math.PI * 2;
+                c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * 74, Math.sin(a) * 74); c.stroke();
+            }
+            for (let i = 0; i < 8; i++) {
+                const a = o.spin + i / 8 * Math.PI * 2;
+                c.fillStyle = CANDY_COLORS[i % CANDY_COLORS.length];
+                c.beginPath(); c.arc(Math.cos(a) * 74, Math.sin(a) * 74, 12, 0, 7); c.fill();
+            }
+            c.fillStyle = '#FF5FA2';
+            c.beginPath(); c.arc(0, 0, 16, 0, 7); c.fill();
+            c.fillStyle = '#FFF6E9';
+            c.beginPath(); c.arc(0, 0, 7, 0, 7); c.fill();
+            break;
+        }
+    }
+}
+function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+/* ============================== town generation ============================== */
+let objects = [];
+let totalObjects = 0;
+
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
+
+function addObj(type, x, y) {
+    const def = CATALOG[type];
+    objects.push({
+        type, x, y, r: def.r, pts: def.pts, tier: def.tier,
+        rot: type === 'car' || type === 'truck' ? pick([0, Math.PI / 2]) + rnd(-0.06, 0.06) : rnd(0, Math.PI * 2),
+        color: type === 'candy' || type === 'flower' ? pick(CANDY_COLORS)
+             : type === 'car' || type === 'truck' ? pick(CAR_COLORS)
+             : type === 'house' ? pick(HOUSE_COLORS) : '',
+        state: 0,           // 0 idle, 1 falling
+        fallT: 0, scale: 1, wob: 0, spin: 0,
+    });
+}
+
+function blockOrigin(i) { return FENCE + i * (BLOCK + ROAD); }
+
+function generateTown() {
+    objects = [];
+    // one showpiece per opposite corner
+    const specials = [
+        { type: 'ferris', bx: 3, by: 0 },
+        { type: 'tower',  bx: 0, by: 3 },
+    ];
+    for (let by = 0; by < 4; by++) {
+        for (let bx = 0; bx < 4; bx++) {
+            const x0 = blockOrigin(bx), y0 = blockOrigin(by);
+            const cx = x0 + BLOCK / 2, cy = y0 + BLOCK / 2;
+            const special = specials.find(s => s.bx === bx && s.by === by);
+            if (special) {
+                addObj(special.type, cx, cy);
+            } else if ((bx + by) % 2 === 0) {
+                addObj('house', cx + rnd(-40, 40), cy + rnd(-40, 40));
+                addObj(pick(['truck', 'kiosk']), x0 + rnd(90, 150), y0 + BLOCK - rnd(90, 150));
+            } else {
+                addObj('bigtree', cx + rnd(-40, 40), cy + rnd(-40, 40));
+                addObj(pick(['kiosk', 'truck']), x0 + BLOCK - rnd(90, 150), y0 + rnd(90, 150));
+            }
+            // ring of medium prey inside each block
+            for (let i = 0; i < 3; i++) {
+                const a = rnd(0, Math.PI * 2);
+                addObj(pick(['tree', 'bench', 'car']),
+                    cx + Math.cos(a) * rnd(150, 215), cy + Math.sin(a) * rnd(150, 215));
+            }
+            // small prey sprinkled in corners
+            for (let i = 0; i < 4; i++) {
+                addObj(pick(['bush', 'mailbox', 'doghouse', 'mushroom', 'flower']),
+                    x0 + pick([rnd(35, 110), BLOCK - rnd(35, 110)]),
+                    y0 + pick([rnd(35, 110), BLOCK - rnd(35, 110)]));
+            }
+        }
+    }
+    // roads: cars, cones and candy trails
+    for (let i = 0; i < 3; i++) {
+        const roadC = blockOrigin(i) + BLOCK + ROAD / 2;
+        for (let j = 0; j < 5; j++) {
+            addObj(pick(['car', 'cone', 'hydrant']), roadC + rnd(-16, 16), rnd(FENCE + 60, WORLD - FENCE - 60));
+            addObj(pick(['car', 'cone', 'hydrant']), rnd(FENCE + 60, WORLD - FENCE - 60), roadC + rnd(-16, 16));
+        }
+        for (let j = 0; j < 9; j++) {
+            addObj(pick(['candy', 'candy', 'flower']), roadC + rnd(-24, 24), rnd(FENCE + 40, WORLD - FENCE - 40));
+            addObj(pick(['candy', 'candy', 'mushroom']), rnd(FENCE + 40, WORLD - FENCE - 40), roadC + rnd(-24, 24));
+        }
+    }
+    // clear a starting plaza in the middle so the first bites are easy wins
+    const mid = WORLD / 2;
+    objects = objects.filter(o => {
+        const d = Math.hypot(o.x - mid, o.y - mid);
+        return d > (o.tier <= 1 ? 90 : 210);
+    });
+    for (let i = 0; i < 7; i++) {
+        const a = i / 7 * Math.PI * 2;
+        addObj('candy', mid + Math.cos(a) * rnd(95, 150), mid + Math.sin(a) * rnd(95, 150));
+    }
+    // keep everything inside the fence
+    for (const o of objects) {
+        o.x = Math.max(FENCE + o.r + 8, Math.min(WORLD - FENCE - o.r - 8, o.x));
+        o.y = Math.max(FENCE + o.r + 8, Math.min(WORLD - FENCE - o.r - 8, o.y));
+    }
+    totalObjects = objects.length;
+}
+
+/* ============================== ground pre-render ============================== */
+const ground = document.createElement('canvas');
+ground.width = WORLD; ground.height = WORLD;
+function paintGround() {
+    const g = ground.getContext('2d');
+    g.fillStyle = '#8FD463';
+    g.fillRect(0, 0, WORLD, WORLD);
+    // mowed-lawn stripes
+    g.fillStyle = 'rgba(255,255,255,.05)';
+    for (let y = 0; y < WORLD; y += 120) g.fillRect(0, y, WORLD, 60);
+    // sidewalks around each block
+    g.fillStyle = '#E8DFC8';
+    for (let by = 0; by < 4; by++) for (let bx = 0; bx < 4; bx++) {
+        const x0 = blockOrigin(bx), y0 = blockOrigin(by);
+        g.fillRect(x0 - 22, y0 - 22, BLOCK + 44, BLOCK + 44);
+    }
+    g.fillStyle = '#9FDD73';
+    for (let by = 0; by < 4; by++) for (let bx = 0; bx < 4; bx++) {
+        const x0 = blockOrigin(bx), y0 = blockOrigin(by);
+        g.fillRect(x0, y0, BLOCK, BLOCK);
+    }
+    // roads (narrower than the block gap so sidewalk strips show)
+    g.fillStyle = '#6E7B8B';
+    for (let i = 0; i < 3; i++) {
+        const r0 = blockOrigin(i) + BLOCK + (ROAD - 58) / 2;
+        g.fillRect(r0, 0, 58, WORLD);
+        g.fillRect(0, r0, WORLD, 58);
+    }
+    // dashed center lines
+    g.strokeStyle = '#FFF6E9'; g.lineWidth = 6; g.setLineDash([26, 30]);
+    for (let i = 0; i < 3; i++) {
+        const c0 = blockOrigin(i) + BLOCK + ROAD / 2;
+        g.beginPath(); g.moveTo(c0, 0); g.lineTo(c0, WORLD); g.stroke();
+        g.beginPath(); g.moveTo(0, c0); g.lineTo(WORLD, c0); g.stroke();
+    }
+    g.setLineDash([]);
+    // candy fence
+    g.strokeStyle = '#FF5FA2'; g.lineWidth = 14;
+    g.strokeRect(FENCE - 7, FENCE - 7, WORLD - FENCE * 2 + 14, WORLD - FENCE * 2 + 14);
+    g.strokeStyle = '#FFF6E9'; g.lineWidth = 14; g.setLineDash([30, 30]);
+    g.strokeRect(FENCE - 7, FENCE - 7, WORLD - FENCE * 2 + 14, WORLD - FENCE * 2 + 14);
+    g.setLineDash([]);
+}
+paintGround();
+
+/* ============================== game state ============================== */
+const hole = { x: WORLD / 2, y: WORLD / 2, r: HOLE_R0, drawR: HOLE_R0, vx: 0, vy: 0, growPts: 0 };
+let score = 0, eatenCount = 0, biggestBite = '', biggestBitePts = 0;
+let combo = 0, comboTimer = 0, comboBest = 0;
+let timeLeft = RUN_TIME, lastTickSec = -1;
+let cleared = false, isNewBest = false;
+let shake = 0;
+let camX = 0, camY = 0, zoom = 1;
+let menuT = 0, overT = 0, clearBonus = 0;
+
+/* particles + score floaters (pooled) */
+const PARTS = [];
+for (let i = 0; i < 120; i++) PARTS.push({ on: false, x: 0, y: 0, vx: 0, vy: 0, t: 0, dur: 1, size: 4, color: '' });
+function burst(x, y, color, n, speed) {
+    let made = 0;
+    for (const p of PARTS) {
+        if (p.on) continue;
+        p.on = true; p.x = x; p.y = y;
+        const a = rnd(0, Math.PI * 2), s = rnd(speed * 0.4, speed);
+        p.vx = Math.cos(a) * s; p.vy = Math.sin(a) * s;
+        p.t = 0; p.dur = rnd(0.35, 0.7); p.size = rnd(3, 7); p.color = color;
+        if (++made >= n) break;
+    }
+}
+const FLOATERS = [];
+for (let i = 0; i < 12; i++) FLOATERS.push({ on: false, x: 0, y: 0, t: 0, text: '' });
+function floatText(x, y, text) {
+    for (const f of FLOATERS) {
+        if (f.on) continue;
+        f.on = true; f.x = x; f.y = y; f.t = 0; f.text = text;
+        return;
+    }
+}
+
+/* ============================== input ============================== */
+const keys = {};
+window.addEventListener('keydown', e => {
+    keys[e.key] = true;
+    if (e.key === ' ' || e.key === 'Enter') {
+        if (currentState === State.MENU || currentState === State.GAME_OVER) startRun();
+    }
+    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') togglePause();
+});
+window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+/* dynamic joystick: steer by dragging anywhere; anchor trails the finger */
+let touching = false, anchorX = 0, anchorY = 0, stickX = 0, stickY = 0;
+const STICK_MAX = 70;
+function pointerDown(x, y) {
+    ensureAudio();
+    if (currentState === State.MENU || currentState === State.GAME_OVER) {
+        if (currentState === State.GAME_OVER && overT < 0.5) return;
+        startRun();
+        return;
+    }
+    if (currentState === State.PAUSED) { togglePause(); return; }
+    touching = true;
+    anchorX = x; anchorY = y; stickX = 0; stickY = 0;
+}
+function pointerMove(x, y) {
+    if (!touching) return;
+    let dx = x - anchorX, dy = y - anchorY;
+    const d = Math.hypot(dx, dy);
+    if (d > STICK_MAX) {
+        const pull = (d - STICK_MAX) / d;
+        anchorX += dx * pull; anchorY += dy * pull;
+        dx = x - anchorX; dy = y - anchorY;
+    }
+    stickX = dx / STICK_MAX; stickY = dy / STICK_MAX;
+}
+function pointerUp() { touching = false; stickX = 0; stickY = 0; }
+
+canvas.addEventListener('touchstart', e => { e.preventDefault(); const t = e.touches[0]; pointerDown(t.clientX, t.clientY); }, { passive: false });
+canvas.addEventListener('touchmove',  e => { e.preventDefault(); const t = e.touches[0]; pointerMove(t.clientX, t.clientY); }, { passive: false });
+canvas.addEventListener('touchend',   e => { e.preventDefault(); pointerUp(); }, { passive: false });
+canvas.addEventListener('mousedown', e => pointerDown(e.clientX, e.clientY));
+canvas.addEventListener('mousemove', e => pointerMove(e.clientX, e.clientY));
+window.addEventListener('mouseup', pointerUp);
+
+/* buttons */
+const muteBtn = document.getElementById('muteBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+function refreshMuteIcon() { muteBtn.textContent = save.muted ? '🔇' : '🔊'; }
+refreshMuteIcon();
+muteBtn.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    save.muted = !save.muted; saveData(); refreshMuteIcon(); ensureAudio();
+});
+pauseBtn.addEventListener('pointerdown', e => { e.stopPropagation(); togglePause(); });
+function togglePause() {
+    if (currentState === State.PLAYING) { currentState = State.PAUSED; pauseBtn.textContent = '▶'; }
+    else if (currentState === State.PAUSED) { currentState = State.PLAYING; pauseBtn.textContent = '⏸'; }
+}
+
+/* ============================== run control ============================== */
+function startRun() {
+    generateTown();
+    hole.x = WORLD / 2; hole.y = WORLD / 2;
+    hole.r = HOLE_R0; hole.drawR = HOLE_R0; hole.growPts = 0;
+    hole.vx = 0; hole.vy = 0;
+    score = 0; eatenCount = 0; biggestBite = ''; biggestBitePts = 0;
+    combo = 0; comboTimer = 0; comboBest = 0;
+    timeLeft = RUN_TIME; lastTickSec = -1;
+    cleared = false; isNewBest = false; clearBonus = 0;
+    shake = 0; overT = 0;
+    camX = hole.x; camY = hole.y;
+    for (const p of PARTS) p.on = false;
+    for (const f of FLOATERS) f.on = false;
+    touching = false; stickX = 0; stickY = 0;
+    save.totalPlays++; saveData();
+    pauseBtn.textContent = '⏸';
+    currentState = State.PLAYING;
+}
+
+function endRun() {
+    const pct = Math.round(eatenCount / totalObjects * 100);
+    if (cleared) {
+        clearBonus = 500 + Math.ceil(timeLeft) * 10;
+        score += clearBonus;
+    }
+    isNewBest = score > save.highScore;
+    if (isNewBest) { save.highScore = score; sfxFanfare(); } else sfxEnd();
+    if (pct > save.bestPct) save.bestPct = pct;
+    if (biggestBitePts > 0) save.bestBite = biggestBite;
+    saveData();
+    overT = 0;
+    currentState = State.GAME_OVER;
+}
+
+/* ============================== update ============================== */
+function targetHoleR() {
+    return Math.min(HOLE_RMAX, Math.sqrt(HOLE_R0 * HOLE_R0 + hole.growPts * 14));
+}
+
+function updateGame(dt) {
+    /* --- steering --- */
+    let ix = stickX, iy = stickY;
+    if (keys.ArrowLeft || keys.a || keys.A) ix -= 1;
+    if (keys.ArrowRight || keys.d || keys.D) ix += 1;
+    if (keys.ArrowUp || keys.w || keys.W) iy -= 1;
+    if (keys.ArrowDown || keys.s || keys.S) iy += 1;
+    const im = Math.hypot(ix, iy);
+    if (im > 1) { ix /= im; iy /= im; }
+    const speed = 250 + hole.r * 0.55;
+    hole.vx += (ix * speed - hole.vx) * Math.min(1, dt * 10);
+    hole.vy += (iy * speed - hole.vy) * Math.min(1, dt * 10);
+    hole.x += hole.vx * dt;
+    hole.y += hole.vy * dt;
+    const rim = hole.r * 0.7;
+    hole.x = Math.max(FENCE + rim, Math.min(WORLD - FENCE - rim, hole.x));
+    hole.y = Math.max(FENCE + rim, Math.min(WORLD - FENCE - rim, hole.y));
+
+    /* --- smooth growth --- */
+    hole.r = targetHoleR();
+    hole.drawR += (hole.r - hole.drawR) * Math.min(1, dt * 6);
+
+    /* --- combo decay --- */
+    if (combo > 0) {
+        comboTimer -= dt;
+        if (comboTimer <= 0) combo = 0;
+    }
+
+    /* --- objects --- */
+    for (const o of objects) {
+        if (o.type === 'ferris') o.spin += dt * 0.4;
+        if (o.state === 1) {
+            o.fallT += dt;
+            const k = Math.min(1, o.fallT / 0.45);
+            o.scale = 1 - k * k;
+            o.rot += dt * 9;
+            o.x += (hole.x - o.x) * Math.min(1, dt * 10);
+            o.y += (hole.y - o.y) * Math.min(1, dt * 10);
+            if (k >= 1) {
+                o.state = 2;
+                eatenCount++;
+                const mult = Math.min(5, 1 + Math.floor(combo / 3));
+                const gained = o.pts * mult;
+                score += gained;
+                hole.growPts += o.pts;
+                combo++; comboBest = Math.max(comboBest, combo);
+                comboTimer = 1.2;
+                if (o.pts > biggestBitePts) { biggestBitePts = o.pts; biggestBite = CATALOG[o.type].name; }
+                sfxPop(o.r, combo);
+                if (o.tier >= 3) { shake = Math.min(1, shake + 0.35 + o.tier * 0.08); sfxGrow(); }
+                burst(hole.x, hole.y, o.color || '#FFCF3D', 6 + o.tier * 3, 120 + o.tier * 60);
+                floatText(hole.x, hole.y - hole.drawR - 14, '+' + gained + (mult > 1 ? '  x' + mult : ''));
+            }
+            continue;
+        }
+        if (o.state === 2) continue;
+        const dx = o.x - hole.x, dy = o.y - hole.y;
+        const d = Math.hypot(dx, dy);
+        const edible = o.r <= hole.r * 0.92;
+        if (edible) {
+            if (d < hole.r * 0.95) {
+                o.state = 1; o.fallT = 0;
+            } else if (d < hole.r + o.r) {
+                // rim pull: lean in before the plunge
+                const pull = (hole.r + o.r - d) / (hole.r + o.r);
+                o.x -= dx / d * pull * 260 * dt;
+                o.y -= dy / d * pull * 260 * dt;
+            }
+        } else if (d < hole.r + o.r * 0.6) {
+            o.wob = Math.min(1, o.wob + dt * 6);   // too big: tease wobble
+        }
+        if (o.wob > 0) o.wob = Math.max(0, o.wob - dt * 2);
+    }
+    if (eatenCount >= totalObjects && !cleared) {
+        cleared = true;
+        endRun();
+        return;
+    }
+
+    /* --- timer --- */
+    timeLeft -= dt;
+    const sec = Math.ceil(timeLeft);
+    if (sec <= 10 && sec >= 1 && sec !== lastTickSec) { lastTickSec = sec; sfxTick(); }
+    if (timeLeft <= 0) { timeLeft = 0; endRun(); return; }
+
+    /* --- camera --- */
+    const targetZoom = Math.max(0.62, Math.min(1, 1 - (hole.drawR - HOLE_R0) / 260));
+    zoom += (targetZoom - zoom) * Math.min(1, dt * 3);
+    camX += (hole.x - camX) * Math.min(1, dt * 6);
+    camY += (hole.y - camY) * Math.min(1, dt * 6);
+
+    shake = Math.max(0, shake - dt * 2.4);
+    updateFx(dt);
+}
+
+function updateFx(dt) {
+    for (const p of PARTS) {
+        if (!p.on) continue;
+        p.t += dt;
+        if (p.t >= p.dur) { p.on = false; continue; }
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        p.vx *= 1 - dt * 2; p.vy *= 1 - dt * 2;
+    }
+    for (const f of FLOATERS) {
+        if (!f.on) continue;
+        f.t += dt;
+        if (f.t > 1) f.on = false;
+    }
+}
+
+/* ============================== render ============================== */
+function worldTransform() {
+    const s = shake * shake;
+    const ox = (Math.random() - 0.5) * 14 * s;
+    const oy = (Math.random() - 0.5) * 14 * s;
+    ctx.translate(W / 2 + ox, H / 2 + oy);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-camX, -camY);
+}
+
+function renderGame() {
+    ctx.fillStyle = '#7BC152';
+    ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    worldTransform();
+
+    /* ground (only the visible slice) */
+    const viewW = W / zoom, viewH = H / zoom;
+    let sx = camX - viewW / 2, sy = camY - viewH / 2;
+    let sw = viewW, sh = viewH;
+    if (sx < 0) { sw += sx; sx = 0; }
+    if (sy < 0) { sh += sy; sy = 0; }
+    sw = Math.min(sw, WORLD - sx); sh = Math.min(sh, WORLD - sy);
+    if (sw > 0 && sh > 0) ctx.drawImage(ground, sx, sy, sw, sh, sx, sy, sw, sh);
+
+    /* hole disc */
+    const hr = hole.drawR;
+    ctx.fillStyle = '#241D42';
+    ctx.beginPath(); ctx.arc(hole.x, hole.y, hr, 0, 7); ctx.fill();
+    const grad = ctx.createRadialGradient(hole.x, hole.y, hr * 0.2, hole.x, hole.y, hr);
+    grad.addColorStop(0, '#0B0820');
+    grad.addColorStop(1, '#3A2F6B');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(hole.x, hole.y, hr * 0.94, 0, 7); ctx.fill();
+
+    /* falling objects clipped inside the hole */
+    ctx.save();
+    ctx.beginPath(); ctx.arc(hole.x, hole.y, hr * 0.96, 0, 7); ctx.clip();
+    for (const o of objects) {
+        if (o.state !== 1) continue;
+        ctx.save();
+        ctx.translate(o.x | 0, o.y | 0);
+        ctx.rotate(o.rot);
+        ctx.scale(o.scale, o.scale);
+        drawObj(o);
+        ctx.restore();
+    }
+    ctx.restore();
+
+    /* rim highlight */
+    ctx.strokeStyle = 'rgba(255,255,255,.65)';
+    ctx.lineWidth = Math.max(3, hr * 0.09);
+    ctx.beginPath(); ctx.arc(hole.x, hole.y, hr, 0, 7); ctx.stroke();
+
+    /* googly eyes riding the rim, looking where you go */
+    const lookA = Math.atan2(hole.vy, hole.vx);
+    const moving = Math.hypot(hole.vx, hole.vy) > 30;
+    const eyeBaseA = moving ? lookA : -Math.PI / 2;
+    const eyeR = Math.max(6, hr * 0.22);
+    for (const side of [-0.35, 0.35]) {
+        const ex = hole.x + Math.cos(eyeBaseA + side) * (hr + eyeR * 0.4);
+        const ey = hole.y + Math.sin(eyeBaseA + side) * (hr + eyeR * 0.4);
+        ctx.fillStyle = '#FFF';
+        ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(ex, ey, eyeR, 0, 7); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#2B2350';
+        ctx.beginPath();
+        ctx.arc(ex + Math.cos(eyeBaseA) * eyeR * 0.35, ey + Math.sin(eyeBaseA) * eyeR * 0.35, eyeR * 0.42, 0, 7);
+        ctx.fill();
+    }
+
+    /* idle objects (view-culled) */
+    const cullPad = 120;
+    for (const o of objects) {
+        if (o.state !== 0) continue;
+        if (Math.abs(o.x - camX) > viewW / 2 + cullPad || Math.abs(o.y - camY) > viewH / 2 + cullPad) continue;
+        ctx.save();
+        ctx.translate(o.x | 0, o.y | 0);
+        if (o.wob > 0) ctx.rotate(Math.sin(performance.now() / 60) * 0.08 * o.wob);
+        ctx.rotate(o.rot * (o.type === 'car' || o.type === 'truck' || o.type === 'house' || o.type === 'kiosk' ? 1 : 0.15));
+        drawObj(o);
+        ctx.restore();
+    }
+
+    /* particles */
+    for (const p of PARTS) {
+        if (!p.on) continue;
+        const a = 1 - p.t / p.dur;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x | 0, p.y | 0, p.size * a + 1, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    /* score floaters */
+    ctx.textAlign = 'center';
+    for (const f of FLOATERS) {
+        if (!f.on) continue;
+        ctx.globalAlpha = 1 - f.t;
+        ctx.font = '800 26px Nunito, sans-serif';
+        ctx.fillStyle = '#FFF';
+        ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 5;
+        const fy = f.y - f.t * 46;
+        ctx.strokeText(f.text, f.x, fy);
+        ctx.fillText(f.text, f.x, fy);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    if (currentState !== State.GAME_OVER) renderHUD();
+    if (touching) {
+        // joystick ghost
+        ctx.globalAlpha = 0.25;
+        ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(anchorX, anchorY, STICK_MAX, 0, 7); ctx.stroke();
+        ctx.fillStyle = '#2B2350';
+        ctx.beginPath(); ctx.arc(anchorX + stickX * STICK_MAX, anchorY + stickY * STICK_MAX, 18, 0, 7); ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+}
+
+function renderHUD() {
+    ctx.textAlign = 'center';
+    // score
+    ctx.font = '800 34px Nunito, sans-serif';
+    ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 6; ctx.lineJoin = 'round';
+    ctx.fillStyle = '#FFF';
+    ctx.strokeText(score, W / 2, 46);
+    ctx.fillText(score, W / 2, 46);
+    // timer
+    const sec = Math.ceil(timeLeft);
+    const m = (sec / 60) | 0, s = sec % 60;
+    const tstr = m + ':' + (s < 10 ? '0' : '') + s;
+    const urgent = sec <= 10;
+    ctx.font = '800 ' + (urgent ? 26 + Math.sin(performance.now() / 90) * 3 : 22) + 'px Nunito, sans-serif';
+    ctx.fillStyle = urgent ? '#FF5252' : '#FFF';
+    ctx.strokeText(tstr, W / 2, 76);
+    ctx.fillText(tstr, W / 2, 76);
+    // town progress
+    const pct = Math.round(eatenCount / totalObjects * 100);
+    ctx.font = '800 16px Nunito, sans-serif';
+    ctx.fillStyle = '#FFF';
+    ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 4;
+    ctx.strokeText('TOWN EATEN: ' + pct + '%', W / 2, H - 18);
+    ctx.fillText('TOWN EATEN: ' + pct + '%', W / 2, H - 18);
+    // combo badge
+    if (combo >= 3) {
+        const mult = Math.min(5, 1 + Math.floor(combo / 3));
+        ctx.font = '800 28px Nunito, sans-serif';
+        ctx.fillStyle = '#FFCF3D';
+        ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 5;
+        const bx = W / 2 + 90, by2 = 50;
+        ctx.strokeText('x' + mult, bx, by2);
+        ctx.fillText('x' + mult, bx, by2);
+    }
+}
+
+/* ---------- menu ---------- */
+function updateMenu(dt) { menuT += dt; }
+function renderMenu() {
+    ctx.fillStyle = '#8FD463';
+    ctx.fillRect(0, 0, W, H);
+    // picnic dots
+    ctx.fillStyle = 'rgba(255,255,255,.12)';
+    for (let i = 0; i < 24; i++) {
+        const x = (i * 233 + 80) % W, y = (i * 157 + 60) % H;
+        ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.fill();
+    }
+    const cx = W / 2, cy = H * 0.42;
+    // demo hole with orbiting candy being gobbled
+    const hr = 52 + Math.sin(menuT * 2) * 3;
+    ctx.fillStyle = '#241D42';
+    ctx.beginPath(); ctx.arc(cx, cy, hr, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.65)'; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.arc(cx, cy, hr, 0, 7); ctx.stroke();
+    const t = menuT % 2.2;
+    if (t < 1.6) {
+        const k = t / 1.6;
+        const ox = cx + (1 - k) * 170 - 0;
+        const scale = k > 0.8 ? Math.max(0, 1 - (k - 0.8) / 0.2) : 1;
+        ctx.save();
+        ctx.translate(ox, cy);
+        ctx.rotate(k * 6);
+        ctx.scale(scale, scale);
+        drawObj({ type: 'candy', color: CANDY_COLORS[((menuT / 2.2) | 0) % 5] });
+        ctx.restore();
+    }
+    // eyes on top of the rim, pupils tracking the candy
+    for (const side of [-0.45, 0.45]) {
+        const a = -Math.PI / 2 + side;
+        const ex = cx + Math.cos(a) * (hr + 6);
+        const ey = cy + Math.sin(a) * (hr + 6);
+        ctx.fillStyle = '#FFF'; ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(ex, ey, 13, 0, 7); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#2B2350';
+        ctx.beginPath(); ctx.arc(ex + 5, ey + 1.5, 5.5, 0, 7); ctx.fill();
+    }
+    // title
+    ctx.textAlign = 'center';
+    ctx.font = '800 ' + Math.min(64, W * 0.11) + 'px Nunito, sans-serif';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 10;
+    ctx.fillStyle = '#FFCF3D';
+    ctx.strokeText('NOM NOM CITY', cx, H * 0.2);
+    ctx.fillText('NOM NOM CITY', cx, H * 0.2);
+    ctx.font = '800 20px Nunito, sans-serif';
+    ctx.fillStyle = '#FFF';
+    ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 5;
+    ctx.strokeText('Drag the hungry hole. Eat the whole town!', cx, H * 0.27);
+    ctx.fillText('Drag the hungry hole. Eat the whole town!', cx, H * 0.27);
+    // tap to play
+    const pulse = 1 + Math.sin(menuT * 4) * 0.06;
+    ctx.save();
+    ctx.translate(cx, H * 0.68);
+    ctx.scale(pulse, pulse);
+    ctx.font = '800 34px Nunito, sans-serif';
+    ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 8;
+    ctx.fillStyle = '#FFF';
+    ctx.strokeText('TAP TO PLAY', 0, 0);
+    ctx.fillText('TAP TO PLAY', 0, 0);
+    ctx.restore();
+    if (save.highScore > 0) {
+        ctx.font = '800 18px Nunito, sans-serif';
+        ctx.fillStyle = '#2B2350';
+        ctx.fillText('BEST: ' + save.highScore + '   ·   TOWN RECORD: ' + save.bestPct + '%', cx, H * 0.76);
+    }
+}
+
+/* ---------- pause ---------- */
+function renderPause() {
+    renderGame();
+    ctx.fillStyle = 'rgba(43,35,80,.55)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.font = '800 44px Nunito, sans-serif';
+    ctx.fillStyle = '#FFF';
+    ctx.fillText('PAUSED', W / 2, H / 2 - 10);
+    ctx.font = '800 20px Nunito, sans-serif';
+    ctx.fillText('tap to keep munching', W / 2, H / 2 + 28);
+}
+
+/* ---------- game over ---------- */
+function updateGameOver(dt) { overT += dt; updateFx(dt); }
+function renderGameOver() {
+    renderGame();
+    const a = Math.min(1, overT * 2.5);
+    ctx.fillStyle = 'rgba(43,35,80,' + 0.72 * a + ')';
+    ctx.fillRect(0, 0, W, H);
+    if (a < 0.4) return;
+    ctx.textAlign = 'center';
+    const cx = W / 2;
+    let y = H * 0.2;
+    ctx.lineJoin = 'round';
+    ctx.font = '800 ' + Math.min(52, W * 0.1) + 'px Nunito, sans-serif';
+    ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 9;
+    ctx.fillStyle = cleared ? '#7ED957' : '#FFCF3D';
+    const title = cleared ? 'TOWN CLEARED!' : "TIME'S UP!";
+    ctx.strokeText(title, cx, y);
+    ctx.fillText(title, cx, y);
+    y += 64;
+    ctx.font = '800 46px Nunito, sans-serif';
+    ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 8;
+    ctx.fillStyle = '#FFF';
+    ctx.strokeText(score, cx, y);
+    ctx.fillText(score, cx, y);
+    y += 34;
+    if (isNewBest) {
+        const pulse = 1 + Math.sin(overT * 6) * 0.08;
+        ctx.save();
+        ctx.translate(cx, y);
+        ctx.scale(pulse, pulse);
+        ctx.font = '800 26px Nunito, sans-serif';
+        ctx.fillStyle = '#FFCF3D';
+        ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 6;
+        ctx.strokeText('NEW BEST!', 0, 0);
+        ctx.fillText('NEW BEST!', 0, 0);
+        ctx.restore();
+    } else {
+        ctx.font = '800 20px Nunito, sans-serif';
+        ctx.fillStyle = '#CFC6FF';
+        const gap = save.highScore - score;
+        ctx.fillText(gap > 0 && gap <= 60 ? 'SO CLOSE! Only ' + gap + ' away from your best!' : 'Your best: ' + save.highScore, cx, y);
+    }
+    y += 44;
+    ctx.font = '800 19px Nunito, sans-serif';
+    ctx.fillStyle = '#FFF';
+    const pct = Math.round(eatenCount / totalObjects * 100);
+    ctx.fillText('Town eaten: ' + pct + '%   ·   Best combo: x' + Math.min(5, 1 + Math.floor(comboBest / 3)), cx, y);
+    y += 30;
+    if (biggestBite) ctx.fillText('Biggest bite: ' + biggestBite, cx, y);
+    if (cleared && clearBonus) {
+        y += 30;
+        ctx.fillStyle = '#7ED957';
+        ctx.fillText('Clear bonus: +' + clearBonus, cx, y);
+    }
+    // play again
+    if (overT > 0.5) {
+        const pulse = 1 + Math.sin(overT * 4) * 0.05;
+        const by = H * 0.78;
+        ctx.save();
+        ctx.translate(cx, by);
+        ctx.scale(pulse, pulse);
+        ctx.fillStyle = '#FF5FA2';
+        ctx.strokeStyle = '#2B2350'; ctx.lineWidth = 5;
+        roundRect(-120, -34, 240, 68, 22); ctx.fill(); ctx.stroke();
+        ctx.font = '800 26px Nunito, sans-serif';
+        ctx.fillStyle = '#FFF';
+        ctx.fillText('PLAY AGAIN', 0, 9);
+        ctx.restore();
+    }
+}
+
+/* ============================== main loop ============================== */
+function update(dt) {
+    switch (currentState) {
+        case State.MENU: updateMenu(dt); break;
+        case State.PLAYING: updateGame(dt); break;
+        case State.PAUSED: break;
+        case State.GAME_OVER: updateGameOver(dt); break;
+    }
+}
+function render() {
+    switch (currentState) {
+        case State.MENU: renderMenu(); break;
+        case State.PLAYING: renderGame(); break;
+        case State.PAUSED: renderPause(); break;
+        case State.GAME_OVER: renderGameOver(); break;
+    }
+}
+let last = performance.now();
+function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    update(dt);
+    render();
+    requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
